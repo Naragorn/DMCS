@@ -1,0 +1,6 @@
+# Step 1, persistence part 1: change two options and save them the way closing the menu does.
+wait-level
+set-option DMCS "Debug Logging" true
+set-option DMCS "Disarm Strike Enabled" false
+save-options
+quit

@@ -27,3 +27,6 @@ bin/
 # dotnet
 TestResults/
 *.binlog
+
+# harness runs
+artifacts/

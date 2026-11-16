@@ -13,7 +13,7 @@ Every feature can be toggled and tuned in the in-game Mod Menu. Full spec: `CLAU
 
 | Build step | State |
 |---|---|
-| 1. Project setup, SDK check, mod loads, Debug Logging, Mod Menu skeleton | **Built, unit-tested. In-game test pending.** |
+| 1. Project setup, SDK check, mod loads, Debug Logging, Mod Menu skeleton | **Done. Unit tests + in-game harness PASS (2026-11-16).** Menu look in the headset not checked. |
 | 2. Charge Stagger | not started |
 | 3. Disarm Strike | not started |
 | 4. Adrenaline | not started |
@@ -38,6 +38,7 @@ Requirements: .NET SDK 8 (builds the `net472` mod via the `Microsoft.NETFramewor
 dotnet test                                               # build + all tests
 dotnet format --verify-no-changes                         # lint
 dotnet build src/DMCS/DMCS.csproj -c Release -p:DeployToGame=true   # copies DMCS.dll + manifest.json to Mods/DMCS
+tools/harness.sh                                          # in-game scenarios, headless (see below)
 ```
 
 Game path defaults to `~/.local/share/Steam/steamapps/common/Blade & Sorcery`; override with `-p:BasGameDir=...` or env `BAS_GAME_DIR`.
@@ -75,11 +76,11 @@ Legend: **V** = verified in the decompiled `ThunderRoad.dll` of game 1.3.2. **V+
 | `[ModOption]` named args `name, nameLocalizationId, tooltip, category, categoryOrder, order, valueSourceName` | V+T | `ModOption.cs`. |
 | `[ModOptionButton]`, `[ModOptionDontSave]`, `[ModOptionApplyOnPress]` | V+T | `ModOptionButton.cs`, `ModOptionDontSave.cs`, `ModOptionApplyOnPress.cs` (sets `applyOnLoad=false`). |
 | Static property as option target, default = getter value at load | V | `ModOption.ReadModOptionDefaultValue` reads the static field/property and matches it against the value list. |
-| Persistence | V (mechanism) / **A** (in game) | `ModOption.Apply` → `GameManager.options.SetModOption(modData.folderName, name, index, saveValue)`. Saved as **value index**, keyed by **(mod folder, option name)**. |
-| Live apply | V (mechanism) / **A** (in game) | Menu change → `UIList.OnIndexChanged` → `ModOption.Apply` → property setter. No restart involved. |
-| Group label "Enabled" | V+T | Option names must be unique (save key), so each toggle has a unique name (`Clash of Might Enabled`, …) and `nameLocalizationId = "Default.Enabled"`, which the menu displays instead (`UIArrowListModOption.InitValues`). That text exists in the game: `bas.jsondb → Texts/Text_English.json` group `Default`, id `Enabled` = "Enabled" (German: "Aktiviert"). Falls back to the unique name if missing. |
-| Button = re-apply on every press | V / **A** | `UIList.NextValue`: for `UIButtonList` subclasses with one value, the index wraps to 0 and `OnIndexChanged` → `Apply(0)` runs on each press. |
-| Reset: `ModManager.ModData.modOptions`, `ModOption.defaultValueIndex`, `parameterValues`, `Apply(int)`, `uiComponent.Reload()` | V / **A** | `ModManager.cs:150`, `ModOption.cs`, `UIList.Reload` = `InitValues + LoadValue(default) + Refresh`. Whether the open menu page redraws correctly is only provable in game. |
+| Persistence | V + **harness** | `ModOption.Apply` → `GameManager.options.SetModOption(modData.folderName, name, index, saveValue)`. Saved as **value index**, keyed by **(mod folder, option name)**. Saved values are applied **after** the ThunderScripts load (`ModManager.LoadAndRefreshCatalog` → `Options.ApplyModOptions`), so DMCS logs the effective settings at level load, not at script load. Harness: set + save, restart, values back. |
+| Live apply | V + **harness** | Menu change → `UIArrowListModOption.OnIndexChanged` → `ModOption.Apply` → property setter. Harness applies the same call in a running level; the toggle and its log line follow at once. |
+| Group label "Enabled" | V+T + **harness** | Option names must be unique (save key), so each toggle has a unique name (`Clash of Might Enabled`, …) and `nameLocalizationId = "Default.Enabled"`, which the menu displays instead (`UIArrowListModOption.InitValues`). That text exists in the game: `bas.jsondb → Texts/Text_English.json` group `Default`, id `Enabled` = "Enabled" (German: "Aktiviert"). Falls back to the unique name if missing. |
+| Button = re-apply on every press | V + **harness** | `UIList.NextValue`: for `UIButtonList` subclasses with one value, the index wraps to 0 and `OnIndexChanged` → `Apply(0)` runs on each press. |
+| Reset: `ModManager.ModData.modOptions`, `ModOption.defaultValueIndex`, `parameterValues`, `Apply(int)`, `uiComponent.Reload()` | V + **harness** (values) / **A** (redraw) | `ModManager.cs:150`, `ModOption.cs`, `UIList.Reload` = `InitValues + LoadValue(default) + Refresh`. Harness: "Reset 5 options to defaults.", values and members back at default. Whether an **open** menu page redraws is still a headset check. |
 | `UnityEngine.Debug.Log` | V | `UnityEngine.CoreModule`. |
 | Manifest format (`Name, Description, Author, ModVersion, GameVersion`) | V | Official wiki JSON-modding page and installed working mods (all use `"GameVersion": "1.0.0.0"`). |
 
@@ -104,8 +105,25 @@ Game quirk found: `UIButtonListModOption` feeds `nameLocalizationId` into the **
 | `Time.timeScale` | A | Unity API; restore paths tested in step 4 |
 | Dodge event | **A** | No dodge event found; spec allows approximation (step 4). |
 
+## In-game tests (headless harness)
+
+`tools/harness.sh` builds DMCS and runs `harness/*.txt` in the game, headless in the background, through
+[BasHarness](../BasHarness) (sibling folder; `BAS_HARNESS_DIR` overrides): Unity's mock headset instead of
+SteamVR, straight into the Arena, only DMCS + the harness mod loaded, in the harness's own Proton prefix —
+your install, mods, saves and options are not touched. Every run starts from a fresh prefix.
+Results land in `artifacts/harness/<time>/<scenario>/summary.md` (with Player.log and screenshots).
+
+| Scenario | Checks |
+|---|---|
+| `step1-a-menu` | mod + script load; effective settings line; all 6 options with category, displayed title (`Enabled` from the game's localisation), type, interaction, save flag, tooltip; defaults; Debug Logging on → toggle change logged live; Debug Logging off → toggle still switches, no debug line; Reset To Defaults restores values and members; screenshot |
+| `step1-b-persist-set` | set Debug Logging on + Disarm Strike off, save as closing the menu does |
+| `step1-c-persist-check` | new game start: both values back (menu value and the live member) |
+
+Not covered by the harness: how the mods page *looks* in the headset (nobody opens the book) and anything
+needing controller input.
+
 ## In-game test log
 
 | Date | Step | Result |
 |---|---|---|
-| – | 1 | pending |
+| 2026-11-16 | 1 | Harness: `step1-a-menu`, `-b-persist-set`, `-c-persist-check` **PASS** (70 s). First run found that saved values apply after script load; the load banner claimed default states — fixed (Settings line at level load). |

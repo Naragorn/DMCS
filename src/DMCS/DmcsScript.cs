@@ -1,3 +1,4 @@
+using DMCS.Core;
 using ThunderRoad;
 
 namespace DMCS
@@ -5,7 +6,10 @@ namespace DMCS
     /// <summary>
     /// Entry point. ThunderRoad instantiates every ThunderScript subclass in the mod DLL
     /// (ModManager.LoadModThunderScripts: Activator.CreateInstance -> ScriptLoaded -> Enable).
-    /// Mod options are discovered and applied by the game before this runs.
+    /// Order in ModManager.LoadCoroutine / LoadAndRefreshCatalog: options are discovered
+    /// (LoadModOptions), then this script loads, and only then are the saved option values
+    /// applied (Options.ApplyModOptions). So at ScriptLoaded the options still hold their defaults;
+    /// the effective settings are logged when a level has loaded.
     /// </summary>
     public sealed class DmcsScript : ThunderScript
     {
@@ -18,28 +22,35 @@ namespace DMCS
             LoadedMod = modData;
             Dmcs.Log.Info(
                 "v" + Dmcs.Version + " loaded from folder '" + modData.folderName + "' with "
-                + modData.modOptions.Count + " mod options. Debug Logging="
-                + (Dmcs.Log.DebugEnabled ? "on" : "off"));
-            foreach (var feature in Features.All)
-            {
-                Dmcs.Log.Info(feature.Name + ": " + (feature.Enabled ? "Enabled" : "Disabled"));
-            }
+                + modData.modOptions.Count + " mod options. Saved settings are applied after loading.");
         }
 
         public override void ScriptEnable()
         {
+            EventManager.onLevelLoad += OnLevelLoad;
             Dmcs.Log.Debug("Script", "ScriptEnable");
         }
 
         public override void ScriptDisable()
         {
+            EventManager.onLevelLoad -= OnLevelLoad;
             Dmcs.Log.Debug("Script", "ScriptDisable");
         }
 
         public override void ScriptUnload()
         {
+            EventManager.onLevelLoad -= OnLevelLoad;
             Dmcs.Log.Debug("Script", "ScriptUnload");
             LoadedMod = null;
+        }
+
+        private static void OnLevelLoad(LevelData levelData, LevelData.Mode mode, EventTime eventTime)
+        {
+            if (eventTime != EventTime.OnEnd)
+            {
+                return;
+            }
+            Dmcs.Log.Info(DmcsStatus.Describe(Dmcs.Log.DebugEnabled, Features.All));
         }
     }
 }
