@@ -135,7 +135,7 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 
 **Own meter, not the game's Focus.** The base game has Focus (`Mana.currentFocus`, 30 without skills, regen 3/s, half while moving). It is spent on a manual slow-time (`SpellPowerSlowTime`, held on the right B button in the SteamVR bindings, scale 0.5, 6 focus/s, needs 10). Full Focus only plays a sound (`Effect_FocusFull`). The skill `SkillCombatFocus` refills it on kill, slice, parry, deflect and disarm. Focus has no automatic critical, so DMCS keeps its own meter and leaves Focus alone.
 
-**State machine** (pure logic in `DMCS.Core`, unit-tested over every flow): `Filling → Ready (window timer) → Critical → Filling`; an unused window empties the meter. `meterMax` default 100, `adrenalineWindowDuration` default 6 s, optional `meterDecay` per second (open decision, proposed default 0 = no decay).
+**State machine** (pure logic in `DMCS.Core`, unit-tested over every flow): `Filling → Ready (window timer) → Critical → Filling`; an unused window empties the meter. `meterMax` default 100, `adrenalineWindowDuration` default 6 s, `meterDecay` 2 per second after `meterDecayDelay` 0 s (see "Meter decay" below).
 
 **Gains** (each its own slider; defaults confirmed by the user 2026-11-16, not tried in game yet):
 
