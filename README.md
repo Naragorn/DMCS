@@ -1,6 +1,6 @@
 # DMCS — Dark Messiah Combat Systems
 
-Blade & Sorcery combat overhaul inspired by *Dark Messiah of Might and Magic*.
+Dark Messiah-style combat mechanics for Blade & Sorcery.
 
 - **Clash of Might** — blade lock decided by how hard you push back with controller micro-movements; loser gets disarmed.
 - **Disarm Strike** — hit a staggered enemy's hand to make them drop their weapon.

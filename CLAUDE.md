@@ -30,7 +30,7 @@ Blade & Sorcery (VR) mod built with the official B&S SDK (Unity + C#, `ThunderRo
 
 ---
 
-Combat overhaul inspired by *Dark Messiah of Might and Magic*. Four mechanics that feed into each other.
+Dark Messiah-style combat mechanics for Blade & Sorcery. Four mechanics that feed into each other.
 
 **Intended combo flow:**
 Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy re-arms) → Win clash → Adrenaline critical
