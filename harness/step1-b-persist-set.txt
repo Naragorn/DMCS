@@ -1,6 +1,8 @@
-# Step 1, persistence part 1: change two options and save them the way closing the menu does.
+# Persistence part 1: change options (step 1 toggles, step 2 slider and dropdown) and save them the way closing the menu does.
 wait-level
 set-option DMCS "Debug Logging" true
 set-option DMCS "Disarm Strike Enabled" false
+set-option DMCS "Charge Speed Threshold" 6
+set-option DMCS "Charge Stagger Strength" "Knock Down"
 save-options
 quit

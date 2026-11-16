@@ -32,6 +32,7 @@ public class ModOptionMetadataTests
         public bool SaveValue = true;
         public bool ApplyOnLoad = true;
         public string InteractionType = "ArrowList";
+        public string ValueSource;
     }
 
     private static string Meta(string key) =>
@@ -102,6 +103,7 @@ public class ModOptionMetadataTests
                 case "order": info.Order = (int)v!; break;
                 case "saveValue": info.SaveValue = (bool)v!; break;
                 case "applyOnLoad": info.ApplyOnLoad = (bool)v!; break;
+                case "valueSourceName": info.ValueSource = (string)v; break;
                 case "interactionType": info.InteractionType = ((int)v!) switch { 0 => "ArrowList", 1 => "ButtonList", 2 => "Slider", 3 => "Text", _ => "?" }; break;
             }
         }
@@ -124,6 +126,25 @@ public class ModOptionMetadataTests
             }
         }
         return info;
+    }
+
+    [Fact]
+    public void ChargeStagger_ExposesItsSettings_InOrder_WithSlidersForNumbersAndADropdownForTheStrength()
+    {
+        var group = Options.Value.Where(o => o.Category == DmcsCategories.ChargeStagger).OrderBy(o => o.Order).ToList();
+
+        Assert.Equal(
+            new[]
+            {
+                (DmcsCategories.ChargeStagger + " Enabled", "System.Boolean", "ArrowList"),
+                (ChargeStaggerSettings.SpeedThresholdName, "System.Single", "Slider"),
+                (ChargeStaggerSettings.SpeedWindowName, "System.Single", "Slider"),
+                (ChargeStaggerSettings.StrengthName, "System.String", "ArrowList"),
+                (ChargeStaggerSettings.DurationName, "System.Single", "Slider"),
+            },
+            group.Select(o => (o.Name, o.DataType, o.InteractionType)));
+        Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));
+        Assert.All(group.Skip(1), o => Assert.False(string.IsNullOrEmpty(o.ValueSource), o.Name + " needs a value list"));
     }
 
     [Fact]

@@ -28,20 +28,39 @@ namespace DMCS
         public override void ScriptEnable()
         {
             EventManager.onLevelLoad += OnLevelLoad;
+            EventManager.onLevelUnload += OnLevelUnload;
+            ChargeStagger.Start();
             Dmcs.Log.Debug("Script", "ScriptEnable");
         }
 
         public override void ScriptDisable()
         {
             EventManager.onLevelLoad -= OnLevelLoad;
+            EventManager.onLevelUnload -= OnLevelUnload;
+            ChargeStagger.Stop();
             Dmcs.Log.Debug("Script", "ScriptDisable");
         }
 
         public override void ScriptUnload()
         {
             EventManager.onLevelLoad -= OnLevelLoad;
+            EventManager.onLevelUnload -= OnLevelUnload;
+            ChargeStagger.Stop();
             Dmcs.Log.Debug("Script", "ScriptUnload");
             LoadedMod = null;
+        }
+
+        public override void ScriptUpdate()
+        {
+            ChargeStagger.Update();
+        }
+
+        private static void OnLevelUnload(LevelData levelData, LevelData.Mode mode, EventTime eventTime)
+        {
+            if (eventTime == EventTime.OnStart)
+            {
+                ChargeStagger.ReleaseAll();
+            }
         }
 
         private static void OnLevelLoad(LevelData levelData, LevelData.Mode mode, EventTime eventTime)

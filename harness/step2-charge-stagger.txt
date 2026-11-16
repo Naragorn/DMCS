@@ -1,0 +1,133 @@
+# Step 2: Charge Stagger. A melee hit landed while sprinting staggers the NPC; walking or standing does not.
+# Movement goes through the game's own locomotion (BasHarness "run"); the hit goes through Creature.Damage
+# with push=-1 (default), so the game's own hit reaction does not stagger: any stagger comes from DMCS.
+
+wait-level
+
+# Menu: the settings, with ranges and defaults
+option-exists DMCS "Charge Speed Threshold" category="Charge Stagger" type=Single interaction=Slider save=true tooltip="m/s"
+option-exists DMCS "Charge Speed Window" category="Charge Stagger" type=Single interaction=Slider save=true
+option-exists DMCS "Charge Stagger Strength" category="Charge Stagger" type=String interaction=ArrowList save=true
+option-exists DMCS "Charge Stagger Duration" category="Charge Stagger" type=Single interaction=Slider save=true
+expect-option DMCS "Charge Speed Threshold" 4.5
+expect-option DMCS "Charge Speed Window" 0.25
+expect-option DMCS "Charge Stagger Strength" Full
+expect-option DMCS "Charge Stagger Duration" 2
+set-option DMCS "Debug Logging" true
+
+# NPC 4 m to the player's right with the game's HumanDummy brain (it has BrainModuleHitReaction, so
+# it staggers, but it does not walk up and fight: a fighting NPC lands real hits whose own pushes would
+# blur the result). The runs go back and forth along the player's forward line (turn-player 180), so
+# they never touch it and never end in a wall.
+spawn-npc HumanMale distance=4 angle=90 brain=HumanDummy
+
+# 1. Standing: no stagger, and the reason is logged
+mark
+hit-npc Torso
+expect-npc staggered false within=0
+expect-log [DMCS][Charge Stagger] no stagger on
+expect-log TooSlow
+
+# 2. Walking (about 2.8 m/s) is below the threshold
+run 0
+wait 1.5
+expect-player-speed 2 4
+mark
+hit-npc Torso
+expect-npc staggered false within=0
+expect-log TooSlow
+
+# 3. Sprinting (about 6 m/s): staggered at once, the game's full stagger
+run 1
+wait 1.5
+expect-player-speed 5
+mark
+hit-npc RightArm
+expect-npc stagger Full within=0
+expect-log [DMCS][Charge Stagger] staggered
+expect-log (RightArm)
+expect-log Full, 2.00 s
+
+# 4. A second hit inside the 2 s window does not stagger again
+mark
+hit-npc Torso
+expect-log AlreadyStaggered
+stop-run
+
+# 5. Speed window: the hit lands 0.1 s after stopping, below the threshold, but the sprint
+#    inside the 0.25 s window still counts
+wait 3
+turn-player 180
+run 1
+wait 1.5
+stop-run
+wait 0.1
+expect-player-speed 0 4.4
+mark
+hit-npc Torso
+expect-npc stagger Full within=0
+expect-log [DMCS][Charge Stagger] staggered
+
+# 6. Live settings: threshold above a full sprint -> no stagger
+wait 3
+set-option DMCS "Charge Speed Threshold" 8
+turn-player 180
+run 1
+wait 1.5
+expect-player-speed 5
+mark
+hit-npc Torso
+expect-npc staggered false within=0
+expect-log TooSlow
+set-option DMCS "Charge Speed Threshold" 4.5
+
+# 7. Knock Down: the NPC falls and stays down for the duration, then stands up
+set-option DMCS "Charge Stagger Strength" "Knock Down"
+set-option DMCS "Charge Stagger Duration" 4
+stop-run
+turn-player 180
+run 1
+wait 1.5
+expect-player-speed 5
+mark
+hit-npc Torso
+expect-npc state Destabilized within=0.5
+expect-log Knock Down, 4.00 s
+wait 3
+expect-npc state Destabilized within=0
+expect-npc state Alive within=10
+stop-run
+
+# 7b. Control: the same knock-down with a 0.5 s duration gets up much sooner, so the 4 s above
+#     came from DMCS holding the NPC down, not from the game's own recovery time
+wait 3
+turn-player 180
+run 1
+wait 1.5
+expect-player-speed 5
+set-option DMCS "Charge Stagger Duration" 0.5
+mark
+hit-npc Torso
+expect-npc state Destabilized within=0.5
+# measured 2026-11-16: up after 1.4 s here, 4.2 s with the 4 s duration above
+expect-npc state Alive within=2.5
+stop-run
+set-option DMCS "Charge Stagger Duration" 2
+
+# 8. Disabled: sprinting hits do nothing, live
+set-option DMCS "Charge Stagger Strength" Full
+set-option DMCS "Charge Stagger Enabled" false
+turn-player 180
+run 1
+wait 1.5
+expect-player-speed 5
+mark
+hit-npc Torso
+expect-npc staggered false within=0
+expect-no-log [DMCS][Charge Stagger] staggered
+stop-run
+set-option DMCS "Charge Stagger Enabled" true
+
+expect-no-log Exception
+screenshot step2-charge-stagger
+quit

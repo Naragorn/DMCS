@@ -1,4 +1,4 @@
-# Step 1, persistence part 2 (new game start, same harness prefix): the values from part 1 are back.
+# Persistence part 2 (new game start, same harness prefix): the values from part 1 are back.
 # The game applies saved values after the scripts load (Options.ApplyModOptions), so the check is the
 # Settings line DMCS logs once the level has loaded.
 wait-level
@@ -6,7 +6,11 @@ expect-log [DMCS] Settings: Debug Logging=on | Clash of Might=Enabled | Disarm S
 expect-option DMCS "Debug Logging" true
 expect-option DMCS "Disarm Strike Enabled" false
 expect-option DMCS "Clash of Might Enabled" true
+expect-option DMCS "Charge Speed Threshold" 6
+expect-option DMCS "Charge Stagger Strength" "Knock Down"
 # Leave the prefix at defaults for the next run.
 press DMCS "Reset To Defaults"
+expect-option DMCS "Charge Speed Threshold" 4.5
+expect-option DMCS "Charge Stagger Strength" Full
 save-options
 quit
