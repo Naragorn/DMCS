@@ -129,6 +129,48 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 
 **Config:** gain values per event, `meterMax`, `adrenalineWindowDuration`, `slowMoScale`, `slowMoDuration`, `knockbackForce`, toggles for each visual effect.
 
+### 4b. Adrenaline design (draft 2026-11-16, not built; open decisions below)
+
+Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSON.
+
+**Own meter, not the game's Focus.** The base game has Focus (`Mana.currentFocus`, 30 without skills, regen 3/s, half while moving). It is spent on a manual slow-time (`SpellPowerSlowTime`, held on the right B button in the SteamVR bindings, scale 0.5, 6 focus/s, needs 10). Full Focus only plays a sound (`Effect_FocusFull`). The skill `SkillCombatFocus` refills it on kill, slice, parry, deflect and disarm. Focus has no automatic critical, so DMCS keeps its own meter and leaves Focus alone.
+
+**State machine** (pure logic in `DMCS.Core`, unit-tested over every flow): `Filling → Ready (window timer) → Critical → Filling`; an unused window empties the meter. `meterMax` default 100, `adrenalineWindowDuration` default 6 s, optional `meterDecay` per second (open decision, proposed default 0 = no decay).
+
+**Gains** (each its own slider; defaults are first guesses, untested):
+
+| Source | Detection (as read in the code) | Default |
+|---|---|---|
+| Player hit on an NPC | `EventManager.onCreatureHit`, existing `HitInfo` | 5 |
+| Block / parry | `EventManager.onCreatureAttackParry` (an NPC attack hits the player's weapon; raised by `BrainModuleMelee`; block and parry are one event) | 10 |
+| Damage taken | `onCreatureHit` with the player as target | 5 |
+| Charge stagger | existing `ChargeStagger` event | 15 |
+| Disarm (all paths) | existing `DisarmStrike` event | 15 |
+| Catch bonus | `EventManager.OnItemGrab` on a weapon DMCS knocked away, before it touched the ground (how "touched the ground" is read is not settled yet) | 10 |
+| Dodge | no game event: an NPC melee attack on the player reaches `AttackStage.Attack` (`onCreatureAttacking`) and ends without a hit on the player and without a parry, while the player moved faster than a threshold (reuse `SpeedHistory`). An approximation; needs the headset | 10 |
+| Clash win | step 5; leave the hook | 25 |
+
+**Critical** (the next landed player hit during the window; melee, fist and kick; thrown and spells behind a switch, default off, as Charge Stagger):
+- Dismember: `RagdollPart.TrySlice()` on the hit part. The game refuses it when dismemberment is off in its content settings and for the root part (torso); then the rest still happens.
+- Slow-mo: the game's `TimeManager.SetSlowMotion` (it also sets `fixedDeltaTime` and the slow-mo audio snapshot), then `SetSlowMotion(false, …)`. If a slow-mo is already running (`TimeManager.slowMotionState` not `Disabled`, e.g. the player's Focus), DMCS skips its own and never stops the other one. Always restore on feature off, level unload and player death.
+- Knockback: destabilize the ragdoll and push all parts along the hit (as the disarm fling).
+
+**Signals while the window is open:**
+- Heartbeat: the game's clip `Bas.Audio.Misc.HeartBeatLoop` on DMCS's own AudioSource (the game's heartbeat source belongs to the health display and is reset by `CameraEffects.RefreshHealth`).
+- Haptics: `RagdollHand.PlayHapticClipOver` with a heartbeat curve.
+- Weapon glow: catalog particle `Bas.Particle.Spell.Hyperfocus.Hand` at the weapon hand (look needs the headset).
+- No meter display while filling (a wrist display would need a UI asset; later at most).
+
+**Deviations from the spec (open decisions, recommendation first):**
+1. Vignette: the game's vignette belongs to the health display and is overwritten on every hit and heal. Recommended: desaturation instead, via `CameraEffects.SetSepia(handler, value)` / `ClearSepia(handler)` (built for several users at once). Alternatives: own vignette mesh (needs an Unity SDK asset bundle; medium–large), or writing into the game's vignette (a hack the game undoes).
+2. Screen distortion: the game has no API for it. Recommended: a short `CameraEffects.DoTimedEffect(Flash)` plus a desaturation pulse on the critical. Alternatives: own distortion shader (asset bundle; large), or none.
+3. The gain defaults and "critical only for melee/fist/kick" above: to be confirmed by the user.
+4. Meter decay: proposed a slider, default 0.
+
+**Build order:** 4a meter, gains (hit, damage, parry, stagger, disarm), window, Mod Menu, debug log; 4b critical (dismember, slow-mo, knockback); 4c signals; 4d dodge and catch bonus (marked "not verified in game" until a headset check). Each: unit tests first, then a harness scenario (the harness can deal hits and damage and read `Time.timeScale` and `isSliced`; parry and dodge are hard to force there).
+
+**Working on Windows:** the harness (`tools/harness.sh`) needs Linux (Bash, own Proton prefix). A Windows build needs `BAS_GAME_DIR` or `-p:BasGameDir=…`, as the default path in `Directory.Build.props` is the Linux Steam folder.
+
 ---
 
 ## Later: features as skill-tree powers (not scheduled)
