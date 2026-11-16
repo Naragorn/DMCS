@@ -1,0 +1,107 @@
+# Step 3: Disarm Strike. A player hit on the hand of a staggered NPC makes it drop its weapon(s); it then
+# stands still (passive HumanDummy brain) and cannot pick up or draw a weapon for the no-regrab time.
+# "Staggered" counts as it was before the hit: the stagger a hit causes does not let that same hit disarm.
+# Expects the defaults at the start (runs after step2, which resets).
+
+wait-level
+option-exists DMCS "Disarm Requires Stagger" category="Disarm Strike" type=Boolean save=true
+option-exists DMCS "Disarm Include Forearm" category="Disarm Strike" type=Boolean save=true
+option-exists DMCS "Disarm Drops Both Hands" category="Disarm Strike" type=Boolean save=true
+option-exists DMCS "Disarm Chance" category="Disarm Strike" type=Int32 interaction=Slider save=true
+option-exists DMCS "Disarm No Regrab Time" category="Disarm Strike" type=Single interaction=Slider save=true
+option-exists DMCS "Disarm Stays Permanent" category="Disarm Strike" type=Boolean save=true
+option-exists DMCS "Disarmed Stand Still" category="Disarm Strike" type=Boolean save=true
+expect-option DMCS "Disarm Requires Stagger" true
+expect-option DMCS "Disarm Include Forearm" false
+expect-option DMCS "Disarm Drops Both Hands" true
+expect-option DMCS "Disarm Chance" 100
+expect-option DMCS "Disarm No Regrab Time" 10
+expect-option DMCS "Disarm Stays Permanent" false
+expect-option DMCS "Disarmed Stand Still" true
+set-option DMCS "Debug Logging" true
+set-option DMCS "Disarm No Regrab Time" 4
+
+# A fighting NPC (its own brain must be swapped and given back), holding a weapon in each hand.
+spawn-npc HumanMale distance=4 angle=90
+npc-grab DaggerCommon hand=right
+npc-grab DaggerCommon hand=left
+expect-npc holding true
+
+# 1. Not staggered: a hand hit does not disarm
+mark
+hit-npc RightHand
+expect-npc holding true within=0
+expect-log NotStaggered
+
+# 2. Forearm is off by default
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc RightArm
+expect-npc holding true within=0
+expect-log WrongPart
+
+# 3. Staggered + hand hit: both hands drop, passive brain, no regrab
+wait 3
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc RightHand
+expect-npc holding false within=0.5
+expect-npc brain HumanDummy within=0
+expect-log [DMCS][Disarm Strike] disarmed
+expect-log stands still
+# a weapon put back into its hand is released again
+npc-grab DaggerCommon hand=right
+expect-npc holding false within=1
+expect-log while disarmed: released
+# after the 4 s it gets its own brain back and may re-arm
+expect-log may re-arm
+expect-npc brain HumanMedium within=0
+npc-grab DaggerCommon hand=right
+expect-npc holding true within=1
+
+# 4. Only the hit hand, with the setting off
+set-option DMCS "Disarm Drops Both Hands" false
+npc-grab DaggerCommon hand=left
+wait 3
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc LeftHand
+expect-log disarmed
+expect-npc holding true within=0
+set-option DMCS "Disarm Drops Both Hands" true
+
+# 5. Charge stagger then disarm (the intended combo); the charge hit itself does not disarm
+expect-log may re-arm
+npc-grab DaggerCommon hand=left
+expect-npc holding true
+run 1
+wait 1.5
+mark
+hit-npc RightHand
+expect-npc stagger Full within=0
+expect-npc holding true within=0
+hit-npc RightHand
+expect-npc holding false within=0.5
+expect-log disarmed
+stop-run
+
+# 6. Disabled: no disarm, live
+expect-log may re-arm
+set-option DMCS "Disarm Strike Enabled" false
+npc-grab DaggerCommon hand=right
+wait 3
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc RightHand
+expect-npc holding true within=0
+expect-no-log [DMCS][Disarm Strike] disarmed
+set-option DMCS "Disarm Strike Enabled" true
+
+press DMCS "Reset To Defaults"
+expect-no-log Exception
+screenshot step3-disarm-strike
+quit

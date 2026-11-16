@@ -30,6 +30,7 @@ namespace DMCS
             EventManager.onLevelLoad += OnLevelLoad;
             EventManager.onLevelUnload += OnLevelUnload;
             ChargeStagger.Start();
+            DisarmStrike.Start();
             Dmcs.Log.Debug("Script", "ScriptEnable");
         }
 
@@ -38,6 +39,7 @@ namespace DMCS
             EventManager.onLevelLoad -= OnLevelLoad;
             EventManager.onLevelUnload -= OnLevelUnload;
             ChargeStagger.Stop();
+            DisarmStrike.Stop();
             Dmcs.Log.Debug("Script", "ScriptDisable");
         }
 
@@ -46,6 +48,7 @@ namespace DMCS
             EventManager.onLevelLoad -= OnLevelLoad;
             EventManager.onLevelUnload -= OnLevelUnload;
             ChargeStagger.Stop();
+            DisarmStrike.Stop();
             Dmcs.Log.Debug("Script", "ScriptUnload");
             LoadedMod = null;
         }
@@ -53,6 +56,8 @@ namespace DMCS
         public override void ScriptUpdate()
         {
             ChargeStagger.Update();
+            DisarmStrike.Update();
+            HitInfo.EndFrame();
         }
 
         private static void OnLevelUnload(LevelData levelData, LevelData.Mode mode, EventTime eventTime)
@@ -60,6 +65,7 @@ namespace DMCS
             if (eventTime == EventTime.OnStart)
             {
                 ChargeStagger.ReleaseAll();
+                DisarmStrike.RestoreAll();
             }
         }
 

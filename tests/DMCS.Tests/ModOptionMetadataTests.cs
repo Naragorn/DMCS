@@ -153,6 +153,27 @@ public class ModOptionMetadataTests
     }
 
     [Fact]
+    public void DisarmStrike_ExposesItsSettings_InOrder()
+    {
+        var group = Options.Value.Where(o => o.Category == DmcsCategories.DisarmStrike).OrderBy(o => o.Order).ToList();
+
+        Assert.Equal(
+            new[]
+            {
+                (DmcsCategories.DisarmStrike + " Enabled", "System.Boolean", "ArrowList"),
+                (DisarmStrikeSettings.RequireStaggerName, "System.Boolean", "ArrowList"),
+                (DisarmStrikeSettings.IncludeForearmName, "System.Boolean", "ArrowList"),
+                (DisarmStrikeSettings.DropBothHandsName, "System.Boolean", "ArrowList"),
+                (DisarmStrikeSettings.ChanceName, "System.Int32", "Slider"),
+                (DisarmStrikeSettings.NoRegrabTimeName, "System.Single", "Slider"),
+                (DisarmStrikeSettings.StayDisarmedName, "System.Boolean", "ArrowList"),
+                (DisarmStrikeSettings.StandStillName, "System.Boolean", "ArrowList"),
+            },
+            group.Select(o => (o.Name, o.DataType, o.InteractionType)));
+        Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));
+    }
+
+    [Fact]
     public void ChargeStaggerPreset_IsNotAppliedOnLoad_SoItNeverOverwritesTheSavedValues()
     {
         var preset = Assert.Single(Options.Value, o => o.Name == ChargeStaggerSettings.PresetName);

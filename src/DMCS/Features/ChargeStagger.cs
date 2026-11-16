@@ -351,11 +351,15 @@ namespace DMCS
             {
                 return;
             }
+            if (eventTime == EventTime.OnStart)
+            {
+                HitInfo.RecordStart(target, hit);
+            }
             var now = Time.time;
             var id = target.GetInstanceID();
             var peak = Speeds.Peak(now, SpeedWindow);
             var impact = hit.impactVelocity.magnitude;
-            var source = SourceOf(hit);
+            var source = HitInfo.SourceOf(hit);
             var decision = ChargeStaggerRule.Decide(new ChargeHit(
                 Toggle.Enabled,
                 eventTime == EventTime.OnEnd,
@@ -363,7 +367,7 @@ namespace DMCS
                 RangedCounts,
                 target.isPlayer,
                 target.isKilled,
-                IsAlreadyStaggered(target, id, now),
+                HitInfo.WasStaggeredBefore(target, hit),
                 SecondKnocksDown,
                 peak,
                 SpeedThreshold,
@@ -400,14 +404,6 @@ namespace DMCS
             Staggered?.Invoke(target);
         }
 
-        /// <summary>Inside a DMCS window, or staggered/down by the game itself.</summary>
-        private static bool IsAlreadyStaggered(Creature target, int id, float now)
-        {
-            return Windows.IsStaggered(id, now)
-                || (target.brain != null && target.brain.currentStagger != Brain.Stagger.None)
-                || target.state == Creature.State.Destabilized;
-        }
-
         private static void OnCreatureDespawn(Creature creature, EventTime eventTime)
         {
             if (creature == null || eventTime != EventTime.OnStart)
@@ -442,49 +438,6 @@ namespace DMCS
                 case StaggerStrength.KnockDown: return BrainModuleHitReaction.PushBehaviour.Effect.Destabilize;
                 default: return BrainModuleHitReaction.PushBehaviour.Effect.StaggerFull;
             }
-        }
-
-        /// <summary>
-        /// Who dealt the hit. A held item: Item.handlers holds the hands holding it. A thrown item keeps
-        /// Item.lastHandler (no hand on it now). Spell projectiles are items with ItemMagicProjectile whose
-        /// lastHandler is the casting hand (SpellCastProjectile); other spells set CollisionInstance.casterHand.
-        /// A body part: the damager's collision handler is a ragdoll part of the player.
-        /// </summary>
-        private static HitSource SourceOf(CollisionInstance hit)
-        {
-            var player = Player.currentCreature;
-            if (player == null)
-            {
-                return HitSource.NotPlayer;
-            }
-            var handler = hit.damageStruct.damager != null ? hit.damageStruct.damager.collisionHandler : null;
-            if (handler == null && hit.sourceColliderGroup != null)
-            {
-                handler = hit.sourceColliderGroup.collisionHandler;
-            }
-            var item = handler != null ? handler.item : null;
-            if (item != null)
-            {
-                if (item.handlers.Any(h => h != null && h.creature == player))
-                {
-                    return HitSource.HeldWeapon;
-                }
-                if (item.lastHandler == null || item.lastHandler.creature != player)
-                {
-                    return HitSource.NotPlayer;
-                }
-                return item.GetComponent<ItemMagicProjectile>() != null ? HitSource.PlayerSpell : HitSource.PlayerThrown;
-            }
-            var part = handler != null ? handler.ragdollPart : null;
-            if (part != null && part.ragdoll != null && part.ragdoll.creature == player)
-            {
-                return HitSource.PlayerBody;
-            }
-            if (hit.casterHand != null && hit.casterHand.mana != null && hit.casterHand.mana.creature == player)
-            {
-                return HitSource.PlayerSpell;
-            }
-            return HitSource.NotPlayer;
         }
     }
 }

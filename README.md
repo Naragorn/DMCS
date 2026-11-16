@@ -15,7 +15,7 @@ Every feature can be toggled and tuned in the in-game Mod Menu. Full spec: `CLAU
 |---|---|
 | 1. Project setup, SDK check, mod loads, Debug Logging, Mod Menu skeleton | **Done. Unit tests + in-game harness PASS (2026-11-16).** Menu look in the headset not checked. |
 | 2. Charge Stagger | **Done. Unit tests + in-game harness PASS (2026-11-16).** Feel in the headset (real sprint + real swing) not checked. |
-| 3. Disarm Strike | not started |
+| 3. Disarm Strike | **Built, unit tests PASS (2026-11-16). In-game harness NOT run yet** (paused while Nadi plays); scenario `step3-disarm-strike` is written. |
 | 4. Adrenaline | not started |
 | 5. Clash of Might | not started |
 
@@ -59,6 +59,13 @@ Game path defaults to `~/.local/share/Steam/steamapps/common/Blade & Sorcery`; o
 | General | Reset To Defaults | button | | – |
 | Clash of Might | Enabled | toggle | | on |
 | Disarm Strike | Enabled | toggle | | on |
+| Disarm Strike | Disarm Requires Stagger | toggle | | on |
+| Disarm Strike | Disarm Include Forearm | toggle | | off |
+| Disarm Strike | Disarm Drops Both Hands | toggle | | on |
+| Disarm Strike | Disarm Chance | slider | 0–100 %, step 5 | 100 % |
+| Disarm Strike | Disarm No Regrab Time | slider | 2–60 s, step 2 | 10 s |
+| Disarm Strike | Disarm Stays Permanent | toggle | | off |
+| Disarm Strike | Disarmed Stand Still | toggle | | on |
 | Charge Stagger | Enabled | toggle | | on |
 | Charge Stagger | Charge Stagger Preset | dropdown | Gamey, Realistic, Custom | Gamey |
 | Charge Stagger | Charge Stagger Chance | slider | 0–100 %, step 5 | 100 % |
@@ -71,7 +78,7 @@ Game path defaults to `~/.local/share/Steam/steamapps/common/Blade & Sorcery`; o
 | Charge Stagger | Charge Second Hit Knocks Down | toggle | | on |
 | Adrenaline | Enabled | toggle | | on |
 
-Feature settings are added to their group as each feature is built (spec build order). Clash of Might, Disarm Strike and Adrenaline have no gameplay effect yet; their toggles only switch state live and log it.
+Feature settings are added to their group as each feature is built (spec build order). Clash of Might and Adrenaline have no gameplay effect yet; their toggles only switch state live and log it.
 
 ## Charge Stagger (step 2)
 
@@ -105,6 +112,23 @@ So *Strength* picks the game's level (`ForceStagger` with `StaggerLight / Stagge
 duration is real: DMCS holds the NPC on the ground with `Brain.AddNoStandUpModifier` (harness: up after 4.2 s with 4 s, 1.4 s with 0.5 s).
 
 `ChargeStagger.Staggered` is raised per stagger and knock-down for the Adrenaline meter (step 4).
+
+## Disarm Strike (step 3)
+
+A player hit (any source: weapon, fist, thrown, spell) on a hand of an NPC that was **staggered before this hit** makes it
+drop its weapon — both hands by default (*Drops Both Hands*), else only the hit side. "Staggered" = inside a Charge Stagger
+window, staggered by the game itself (`Brain.currentStagger`), or lying down. It is judged at the hit's `OnStart`: the game's
+own hit reaction pushes before `onCreatureHit` `OnEnd`, so without that the hit that *causes* a stagger would also disarm.
+The same rule now applies to Charge Stagger's "second hit knocks down".
+
+Release goes through `RagdollHand.TryRelease` and `EventManager.InvokeDisarm`, like the game's own hand-hit disarm
+(`BrainModuleEquipment.OnDamage`, which needs `pushLevel == 2`). For *No Regrab Time* (or for good with *Stays Permanent*):
+- any item that lands in its hands is released again (covers picking up and drawing from holsters);
+- with *Stand Still* the NPC gets the game's `HumanDummy` brain (`Brain.Load`, which swaps the brain at runtime) — it stands,
+  does not attack or flee — and gets its own brain back when the time ends.
+
+Not yet verified in game: the brain swap and swap-back on a fighting NPC, that `HumanDummy` never picks anything up, and how
+the release looks. `DisarmStrike.Disarmed` is raised per disarm (for Adrenaline).
 
 ## API verification
 
@@ -157,7 +181,7 @@ DMCS's stagger — derived from the code, not tested.
 | `RagdollPart.Type` | V | `Head, Neck, Torso, LeftArm, RightArm, LeftHand, RightHand, LeftLeg, …`. **No separate forearm type** — "include forearm" will map to `LeftArm/RightArm` (to verify in step 3 which bones that covers). |
 | `RagdollPart.TrySlice()`, `sliceAllowed`, `isSliced` | V | dismemberment for step 4 |
 | `Creature` | V | `isPlayer`, `brain`, `ragdoll`, `handLeft/handRight`, `isKilled`, `TryPush(PushType, Vector3, int, RagdollPart.Type)`, `ForceStagger(Vector3, BrainModuleHitReaction.PushBehaviour.Effect, RagdollPart.Type)` |
-| Disarm | V | `RagdollHand.grabbedHandle`, `UnGrab(bool throwing)`, `TryRelease()` |
+| Disarm | V (used in step 3, not yet in game) | `RagdollHand.grabbedHandle`, `TryRelease()` (= `UnGrab(false)`), `EventManager.InvokeDisarm(Creature, RagdollHand, Handle, CollisionInstance)`; `Brain.Load(string)` swaps brains at runtime (`Brain.cs:289`); AI picks items up via the behaviour-tree node `AI.Action.PickupItem` and draws via `DrawItem` — both end in a hand grab, which DMCS releases. |
 | `Item`, `Handle` | V | `Item.mainHandler`, `Item.handlers`, `Item.collisionHandlers` → `CollisionHandler.OnCollisionStartEvent/OnCollisionStopEvent/OnCollidingEvent` (blade-lock contact timing for step 5) |
 | Haptics | V | `RagdollHand.HapticTick(float, bool)`, `PlayHapticClipOver(AnimationCurve, float)` |
 | Player locomotion | V | `Player.local`, `Player.locomotion`, `Locomotion.velocity`, `Locomotion.IsRunning` |
@@ -178,6 +202,7 @@ Results land in `artifacts/harness/<time>/<scenario>/summary.md` (with Player.lo
 | `step1-b-persist-set` | set Debug Logging on, Disarm Strike off, Charge Stagger preset Realistic then Speed Threshold 6 and Strength Knock Down |
 | `step1-c-persist-check` | new game start: all values back (menu value and live member), preset row shows Custom and the rest of Realistic (chance 75 %, window 0.15 s) survived — the preset row did not reset them on load; Reset To Defaults → Gamey |
 | `step2-charge-stagger` | all nine settings with type/slider/Gamey defaults; Realistic sets its six values, one change → Custom, back → Realistic, Gamey restores; NPC (`HumanDummy` brain) beside the player; standing / walking (2.8 m/s) → TooSlow; sprint (6 m/s) → `Brain.currentStagger = Full`; second charge hit → knocked down and held, then up; hit 0.2 s after stopping (2.3 m/s) counts through the 0.5 s window; threshold 8 → TooSlow; min swing 6 → 5 m/s SwingTooWeak, 7 m/s staggers; chance 0 % → ChanceFailed; thrown, spell, held weapon → staggered (source logged); thrown/spells off → RangedNotCounted; second-hit switch off → AlreadyStaggered; Knock Down 4 s → down 4.2 s, control 0.5 s → up after 1.4 s; feature off → none (all live) |
+| `step3-disarm-strike` | **written, not run yet.** Settings and defaults; fighting NPC with a dagger in each hand; not staggered → NotStaggered; forearm off → WrongPart; staggered + hand hit → both drop, brain `HumanDummy`, a re-grabbed dagger is released, after 4 s the own brain is back and it can hold again; drop-both off → only the hit hand; charge hit then hand hit → the charge hit staggers without disarming, the next one disarms; feature off → none |
 
 The harness hits the NPC through `Creature.Damage` with the player's hand as damager and `pushLevel = -1`, so the
 game's own hit reaction does not push and any stagger comes from DMCS.
