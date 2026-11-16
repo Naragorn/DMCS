@@ -2,6 +2,7 @@
 wait-level
 set-option DMCS "Debug Logging" true
 set-option DMCS "Disarm Strike Enabled" false
+set-option DMCS "Charge Stagger Preset" Realistic
 set-option DMCS "Charge Speed Threshold" 6
 set-option DMCS "Charge Stagger Strength" "Knock Down"
 save-options

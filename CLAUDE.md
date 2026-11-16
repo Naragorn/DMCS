@@ -68,14 +68,20 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 ## 3. Charge Stagger
 
 **Behavior**
-- If the player is sprinting (locomotion speed ≥ `chargeSpeedThreshold`) when a melee hit lands, the hit NPC is **staggered**.
+- If the player is running fast (locomotion speed ≥ `chargeSpeedThreshold`, top speed within `chargeSpeedWindow` before the impact) when a hit lands, the hit NPC is **staggered**.
+- Counts for melee hits (held weapon, fist/kick) and — switchable, default on — for thrown weapons and spells that hit while the player runs.
+- The hit itself must be hard enough: impact speed ≥ `minSwingSpeed` (swing, punch or projectile).
+- A charge hit staggers with `staggerChance` (percent, default 100 %).
+- Any number of NPCs can be charge-staggered. A **second** charge hit on an NPC that is still staggered does not stagger again: it **throws the NPC to the ground** (switchable, default on).
 - A successful charge stagger adds to the Adrenaline meter.
+
+**Presets:** a `Gamey` / `Realistic` choice sets predefined values for chance, speed threshold, speed window, min swing speed, strength and duration. Every value stays adjustable; changing one shows `Custom`. Default: Gamey.
 
 **Implementation hints**
 - Track player locomotion velocity each frame; on hit, compare against threshold (optionally use speed in a short window before impact).
 - Trigger the game's built-in stagger/push on the NPC if available, otherwise apply a short ragdoll/unbalance.
 
-**Config:** `chargeSpeedThreshold`, `staggerStrength`, `staggerDuration`.
+**Config:** `preset`, `staggerChance`, `chargeSpeedThreshold`, `chargeSpeedWindow`, `minSwingSpeed`, `thrownAndSpellsCount`, `staggerStrength`, `staggerDuration`, `secondHitKnocksDown`.
 
 ## 4. Adrenaline System
 
@@ -105,6 +111,15 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 **Config:** gain values per event, `meterMax`, `adrenalineWindowDuration`, `slowMoScale`, `slowMoDuration`, `knockbackForce`, toggles for each visual effect.
 
 ---
+
+## Later: features as skill-tree powers (not scheduled)
+
+Instead of an on/off toggle, each feature's main setting becomes **Off / On / Power**:
+- **Off** — feature disabled.
+- **On** — always active (today's behaviour).
+- **Power** — the feature becomes a power the player has to **buy in the Body crystal skill tree**; it only works once bought.
+
+To verify before building: how a mod adds a skill to an existing tree (the game's skills are `SkillData` catalog entries, e.g. `SkillCharger`; whether a mod can add one to the Body tree via its own catalog JSON is not checked yet), and how "bought" is read at runtime (e.g. `Creature.HasSkill`).
 
 ## Build order
 

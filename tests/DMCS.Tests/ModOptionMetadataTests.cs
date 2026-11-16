@@ -129,7 +129,7 @@ public class ModOptionMetadataTests
     }
 
     [Fact]
-    public void ChargeStagger_ExposesItsSettings_InOrder_WithSlidersForNumbersAndADropdownForTheStrength()
+    public void ChargeStagger_ExposesItsSettings_InOrder_WithSlidersForNumbersAndDropdownsForChoices()
     {
         var group = Options.Value.Where(o => o.Category == DmcsCategories.ChargeStagger).OrderBy(o => o.Order).ToList();
 
@@ -137,14 +137,27 @@ public class ModOptionMetadataTests
             new[]
             {
                 (DmcsCategories.ChargeStagger + " Enabled", "System.Boolean", "ArrowList"),
+                (ChargeStaggerSettings.PresetName, "System.String", "ArrowList"),
+                (ChargeStaggerSettings.ChanceName, "System.Int32", "Slider"),
                 (ChargeStaggerSettings.SpeedThresholdName, "System.Single", "Slider"),
                 (ChargeStaggerSettings.SpeedWindowName, "System.Single", "Slider"),
+                (ChargeStaggerSettings.MinSwingSpeedName, "System.Single", "Slider"),
+                (ChargeStaggerSettings.RangedCountsName, "System.Boolean", "ArrowList"),
                 (ChargeStaggerSettings.StrengthName, "System.String", "ArrowList"),
                 (ChargeStaggerSettings.DurationName, "System.Single", "Slider"),
+                (ChargeStaggerSettings.SecondKnocksDownName, "System.Boolean", "ArrowList"),
             },
             group.Select(o => (o.Name, o.DataType, o.InteractionType)));
         Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));
-        Assert.All(group.Skip(1), o => Assert.False(string.IsNullOrEmpty(o.ValueSource), o.Name + " needs a value list"));
+        Assert.All(group.Where(o => o.DataType != "System.Boolean"), o => Assert.False(string.IsNullOrEmpty(o.ValueSource), o.Name + " needs a value list"));
+    }
+
+    [Fact]
+    public void ChargeStaggerPreset_IsNotAppliedOnLoad_SoItNeverOverwritesTheSavedValues()
+    {
+        var preset = Assert.Single(Options.Value, o => o.Name == ChargeStaggerSettings.PresetName);
+
+        Assert.False(preset.ApplyOnLoad);
     }
 
     [Fact]

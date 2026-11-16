@@ -71,66 +71,198 @@ public class ChargeStaggerRuleTests
 {
     private static ChargeHit Hit(
         bool enabled = true,
-        bool endPhase = true,
+        bool finalPhase = true,
         HitSource source = HitSource.HeldWeapon,
+        bool rangedCounts = true,
         bool targetIsPlayer = false,
         bool targetKilled = false,
         bool alreadyStaggered = false,
+        bool secondKnocksDown = true,
         float peakSpeed = 6f,
-        float threshold = 4.5f) =>
-        new ChargeHit(enabled, endPhase, source, targetIsPlayer, targetKilled, alreadyStaggered, peakSpeed, threshold);
+        float threshold = 4.5f,
+        float impactSpeed = 5f,
+        float minImpactSpeed = 1f,
+        float roll = 0f,
+        float chance = 1f) =>
+        new ChargeHit(enabled, finalPhase, source, rangedCounts, targetIsPlayer, targetKilled, alreadyStaggered, secondKnocksDown,
+            peakSpeed, threshold, impactSpeed, minImpactSpeed, roll, chance);
 
-    [Fact]
-    public void SprintingPlayerWeaponHit_OnALivingNpc_Staggers()
+    [Theory]
+    [InlineData(HitSource.HeldWeapon)]
+    [InlineData(HitSource.PlayerBody)]
+    [InlineData(HitSource.PlayerThrown)]
+    [InlineData(HitSource.PlayerSpell)]
+    public void ChargeHit_FromEveryPlayerSource_Staggers(HitSource source)
     {
-        Assert.Equal(ChargeDecision.Stagger, ChargeStaggerRule.Decide(Hit()));
-    }
-
-    [Fact]
-    public void BodyHit_CountsAsMelee()
-    {
-        Assert.Equal(ChargeDecision.Stagger, ChargeStaggerRule.Decide(Hit(source: HitSource.PlayerBody)));
-    }
-
-    [Fact]
-    public void SpeedExactlyAtTheThreshold_Staggers()
-    {
-        Assert.Equal(ChargeDecision.Stagger, ChargeStaggerRule.Decide(Hit(peakSpeed: 4.5f)));
+        Assert.Equal(ChargeDecision.Stagger, ChargeStaggerRule.Decide(Hit(source: source)));
     }
 
     [Theory]
-    [InlineData(false, true, HitSource.HeldWeapon, false, false, false, 6f, ChargeDecision.Disabled)]
-    [InlineData(true, false, HitSource.HeldWeapon, false, false, false, 6f, ChargeDecision.NotFinalPhase)]
-    [InlineData(true, true, HitSource.NotPlayer, false, false, false, 6f, ChargeDecision.NotByPlayer)]
-    [InlineData(true, true, HitSource.PlayerNotMelee, false, false, false, 6f, ChargeDecision.NotMelee)]
-    [InlineData(true, true, HitSource.HeldWeapon, true, false, false, 6f, ChargeDecision.TargetIsPlayer)]
-    [InlineData(true, true, HitSource.HeldWeapon, false, true, false, 6f, ChargeDecision.TargetDead)]
-    [InlineData(true, true, HitSource.HeldWeapon, false, false, true, 6f, ChargeDecision.AlreadyStaggered)]
-    [InlineData(true, true, HitSource.HeldWeapon, false, false, false, 4.49f, ChargeDecision.TooSlow)]
-    public void EveryRefusal_HasItsOwnReason(bool enabled, bool endPhase, HitSource source, bool targetIsPlayer, bool killed, bool staggered, float speed, ChargeDecision expected)
+    [InlineData(HitSource.PlayerThrown)]
+    [InlineData(HitSource.PlayerSpell)]
+    public void RangedHits_DoNotCount_WhenSwitchedOff(HitSource source)
     {
-        Assert.Equal(expected, ChargeStaggerRule.Decide(Hit(enabled, endPhase, source, targetIsPlayer, killed, staggered, speed)));
+        Assert.Equal(ChargeDecision.RangedNotCounted, ChargeStaggerRule.Decide(Hit(source: source, rangedCounts: false)));
+    }
+
+    [Theory]
+    [InlineData(HitSource.HeldWeapon)]
+    [InlineData(HitSource.PlayerBody)]
+    public void MeleeHits_IgnoreTheRangedSwitch(HitSource source)
+    {
+        Assert.Equal(ChargeDecision.Stagger, ChargeStaggerRule.Decide(Hit(source: source, rangedCounts: false)));
+    }
+
+    [Fact]
+    public void BothThresholds_AreInclusive()
+    {
+        Assert.Equal(ChargeDecision.Stagger, ChargeStaggerRule.Decide(Hit(peakSpeed: 4.5f, impactSpeed: 1f)));
+    }
+
+    [Fact]
+    public void SecondChargeHit_OnAStaggeredNpc_KnocksItDown()
+    {
+        Assert.Equal(ChargeDecision.KnockDown, ChargeStaggerRule.Decide(Hit(alreadyStaggered: true)));
+    }
+
+    [Fact]
+    public void SecondChargeHit_WithTheKnockDownSwitchOff_DoesNothing()
+    {
+        Assert.Equal(ChargeDecision.AlreadyStaggered, ChargeStaggerRule.Decide(Hit(alreadyStaggered: true, secondKnocksDown: false)));
+    }
+
+    [Fact]
+    public void SecondHit_ThatIsNoChargeHit_DoesNotKnockDown()
+    {
+        Assert.Equal(ChargeDecision.TooSlow, ChargeStaggerRule.Decide(Hit(alreadyStaggered: true, peakSpeed: 1f)));
+    }
+
+    [Theory]
+    [InlineData(0.00f, 0.5f, ChargeDecision.Stagger)]
+    [InlineData(0.49f, 0.5f, ChargeDecision.Stagger)]
+    [InlineData(0.50f, 0.5f, ChargeDecision.ChanceFailed)]
+    [InlineData(0.99f, 1.0f, ChargeDecision.Stagger)]
+    [InlineData(0.00f, 0.0f, ChargeDecision.ChanceFailed)]
+    public void Chance_RollBelowTheChanceSucceeds(float roll, float chance, ChargeDecision expected)
+    {
+        Assert.Equal(expected, ChargeStaggerRule.Decide(Hit(roll: roll, chance: chance)));
+    }
+
+    [Fact]
+    public void Chance_AlsoGatesTheKnockDown()
+    {
+        Assert.Equal(ChargeDecision.ChanceFailed, ChargeStaggerRule.Decide(Hit(alreadyStaggered: true, roll: 0.9f, chance: 0.5f)));
+    }
+
+    [Theory]
+    [InlineData(false, true, HitSource.HeldWeapon, false, false, 6f, 5f, ChargeDecision.Disabled)]
+    [InlineData(true, false, HitSource.HeldWeapon, false, false, 6f, 5f, ChargeDecision.NotFinalPhase)]
+    [InlineData(true, true, HitSource.NotPlayer, false, false, 6f, 5f, ChargeDecision.NotByPlayer)]
+    [InlineData(true, true, HitSource.HeldWeapon, true, false, 6f, 5f, ChargeDecision.TargetIsPlayer)]
+    [InlineData(true, true, HitSource.HeldWeapon, false, true, 6f, 5f, ChargeDecision.TargetDead)]
+    [InlineData(true, true, HitSource.HeldWeapon, false, false, 4.49f, 5f, ChargeDecision.TooSlow)]
+    [InlineData(true, true, HitSource.HeldWeapon, false, false, 6f, 0.99f, ChargeDecision.SwingTooWeak)]
+    public void EveryRefusal_HasItsOwnReason(bool enabled, bool finalPhase, HitSource source, bool targetIsPlayer, bool killed, float speed, float impact, ChargeDecision expected)
+    {
+        Assert.Equal(expected, ChargeStaggerRule.Decide(Hit(enabled, finalPhase, source, targetIsPlayer: targetIsPlayer, targetKilled: killed, peakSpeed: speed, impactSpeed: impact)));
     }
 
     [Fact]
     public void Disabled_WinsOverEverythingElse()
     {
-        Assert.Equal(ChargeDecision.Disabled, ChargeStaggerRule.Decide(Hit(enabled: false, endPhase: false, source: HitSource.NotPlayer, peakSpeed: 0f)));
+        Assert.Equal(ChargeDecision.Disabled, ChargeStaggerRule.Decide(Hit(enabled: false, finalPhase: false, source: HitSource.NotPlayer, peakSpeed: 0f)));
     }
 
     [Theory]
     [InlineData(ChargeDecision.Stagger, false)]
+    [InlineData(ChargeDecision.KnockDown, false)]
     [InlineData(ChargeDecision.TooSlow, false)]
+    [InlineData(ChargeDecision.SwingTooWeak, false)]
+    [InlineData(ChargeDecision.ChanceFailed, false)]
     [InlineData(ChargeDecision.AlreadyStaggered, false)]
+    [InlineData(ChargeDecision.RangedNotCounted, false)]
     [InlineData(ChargeDecision.Disabled, true)]
     [InlineData(ChargeDecision.NotFinalPhase, true)]
     [InlineData(ChargeDecision.NotByPlayer, true)]
-    [InlineData(ChargeDecision.NotMelee, true)]
     [InlineData(ChargeDecision.TargetIsPlayer, true)]
     [InlineData(ChargeDecision.TargetDead, true)]
-    public void OnlyDecisionsAboutAPlayerMeleeHitOnAnNpc_AreWorthLogging(ChargeDecision decision, bool quiet)
+    public void OnlyDecisionsAboutAPlayerHitOnALivingNpc_AreWorthLogging(ChargeDecision decision, bool quiet)
     {
         Assert.Equal(quiet, ChargeStaggerRule.IsQuiet(decision));
+    }
+}
+
+public class ChargePresetTests
+{
+    [Fact]
+    public void Defaults_AreTheGameyPreset()
+    {
+        Assert.Equal(ChargePreset.Gamey, ChargePresets.Parse(ChargeStaggerSettings.DefaultPreset));
+        Assert.Equal(ChargePreset.Gamey, ChargePresets.Detect(ChargeStaggerSettings.Defaults));
+    }
+
+    [Theory]
+    [InlineData(ChargePreset.Gamey)]
+    [InlineData(ChargePreset.Realistic)]
+    public void EachPreset_IsRecognisedFromItsOwnValues(ChargePreset preset)
+    {
+        Assert.Equal(preset, ChargePresets.Detect(ChargePresets.ValuesOf(preset)));
+    }
+
+    [Fact]
+    public void Realistic_IsHarderThanGamey()
+    {
+        var g = ChargePresets.ValuesOf(ChargePreset.Gamey);
+        var r = ChargePresets.ValuesOf(ChargePreset.Realistic);
+
+        Assert.True(r.SpeedThreshold > g.SpeedThreshold);
+        Assert.True(r.SpeedWindow < g.SpeedWindow);
+        Assert.True(r.MinSwingSpeed > g.MinSwingSpeed);
+        Assert.True(r.ChancePercent <= g.ChancePercent);
+        Assert.True(r.Duration < g.Duration);
+    }
+
+    [Fact]
+    public void AnyChangedValue_MakesItCustom()
+    {
+        var g = ChargePresets.ValuesOf(ChargePreset.Gamey);
+
+        Assert.Equal(ChargePreset.Custom, ChargePresets.Detect(g.With(speedThreshold: g.SpeedThreshold + 0.25f)));
+        Assert.Equal(ChargePreset.Custom, ChargePresets.Detect(g.With(strength: "Light")));
+        Assert.Equal(ChargePreset.Custom, ChargePresets.Detect(g.With(chancePercent: 50)));
+    }
+
+    [Fact]
+    public void Names_AndParse_RoundTrip_UnknownIsCustom()
+    {
+        Assert.Equal(new[] { "Gamey", "Realistic", "Custom" }, ChargePresets.Names);
+        foreach (var name in ChargePresets.Names)
+        {
+            Assert.Equal(name, ChargePresets.NameOf(ChargePresets.Parse(name)));
+        }
+        Assert.Equal(ChargePreset.Custom, ChargePresets.Parse("Silly"));
+        Assert.Equal(ChargePreset.Custom, ChargePresets.Parse(null));
+    }
+
+    [Fact]
+    public void Custom_HasNoValuesOfItsOwn()
+    {
+        Assert.Null(ChargePresets.ValuesOf(ChargePreset.Custom));
+    }
+
+    [Theory]
+    [InlineData(ChargePreset.Gamey)]
+    [InlineData(ChargePreset.Realistic)]
+    public void EveryPresetValue_IsSelectableInTheMenu(ChargePreset preset)
+    {
+        var v = ChargePresets.ValuesOf(preset);
+
+        Assert.True(SliderValues.IndexOf(ChargeStaggerSettings.SpeedThreshold.Values(), v.SpeedThreshold) >= 0);
+        Assert.True(SliderValues.IndexOf(ChargeStaggerSettings.SpeedWindow.Values(), v.SpeedWindow) >= 0);
+        Assert.True(SliderValues.IndexOf(ChargeStaggerSettings.MinSwingSpeed.Values(), v.MinSwingSpeed) >= 0);
+        Assert.True(SliderValues.IndexOf(ChargeStaggerSettings.Duration.Values(), v.Duration) >= 0);
+        Assert.Contains(v.ChancePercent, ChargeStaggerSettings.ChanceValues());
+        Assert.Contains(v.Strength, StaggerStrengths.Names);
     }
 }
 

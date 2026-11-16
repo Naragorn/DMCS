@@ -1,24 +1,54 @@
-# Step 2: Charge Stagger. A melee hit landed while sprinting staggers the NPC; walking or standing does not.
+# Step 2: Charge Stagger. A hit landed while running fast staggers the NPC; walking or standing does not.
 # Movement goes through the game's own locomotion (BasHarness "run"); the hit goes through Creature.Damage
 # with push=-1 (default), so the game's own hit reaction does not stagger: any stagger comes from DMCS.
+# Every sprint is "turn-player 180, run 1, wait 1.5": the player runs back and forth along one line.
+# Expects the defaults at the start: runs after step1-c (which resets) or first after --fresh-prefix.
+# Option changes survive into the next scenario even without save-options (the game saves dirty options on quit).
 
 wait-level
 
-# Menu: the settings, with ranges and defaults
+# Menu: the settings, with ranges and the Gamey defaults
+option-exists DMCS "Charge Stagger Preset" category="Charge Stagger" type=String interaction=ArrowList tooltip="Gamey"
+option-exists DMCS "Charge Stagger Chance" category="Charge Stagger" type=Int32 interaction=Slider save=true
 option-exists DMCS "Charge Speed Threshold" category="Charge Stagger" type=Single interaction=Slider save=true tooltip="m/s"
 option-exists DMCS "Charge Speed Window" category="Charge Stagger" type=Single interaction=Slider save=true
+option-exists DMCS "Charge Min Swing Speed" category="Charge Stagger" type=Single interaction=Slider save=true
+option-exists DMCS "Charge Thrown And Spells Count" category="Charge Stagger" type=Boolean save=true
 option-exists DMCS "Charge Stagger Strength" category="Charge Stagger" type=String interaction=ArrowList save=true
 option-exists DMCS "Charge Stagger Duration" category="Charge Stagger" type=Single interaction=Slider save=true
-expect-option DMCS "Charge Speed Threshold" 4.5
-expect-option DMCS "Charge Speed Window" 0.25
+option-exists DMCS "Charge Second Hit Knocks Down" category="Charge Stagger" type=Boolean save=true
+expect-option DMCS "Charge Stagger Preset" Gamey
+expect-option DMCS "Charge Stagger Chance" 100
+expect-option DMCS "Charge Speed Threshold" 4
+expect-option DMCS "Charge Speed Window" 0.5
+expect-option DMCS "Charge Min Swing Speed" 1
+expect-option DMCS "Charge Thrown And Spells Count" true
 expect-option DMCS "Charge Stagger Strength" Full
-expect-option DMCS "Charge Stagger Duration" 2
+expect-option DMCS "Charge Stagger Duration" 2.5
+expect-option DMCS "Charge Second Hit Knocks Down" true
 set-option DMCS "Debug Logging" true
+
+# Presets: Realistic sets its values, one change makes it Custom, Gamey sets the defaults again
+set-option DMCS "Charge Stagger Preset" Realistic
+expect-option DMCS "Charge Stagger Chance" 75
+expect-option DMCS "Charge Speed Threshold" 5.5
+expect-option DMCS "Charge Speed Window" 0.15
+expect-option DMCS "Charge Min Swing Speed" 3
+expect-option DMCS "Charge Stagger Strength" Medium
+expect-option DMCS "Charge Stagger Duration" 1.25
+expect-option DMCS "Charge Stagger Preset" Realistic
+set-option DMCS "Charge Speed Threshold" 5
+expect-option DMCS "Charge Stagger Preset" Custom
+set-option DMCS "Charge Speed Threshold" 5.5
+expect-option DMCS "Charge Stagger Preset" Realistic
+set-option DMCS "Charge Stagger Preset" Gamey
+expect-option DMCS "Charge Speed Threshold" 4
+expect-option DMCS "Charge Stagger Chance" 100
+expect-option DMCS "Charge Stagger Duration" 2.5
 
 # NPC 4 m to the player's right with the game's HumanDummy brain (it has BrainModuleHitReaction, so
 # it staggers, but it does not walk up and fight: a fighting NPC lands real hits whose own pushes would
-# blur the result). The runs go back and forth along the player's forward line (turn-player 180), so
-# they never touch it and never end in a wall.
+# blur the result).
 spawn-npc HumanMale distance=4 angle=90 brain=HumanDummy
 
 # 1. Standing: no stagger, and the reason is logged
@@ -28,10 +58,10 @@ expect-npc staggered false within=0
 expect-log [DMCS][Charge Stagger] no stagger on
 expect-log TooSlow
 
-# 2. Walking (about 2.8 m/s) is below the threshold
+# 2. Walking (about 2.8 m/s) is below the 4 m/s threshold
 run 0
 wait 1.5
-expect-player-speed 2 4
+expect-player-speed 2 3.5
 mark
 hit-npc Torso
 expect-npc staggered false within=0
@@ -45,30 +75,33 @@ mark
 hit-npc RightArm
 expect-npc stagger Full within=0
 expect-log [DMCS][Charge Stagger] staggered
-expect-log (RightArm)
-expect-log Full, 2.00 s
+expect-log (RightArm): Full, 2.50 s
 
-# 4. A second hit inside the 2 s window does not stagger again
+# 4. A second charge hit while it is staggered throws it to the ground, held down for the duration
 mark
 hit-npc Torso
-expect-log AlreadyStaggered
 stop-run
+expect-npc state Destabilized within=0.5
+expect-log [DMCS][Charge Stagger] knocked down
+expect-npc state Alive within=10
 
-# 5. Speed window: the hit lands 0.1 s after stopping, below the threshold, but the sprint
-#    inside the 0.25 s window still counts
+# 5. Speed window: the hit lands after stopping, below the threshold, but the sprint
+#    inside the 0.5 s window still counts
+stop-run
 wait 3
 turn-player 180
 run 1
 wait 1.5
 stop-run
-wait 0.1
-expect-player-speed 0 4.4
+wait 0.2
+expect-player-speed 0 3.9
 mark
 hit-npc Torso
 expect-npc stagger Full within=0
 expect-log [DMCS][Charge Stagger] staggered
 
-# 6. Live settings: threshold above a full sprint -> no stagger
+# 6. Live settings, each in its own sprint: threshold above a full sprint -> none
+stop-run
 wait 3
 set-option DMCS "Charge Speed Threshold" 8
 turn-player 180
@@ -79,27 +112,110 @@ mark
 hit-npc Torso
 expect-npc staggered false within=0
 expect-log TooSlow
-set-option DMCS "Charge Speed Threshold" 4.5
+set-option DMCS "Charge Speed Threshold" 4
 
-# 7. Knock Down: the NPC falls and stays down for the duration, then stands up
-set-option DMCS "Charge Stagger Strength" "Knock Down"
-set-option DMCS "Charge Stagger Duration" 4
+# 6b. Swing speed: a 5 m/s hit is too weak for a 6 m/s minimum, a 7 m/s hit is not
+set-option DMCS "Charge Min Swing Speed" 6
+mark
+hit-npc Torso velocity=5
+expect-npc staggered false within=0
+expect-log SwingTooWeak
+mark
+hit-npc Torso velocity=7
+expect-npc stagger Full within=0
+expect-log [DMCS][Charge Stagger] staggered
+set-option DMCS "Charge Min Swing Speed" 1
+expect-option DMCS "Charge Stagger Preset" Gamey
+
+# 6c. Chance 0 % -> never
 stop-run
+wait 3
+set-option DMCS "Charge Stagger Chance" 0
+expect-option DMCS "Charge Stagger Preset" Custom
 turn-player 180
 run 1
 wait 1.5
 expect-player-speed 5
 mark
 hit-npc Torso
+expect-npc staggered false within=0
+expect-log ChanceFailed
+set-option DMCS "Charge Stagger Chance" 100
+
+# 7. Thrown weapon, spell, held weapon: all count while running
+mark
+hit-npc Torso by=thrown
+expect-npc stagger Full within=0
+expect-log staggered HumanMale0 (Torso): Full, 2.50 s (PlayerThrown
+stop-run
+wait 3
+turn-player 180
+run 1
+wait 1.5
+expect-player-speed 5
+mark
+hit-npc Torso by=spell
+expect-npc stagger Full within=0
+expect-log (PlayerSpell
+stop-run
+wait 3
+turn-player 180
+run 1
+wait 1.5
+expect-player-speed 5
+mark
+hit-npc Torso by=held
+expect-npc stagger Full within=0
+expect-log (HeldWeapon
+
+# 7b. Thrown and spells switched off -> none, held still counts
+stop-run
+wait 3
+set-option DMCS "Charge Thrown And Spells Count" false
+turn-player 180
+run 1
+wait 1.5
+expect-player-speed 5
+mark
+hit-npc Torso by=thrown
+hit-npc Torso by=spell
+expect-npc staggered false within=0
+expect-log RangedNotCounted
+set-option DMCS "Charge Thrown And Spells Count" true
+
+# 7c. Second-hit knock-down switched off -> the second hit does nothing
+set-option DMCS "Charge Second Hit Knocks Down" false
+mark
+hit-npc Torso
+expect-npc stagger Full within=0
+hit-npc Torso
+expect-log AlreadyStaggered
+expect-npc state Alive within=0
+set-option DMCS "Charge Second Hit Knocks Down" true
+
+# 8. Knock Down as strength: the NPC falls and stays down for the duration, then stands up
+stop-run
+wait 3
+set-option DMCS "Charge Stagger Strength" "Knock Down"
+set-option DMCS "Charge Stagger Duration" 4
+turn-player 180
+run 1
+wait 1.5
+expect-player-speed 5
+mark
+hit-npc Torso
+stop-run
 expect-npc state Destabilized within=0.5
 expect-log Knock Down, 4.00 s
+stop-run
 wait 3
 expect-npc state Destabilized within=0
 expect-npc state Alive within=10
 stop-run
 
-# 7b. Control: the same knock-down with a 0.5 s duration gets up much sooner, so the 4 s above
+# 8b. Control: the same knock-down with a 0.5 s duration gets up much sooner, so the 4 s above
 #     came from DMCS holding the NPC down, not from the game's own recovery time
+stop-run
 wait 3
 turn-player 180
 run 1
@@ -108,15 +224,18 @@ expect-player-speed 5
 set-option DMCS "Charge Stagger Duration" 0.5
 mark
 hit-npc Torso
+stop-run
 expect-npc state Destabilized within=0.5
 # measured 2026-11-16: up after 1.4 s here, 4.2 s with the 4 s duration above
 expect-npc state Alive within=2.5
 stop-run
-set-option DMCS "Charge Stagger Duration" 2
-
-# 8. Disabled: sprinting hits do nothing, live
 set-option DMCS "Charge Stagger Strength" Full
+set-option DMCS "Charge Stagger Duration" 2.5
+
+# 9. Disabled: sprinting hits do nothing, live
 set-option DMCS "Charge Stagger Enabled" false
+stop-run
+wait 3
 turn-player 180
 run 1
 wait 1.5
@@ -128,6 +247,8 @@ expect-no-log [DMCS][Charge Stagger] staggered
 stop-run
 set-option DMCS "Charge Stagger Enabled" true
 
+expect-option DMCS "Charge Stagger Preset" Gamey
+press DMCS "Reset To Defaults"
 expect-no-log Exception
 screenshot step2-charge-stagger
 quit
