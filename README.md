@@ -16,8 +16,8 @@ Every feature can be toggled and tuned in the in-game Mod Menu. Full spec: `CLAU
 | 1. Project setup, SDK check, mod loads, Debug Logging, Mod Menu skeleton | **Done. Unit tests + in-game harness PASS (2026-11-16).** Menu look in the headset not checked. |
 | 2. Charge Stagger | **Done. Unit tests + in-game harness PASS (2026-11-16).** Feel in the headset (real sprint + real swing) not checked. |
 | 3. Disarm Strike | **Built, unit tests PASS, in-game harness PASS (2026-11-16).** Not checked in the headset yet. |
-| 3b. Body Hit Drop, chances per NPC type, shields, fling | **Built, unit tests PASS.** In-game harness PASS for the toggle version; the chance-per-type rework is not run in game yet. Not checked in the headset; Twist Disarm not built (with step 5). |
-| 4. Adrenaline | not started |
+| 3b. Body Hit Drop, chances per NPC type, shields, fling | **Built, unit tests + in-game harness PASS (2026-11-16, chance-per-type version).** Not checked in the headset; Twist Disarm not built (with step 5). |
+| 4. Adrenaline | **4a (meter, gains, decay, window) built, unit tests + in-game harness PASS (2026-11-16).** Block/parry and damage-taken gains are unit-tested only (the harness cannot force them yet). 4b–4e (critical, kneel/execution, signals/vignette, dodge/catch) not built; design in `CLAUDE.md` 4b. |
 | 5. Clash of Might | not started |
 
 ## Versions (checked 2026-11-16)
@@ -78,8 +78,17 @@ Game path defaults to `~/.local/share/Steam/steamapps/common/Blade & Sorcery`; o
 | Charge Stagger | Charge Stagger Duration | slider | 0.5–5 s, step 0.25 | 2.5 s |
 | Charge Stagger | Charge Second Hit Knocks Down | toggle | | on |
 | Adrenaline | Enabled | toggle | | on |
+| Adrenaline | Adrenaline Meter Max | slider | 50–300, step 10 | 100 |
+| Adrenaline | Adrenaline Window | slider | 2–20 s, step 1 | 6 s |
+| Adrenaline | Adrenaline Decay Per Second | slider | 0–20, step 0.5 | 2 |
+| Adrenaline | Adrenaline Decay Delay | slider | 0–30 s, step 1 | 0 s |
+| Adrenaline | Adrenaline Per Hit | slider | 0–50 | 5 |
+| Adrenaline | Adrenaline Per Block Or Parry | slider | 0–50 | 10 |
+| Adrenaline | Adrenaline Per Damage Taken | slider | 0–50 | 5 |
+| Adrenaline | Adrenaline Per Charge Stagger | slider | 0–50 | 15 |
+| Adrenaline | Adrenaline Per Disarm | slider | 0–50 | 15 |
 
-Feature settings are added to their group as each feature is built (spec build order). Clash of Might and Adrenaline have no gameplay effect yet; their toggles only switch state live and log it.
+Feature settings are added to their group as each feature is built (spec build order). Clash of Might has no gameplay effect yet. Adrenaline fills its meter and opens the window, but the critical is not built yet (4b).
 
 ## Charge Stagger (step 2)
 
@@ -152,6 +161,18 @@ Not yet verified in game: that `HumanDummy` never picks anything up, and how the
 - Not built: "grab the handle while staggered to take the weapon". The base game already gives a dagger or short sword to
   whoever grabs its handle, staggered or not (`Handle.OnGrab` → `Release()` when `axisLength == 0`; seen in a harness probe
   2026-11-16 with `DaggerCommon` and `SwordShortCommon`).
+
+## Adrenaline (step 4a)
+
+- Meter `AdrenalineMeter` (Core): Filling → Ready (window) → empty again when the window runs out unused. Real time
+  (`Time.unscaledTime`), so slow-mo will not stretch the window. Gains while Ready are ignored.
+- Gains: a player hit on an NPC (`onCreatureHit` OnEnd, any player source), an NPC hit with damage on the player,
+  a block or parry (`onCreatureAttackParry`, parrying creature = player), a charge stagger and a disarm (DMCS events).
+- Decay: a filling meter loses *Decay Per Second* after *Decay Delay* seconds without a gain.
+- Debug log (channel `Adrenaline`): `+5 Hit (<npc>): 5/100`, `meter full: window open for 6 s`,
+  `window over unused: meter emptied`, `meter drained to 0`.
+- Harness `step4a-adrenaline-meter`: hit, disarm, full + expiry, decay, off. Not covered in game: block/parry and damage
+  taken (no harness step for them yet).
 
 ## API verification
 

@@ -1,0 +1,75 @@
+# Step 4a: Adrenaline meter. Player hits, charge staggers and disarms fill it (blocks/parries and damage taken too,
+# but the harness cannot force those yet: unit-tested only). Full = a window opens; unused, it empties. A filling
+# meter drains over time. Expects the defaults at the start.
+
+wait-level
+option-exists DMCS "Adrenaline Meter Max" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Adrenaline Window" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Adrenaline Decay Per Second" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Adrenaline Decay Delay" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Adrenaline Per Hit" category=Adrenaline type=Int32 interaction=Slider save=true
+option-exists DMCS "Adrenaline Per Block Or Parry" category=Adrenaline type=Int32 interaction=Slider save=true
+option-exists DMCS "Adrenaline Per Damage Taken" category=Adrenaline type=Int32 interaction=Slider save=true
+option-exists DMCS "Adrenaline Per Charge Stagger" category=Adrenaline type=Int32 interaction=Slider save=true
+option-exists DMCS "Adrenaline Per Disarm" category=Adrenaline type=Int32 interaction=Slider save=true
+expect-option DMCS "Adrenaline Meter Max" 100
+expect-option DMCS "Adrenaline Window" 6
+expect-option DMCS "Adrenaline Decay Per Second" 2
+expect-option DMCS "Adrenaline Decay Delay" 0
+expect-option DMCS "Adrenaline Per Hit" 5
+expect-option DMCS "Adrenaline Per Block Or Parry" 10
+expect-option DMCS "Adrenaline Per Damage Taken" 5
+expect-option DMCS "Adrenaline Per Charge Stagger" 15
+expect-option DMCS "Adrenaline Per Disarm" 15
+set-option DMCS "Debug Logging" true
+# Exact values below: no draining until the decay case.
+set-option DMCS "Adrenaline Decay Per Second" 0
+set-option DMCS "Body Hit Drop" false
+set-option DMCS "Disarm No Regrab Time" 4
+
+spawn-npc HumanMale distance=4 angle=90 brain=HumanDummy
+npc-grab DaggerCommon hand=right
+expect-npc holding true
+
+# 1. A player hit fills the meter
+mark
+hit-npc Torso
+expect-log [DMCS][Adrenaline] +5 Hit (
+expect-log : 5/100
+
+# 2. A disarm fills it too (stagger with the game's push, then a hand hit)
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc RightHand
+expect-log disarmed
+expect-log [DMCS][Adrenaline] +15 Disarm (
+expect-npc holding false within=0.5
+
+# 3. Full: the window opens; unused, it empties
+set-option DMCS "Adrenaline Per Hit" 50
+set-option DMCS "Adrenaline Window" 2
+mark
+hit-npc Torso
+hit-npc Torso
+expect-log meter full: window open for 2 s
+expect-log window over unused: meter emptied
+
+# 4. A filling meter drains
+set-option DMCS "Adrenaline Decay Per Second" 20
+mark
+hit-npc Torso
+expect-log meter drained to 0
+
+# 5. Off: nothing fills
+set-option DMCS "Adrenaline Enabled" false
+mark
+hit-npc Torso
+wait 0.5
+expect-no-log [DMCS][Adrenaline] +
+set-option DMCS "Adrenaline Enabled" true
+
+press DMCS "Reset To Defaults"
+expect-no-log Exception
+screenshot step4a-adrenaline-meter
+quit

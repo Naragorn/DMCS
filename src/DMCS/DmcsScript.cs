@@ -31,6 +31,7 @@ namespace DMCS
             EventManager.onLevelUnload += OnLevelUnload;
             ChargeStagger.Start();
             DisarmStrike.Start();
+            Adrenaline.Start();
             Dmcs.Log.Debug("Script", "ScriptEnable");
         }
 
@@ -40,6 +41,7 @@ namespace DMCS
             EventManager.onLevelUnload -= OnLevelUnload;
             ChargeStagger.Stop();
             DisarmStrike.Stop();
+            Adrenaline.Stop();
             Dmcs.Log.Debug("Script", "ScriptDisable");
         }
 
@@ -49,6 +51,7 @@ namespace DMCS
             EventManager.onLevelUnload -= OnLevelUnload;
             ChargeStagger.Stop();
             DisarmStrike.Stop();
+            Adrenaline.Stop();
             Dmcs.Log.Debug("Script", "ScriptUnload");
             LoadedMod = null;
         }
@@ -57,6 +60,7 @@ namespace DMCS
         {
             ChargeStagger.Update();
             DisarmStrike.Update();
+            Adrenaline.Update();
             HitInfo.EndFrame();
         }
 
@@ -66,6 +70,7 @@ namespace DMCS
             {
                 ChargeStagger.ReleaseAll();
                 DisarmStrike.RestoreAll();
+                Adrenaline.ResetAll();
             }
         }
 

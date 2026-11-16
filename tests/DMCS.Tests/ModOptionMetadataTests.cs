@@ -184,6 +184,30 @@ public class ModOptionMetadataTests
     }
 
     [Fact]
+    public void Adrenaline_ExposesItsSettings_InOrder()
+    {
+        var group = Options.Value.Where(o => o.Category == DmcsCategories.Adrenaline).OrderBy(o => o.Order).ToList();
+
+        Assert.Equal(
+            new[]
+            {
+                (DmcsCategories.Adrenaline + " Enabled", "System.Boolean", "ArrowList"),
+                (AdrenalineSettings.MeterMaxName, "System.Single", "Slider"),
+                (AdrenalineSettings.WindowDurationName, "System.Single", "Slider"),
+                (AdrenalineSettings.DecayPerSecondName, "System.Single", "Slider"),
+                (AdrenalineSettings.DecayDelayName, "System.Single", "Slider"),
+                (AdrenalineSettings.GainHitName, "System.Int32", "Slider"),
+                (AdrenalineSettings.GainBlockParryName, "System.Int32", "Slider"),
+                (AdrenalineSettings.GainDamageTakenName, "System.Int32", "Slider"),
+                (AdrenalineSettings.GainChargeStaggerName, "System.Int32", "Slider"),
+                (AdrenalineSettings.GainDisarmName, "System.Int32", "Slider"),
+            },
+            group.Select(o => (o.Name, o.DataType, o.InteractionType)));
+        Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));
+        Assert.All(group.Where(o => o.DataType != "System.Boolean"), o => Assert.False(string.IsNullOrEmpty(o.ValueSource), o.Name + " needs a value list"));
+    }
+
+    [Fact]
     public void ChargeStaggerPreset_IsNotAppliedOnLoad_SoItNeverOverwritesTheSavedValues()
     {
         var preset = Assert.Single(Options.Value, o => o.Name == ChargeStaggerSettings.PresetName);
