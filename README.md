@@ -108,7 +108,7 @@ Game quirk found: `UIButtonListModOption` feeds `nameLocalizationId` into the **
 ## In-game tests (headless harness)
 
 `tools/harness.sh` builds DMCS and runs `harness/*.txt` in the game, headless in the background, through
-[BasHarness](../BasHarness) (sibling folder; `BAS_HARNESS_DIR` overrides): Unity's mock headset instead of
+[BasHarness](https://github.com/Naragorn/BasHarness) (cloned as sibling folder `../BasHarness`; `BAS_HARNESS_DIR` overrides): Unity's mock headset instead of
 SteamVR, straight into the Arena, only DMCS + the harness mod loaded, in the harness's own Proton prefix —
 your install, mods, saves and options are not touched. Every run starts from a fresh prefix.
 Results land in `artifacts/harness/<time>/<scenario>/summary.md` (with Player.log and screenshots).
