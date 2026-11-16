@@ -32,8 +32,10 @@ namespace DMCS.Core
     {
         public DisarmHit(
             bool enabled, bool finalPhase, HitSource source, bool targetIsPlayer, bool targetKilled, HitPart part,
-            bool includeForearm, bool requireStagger, bool staggered, bool holdsSomething, float roll, float chance)
+            bool includeForearm, bool requireStagger, bool staggered, bool holdsSomething, float roll, float chance,
+            bool surrendered = false)
         {
+            Surrendered = surrendered;
             Enabled = enabled;
             FinalPhase = finalPhase;
             Source = source;
@@ -65,6 +67,9 @@ namespace DMCS.Core
 
         public float Roll { get; }
         public float Chance { get; }
+
+        /// <summary>Surrendered (Threat mod) with "Surrender Always Drops" on: counts as staggered, chance 100 %.</summary>
+        public bool Surrendered { get; }
     }
 
     public static class DisarmRule
@@ -95,7 +100,7 @@ namespace DMCS.Core
             {
                 return DisarmDecision.WrongPart;
             }
-            if (hit.RequireStagger && !hit.Staggered)
+            if (hit.RequireStagger && !hit.Staggered && !hit.Surrendered)
             {
                 return DisarmDecision.NotStaggered;
             }
@@ -103,7 +108,7 @@ namespace DMCS.Core
             {
                 return DisarmDecision.NothingHeld;
             }
-            return hit.Roll < hit.Chance ? DisarmDecision.Disarm : DisarmDecision.ChanceFailed;
+            return hit.Surrendered || hit.Roll < hit.Chance ? DisarmDecision.Disarm : DisarmDecision.ChanceFailed;
         }
 
         public static bool IsDisarmPart(HitPart part, bool includeForearm)

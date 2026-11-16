@@ -1,0 +1,155 @@
+# Step 3b: Body Hit Drop, shields, fling. A player hit anywhere but the hand on a staggered NPC makes it drop its
+# weapon with a chance; each earlier such hit in the same stagger raises it. A hit that does not drop shows sparks
+# and a haptic pulse. Shields stay in the hand; a knocked-out weapon flies off in the hit's direction.
+# Chances are set to 0 % / 100 % here so every result is certain. Expects the defaults at the start.
+
+wait-level
+option-exists DMCS "Body Hit Drop" category="Disarm Strike" type=Boolean save=true
+option-exists DMCS "Body Hit Drop Chance" category="Disarm Strike" type=Int32 interaction=Slider save=true
+option-exists DMCS "Drop Chance Per Extra Hit" category="Disarm Strike" type=Int32 interaction=Slider save=true
+option-exists DMCS "Loosened Grip Spark" category="Disarm Strike" type=Boolean save=true
+option-exists DMCS "Loosened Grip Haptics" category="Disarm Strike" type=Boolean save=true
+option-exists DMCS "Shields Can Be Disarmed" category="Disarm Strike" type=Boolean save=true
+option-exists DMCS "Disarm Fling Force" category="Disarm Strike" type=Single interaction=Slider save=true
+option-exists DMCS "Body Hit Drop Only Female" category="Disarm Strike" type=Boolean save=true
+option-exists DMCS "Body Hit Drop Only Smaller" category="Disarm Strike" type=Boolean save=true
+option-exists DMCS "Smaller By" category="Disarm Strike" type=Single interaction=Slider save=true
+option-exists DMCS "Surrender Always Drops" category="Disarm Strike" type=Boolean save=true
+expect-option DMCS "Body Hit Drop" true
+expect-option DMCS "Body Hit Drop Chance" 25
+expect-option DMCS "Drop Chance Per Extra Hit" 25
+expect-option DMCS "Loosened Grip Spark" true
+expect-option DMCS "Loosened Grip Haptics" true
+expect-option DMCS "Shields Can Be Disarmed" false
+expect-option DMCS "Disarm Fling Force" 3
+expect-option DMCS "Body Hit Drop Only Female" false
+expect-option DMCS "Body Hit Drop Only Smaller" false
+expect-option DMCS "Smaller By" 0
+expect-option DMCS "Surrender Always Drops" true
+set-option DMCS "Debug Logging" true
+set-option DMCS "Disarm No Regrab Time" 4
+
+# Passive brain: a fighting HumanMedium picks up items (a mace, seen 2026-11-16) and does not always stagger from
+# the test hit; the fighting brain is covered by step3.
+spawn-npc HumanMale distance=4 angle=90 brain=HumanDummy
+npc-grab DaggerCommon hand=right
+expect-npc holding true
+
+# 1. Not staggered: a body hit does nothing, even at 100 %
+set-option DMCS "Body Hit Drop Chance" 100
+mark
+hit-npc Torso
+expect-npc holding true within=0
+expect-no-log body hit
+
+# 2. 0 % + 100 % per extra hit: the first body hit in the stagger fails (sparks, pulse), the second drops (flung)
+set-option DMCS "Body Hit Drop Chance" 0
+set-option DMCS "Drop Chance Per Extra Hit" 100
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc Torso
+expect-log ChanceFailed at 0 %, hit 1 in this stagger, sparks 1, haptic pulse
+expect-npc holding true within=0
+hit-npc LeftLeg
+expect-log body hit LeftLeg, 100 %, hit 2 in this stagger
+expect-log dropped DaggerCommon (flung at 3.0 m/s)
+expect-npc holding false within=0.5
+expect-log may re-arm
+
+# 3. The count ends with the stagger: the next stagger starts at the base chance again
+npc-grab DaggerCommon hand=right
+wait 3
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc Torso
+expect-log hit 1 in this stagger
+expect-npc staggered false within=8
+wait 1
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc Torso
+expect-log ChanceFailed at 0 %, hit 1 in this stagger
+expect-npc holding true within=0
+
+# 4. Shield: the dagger drops, the buckler stays. Given after the stagger and right before the hit: an NPC
+#    holding a buckler did not stagger from the push=1 test hit (seen 2026-11-16, the game's own reaction), and
+#    a fighting brain may put a left-hand item away for a rock throw.
+set-option DMCS "Body Hit Drop Chance" 100
+wait 3
+hit-npc Torso push=1
+expect-npc staggered true
+npc-grab BucklerWooden hand=left
+mark
+hit-npc Torso
+expect-log dropped DaggerCommon (flung at 3.0 m/s)
+expect-no-log dropped BucklerWooden
+expect-npc holding true within=0
+expect-log may re-arm
+
+# 5. Body Hit Drop off: nothing drops, live
+set-option DMCS "Body Hit Drop" false
+npc-grab DaggerCommon hand=right
+wait 3
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc Torso
+expect-npc holding true within=0.5
+expect-no-log body hit
+set-option DMCS "Body Hit Drop" true
+
+# 6. Only female: the male NPC keeps its dagger
+set-option DMCS "Body Hit Drop Only Female" true
+wait 3
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc Torso
+expect-log NotFemale
+expect-npc holding true within=0
+set-option DMCS "Body Hit Drop Only Female" false
+
+# 7. Only smaller, by at least 50 cm: an adult NPC is not (the real height check is unit-tested)
+set-option DMCS "Body Hit Drop Only Smaller" true
+set-option DMCS "Smaller By" 50
+wait 3
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc Torso
+expect-log NotSmaller
+expect-npc holding true within=0
+set-option DMCS "Body Hit Drop Only Smaller" false
+
+# 8. Without the Threat mod nothing counts as surrendered (logged once, on the first hit that asks)
+expect-no-log Threat mod found
+
+# 9. Disarm Strike off: nothing drops either
+set-option DMCS "Disarm Strike Enabled" false
+wait 3
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc Torso
+expect-npc holding true within=0.5
+expect-no-log body hit
+set-option DMCS "Disarm Strike Enabled" true
+
+# 10. Only female, on a female NPC: it drops
+set-option DMCS "Body Hit Drop Only Female" true
+spawn-npc HumanFemale distance=4 angle=-90 brain=HumanDummy
+npc-grab DaggerCommon hand=right
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc Torso
+expect-log dropped DaggerCommon
+expect-npc holding false within=0.5
+
+press DMCS "Reset To Defaults"
+expect-no-log Exception
+screenshot step3b-body-hit-drop
+quit

@@ -20,6 +20,8 @@ expect-option DMCS "Disarm Stays Permanent" false
 expect-option DMCS "Disarmed Stand Still" true
 set-option DMCS "Debug Logging" true
 set-option DMCS "Disarm No Regrab Time" 4
+# This scenario checks the hand rule; body hits (Body Hit Drop, random) are covered by step3b.
+set-option DMCS "Body Hit Drop" false
 
 # A fighting NPC (its own brain must be swapped and given back), holding a weapon in each hand.
 spawn-npc HumanMale distance=4 angle=90
@@ -39,7 +41,7 @@ expect-npc staggered true
 mark
 hit-npc RightArm
 expect-npc holding true within=0
-expect-log WrongPart
+expect-no-log [DMCS][Disarm Strike] disarmed
 
 # 3. Staggered + hand hit: both hands drop, passive brain, no regrab
 wait 3
@@ -61,14 +63,15 @@ expect-npc brain HumanMedium within=0
 npc-grab DaggerCommon hand=right
 expect-npc holding true within=1
 
-# 4. Only the hit hand, with the setting off. The left dagger is given right before the hit: during
-#    a wait the fighting brain may put its left-hand item away for a rock throw (BrainModuleThrow
-#    grabs rocks with the left hand), which has nothing to do with DMCS.
+# 4. Only the hit hand, with the setting off. The left dagger is given right before the hits (it replaces
+#    whatever the hand holds): during a wait the fighting brain may put its left-hand item away for a rock
+#    throw (BrainModuleThrow grabs rocks with the left hand) or pick up a shield lying around, and an NPC
+#    holding a buckler did not stagger from the push=1 test hit (seen 2026-11-16) - none of it from DMCS.
 set-option DMCS "Disarm Drops Both Hands" false
 wait 3
+npc-grab DaggerCommon hand=left
 hit-npc Torso push=1
 expect-npc staggered true
-npc-grab DaggerCommon hand=left
 mark
 hit-npc LeftHand
 expect-log disarmed

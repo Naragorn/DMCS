@@ -65,26 +65,24 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 
 **Config:** `includeForearm`, `disarmedNoRegrabTime`, `requireStagger` (default true).
 
-### 2b. Disarm Strike extensions (designed 2026-11-16, not built)
+### 2b. Disarm Strike extensions (designed 2026-11-16)
 
-Three more ways to disarm, each switchable, each with its own success chance:
-
-- **Twist Disarm** (default on, chance default **open**): the player's weapon hits the NPC's **weapon** (blade on blade, not the hand) while the blade rolls around its own long axis (wrist twist) faster than `twistMinRollSpeed` (deg/s). Total angular speed is not used, because every swing rotates around shoulder and elbow. On success the NPC drops the weapon. Whether it needs a stagger: **open**. Shares the weapon-on-weapon contact code with Clash of Might.
-- **Grip Steal while staggered** (default on, chance default 50 %): the player grabs the handle of a weapon a staggered NPC holds (`Item.OnGrabEvent`); on success the NPC's hand lets go.
-- **Grip Steal after hit** (default on, chance default 75 %): a hit of any kind on a staggered NPC loosens its grip; grabbing the handle then succeeds with the higher chance. Window: `loosenedGripDuration`.
-- One roll per NPC per stagger / loosened window, so re-grabbing cannot retry the chance (proposal, **open**).
+- **Body Hit Drop** (built, default on): a player hit anywhere but the hand (forearm counts as body while `includeForearm` is off) on a staggered NPC makes it drop its weapon(s) with `bodyHitDropChance` (default 25 %). Every further body hit in the same stagger that did not drop adds `dropChancePerExtraHit` (default 25 %), so 25 / 50 / 75 / 100 %. The count starts over with the next stagger.
+- A body hit that does not drop signals the loosening grip: sparks at the held weapon (`loosenedGripSpark`) and a haptic pulse in the hitting hand (`loosenedGripHaptics`).
+- A knocked-out weapon flies off in the hit's direction (`disarmFlingForce`, m/s, 0 = just drops). Applies to hand hits and body hits.
+- Shields stay in the hand (`shieldsCanBeDisarmed`, default off), as the game's own hand-hit disarm keeps them.
 - After every disarm path: the same no-regrab lock as Disarm Strike.
+- Filters for Body Hit Drop (both default off, built): `femaleOnly` (`CreatureData.gender == Female`) and `smallerOnly` (NPC shorter than the player by at least `smallerMargin` cm, default 0; `Creature.GetHeight`).
+- **Threat mod link** (built, `surrenderAlwaysDrops`, default on): an NPC the Threat mod (HuJohner, Nexus 6830) holds at weapon point counts as staggered, and hand hits and body hits on it disarm at 100 %. Read by reflection from `Threat.ThreatBehaviour.threatenedCreatures`, no hard dependency.
+- The existing hand-hit rule stays: a hit on a staggered NPC's hand disarms (`disarmChance`, default 100 %); forearm only with `includeForearm` (default off).
+- Dropped design: "grab the handle to take the weapon while staggered". The base game already hands a weapon with a short handle (dagger, short sword) to whoever grabs it, staggered or not (`Handle.OnGrab` releases all other holders when `axisLength == 0`; seen in a BasHarness run 2026-11-16). A chance on top would need DMCS to block the game's own grab.
 
-Extras:
-- Every disarm path adds to the Adrenaline meter (own gain value).
-- Loosened grip is signalled with a spark and haptics.
-- A disarm by twist or hit throws the weapon away with an impulse in swing direction (`disarmFlingForce`).
-- Shields are excluded (`shieldsCanBeDisarmed`, default off), matching the game's own hand-hit disarm.
-- Catch bonus: catching a disarmed weapon in the air before it lands adds extra Adrenaline.
+**Not built yet:**
+- **Twist Disarm** (default on, chance default 50 %, no stagger needed): the player's weapon hits the NPC's **weapon** (blade on blade) while the blade rolls around its own long axis (wrist twist) faster than `twistMinRollSpeed` (deg/s). Total angular speed is not used, because every swing rotates around shoulder and elbow. Shares the weapon-on-weapon contact code with Clash of Might; build together with step 5.
+- Maybe `Gamey` / `Realistic` / `Custom` presets for the disarm values (as Charge Stagger has); Realistic values need the headset.
+- Adrenaline gain per disarm path and a catch bonus (catching a disarmed weapon in the air before it lands); with step 4.
 
-Existing behaviour stays: a plain hit on a staggered NPC's hand disarms; forearm hits only with `includeForearm` (default off).
-
-**Config:** `twistEnabled`, `twistChance`, `twistMinRollSpeed`, `gripStealStaggeredEnabled`, `gripStealStaggeredChance`, `gripStealAfterHitEnabled`, `gripStealAfterHitChance`, `loosenedGripDuration`, `disarmFlingForce`, `shieldsCanBeDisarmed`, Adrenaline gains for disarm and catch.
+**Config:** `bodyHitDrop`, `bodyHitDropChance`, `dropChancePerExtraHit`, `femaleOnly`, `smallerOnly`, `smallerMargin`, `surrenderAlwaysDrops`, `loosenedGripSpark`, `loosenedGripHaptics`, `shieldsCanBeDisarmed`, `disarmFlingForce`; later `twistEnabled`, `twistChance`, `twistMinRollSpeed`, Adrenaline gains for disarm and catch.
 
 ## 3. Charge Stagger
 

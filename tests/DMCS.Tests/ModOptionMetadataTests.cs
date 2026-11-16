@@ -168,6 +168,17 @@ public class ModOptionMetadataTests
                 (DisarmStrikeSettings.NoRegrabTimeName, "System.Single", "Slider"),
                 (DisarmStrikeSettings.StayDisarmedName, "System.Boolean", "ArrowList"),
                 (DisarmStrikeSettings.StandStillName, "System.Boolean", "ArrowList"),
+                (DisarmStrikeSettings.BodyHitDropName, "System.Boolean", "ArrowList"),
+                (DisarmStrikeSettings.BodyHitDropChanceName, "System.Int32", "Slider"),
+                (DisarmStrikeSettings.DropChancePerExtraHitName, "System.Int32", "Slider"),
+                (DisarmStrikeSettings.LoosenedSparkName, "System.Boolean", "ArrowList"),
+                (DisarmStrikeSettings.LoosenedHapticsName, "System.Boolean", "ArrowList"),
+                (DisarmStrikeSettings.ShieldsName, "System.Boolean", "ArrowList"),
+                (DisarmStrikeSettings.FlingForceName, "System.Single", "Slider"),
+                (DisarmStrikeSettings.FemaleOnlyName, "System.Boolean", "ArrowList"),
+                (DisarmStrikeSettings.SmallerOnlyName, "System.Boolean", "ArrowList"),
+                (DisarmStrikeSettings.SmallerMarginName, "System.Single", "Slider"),
+                (DisarmStrikeSettings.SurrenderAlwaysDropsName, "System.Boolean", "ArrowList"),
             },
             group.Select(o => (o.Name, o.DataType, o.InteractionType)));
         Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));

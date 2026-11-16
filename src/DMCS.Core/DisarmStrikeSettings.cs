@@ -20,6 +20,39 @@ namespace DMCS.Core
         public const bool DefaultStayDisarmed = false;
         public const bool DefaultStandStill = true;
 
+        public const string BodyHitDropName = "Body Hit Drop";
+        public const string BodyHitDropChanceName = "Body Hit Drop Chance";
+        public const string DropChancePerExtraHitName = "Drop Chance Per Extra Hit";
+        public const string LoosenedSparkName = "Loosened Grip Spark";
+        public const string LoosenedHapticsName = "Loosened Grip Haptics";
+        public const string ShieldsName = "Shields Can Be Disarmed";
+        public const string FlingForceName = "Disarm Fling Force";
+
+        public const bool DefaultBodyHitDrop = true;
+        public const int DefaultBodyHitDropChance = 25;
+        public const int DefaultDropChancePerExtraHit = 25;
+        public const bool DefaultLoosenedSpark = true;
+        public const bool DefaultLoosenedHaptics = true;
+        public const bool DefaultShieldsCanBeDisarmed = false;
+
+        public const string FemaleOnlyName = "Body Hit Drop Only Female";
+        public const string SmallerOnlyName = "Body Hit Drop Only Smaller";
+        public const string SmallerMarginName = "Smaller By";
+        public const string SurrenderAlwaysDropsName = "Surrender Always Drops";
+
+        public const bool DefaultFemaleOnly = false;
+        public const bool DefaultSmallerOnly = false;
+        public const bool DefaultSurrenderAlwaysDrops = true;
+
+        /// <summary>How much shorter than the player (cm) an NPC must be to count as smaller; 0 = any shorter.</summary>
+        public static readonly SliderSpec SmallerMargin = new SliderSpec(SmallerMarginName, 0f, 50f, 5f, 0f);
+
+        /// <summary>Velocity change (m/s) a weapon knocked out of the hand gets in the hit's direction; 0 = just drops (default a first guess).</summary>
+        public static readonly SliderSpec FlingForce = new SliderSpec(FlingForceName, 0f, 10f, 0.5f, 3f);
+
+        /// <summary>The game's metal collision effect (catalog Effect_HitMaterialMetal: metal sound + Bas.Particle.Collision.Metal).</summary>
+        public const string SparkEffectId = "HitMaterialMetal";
+
         /// <summary>Seconds the NPC neither picks up nor draws a weapon (and stands still).</summary>
         public static readonly SliderSpec NoRegrabTime = new SliderSpec(NoRegrabTimeName, 2f, 60f, 2f, 10f);
 

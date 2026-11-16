@@ -23,6 +23,7 @@
     <Reference Include="ThunderRoad"><HintPath>$(BasManagedDir)/ThunderRoad.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine"><HintPath>$(BasManagedDir)/UnityEngine.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(BasManagedDir)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(BasManagedDir)/UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 
   <ItemGroup>

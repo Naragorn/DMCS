@@ -13,6 +13,12 @@ dotnet build "$ROOT/src/DMCS/DMCS.csproj" -c Release -nologo -v q
 if [ $# -eq 0 ]; then
   set -- "$ROOT"/harness/*.txt
 fi
+# DMCS_EXTRA_MODS: more mod folders to load next to DMCS, colon-separated (e.g. the Threat mod for harness/optional).
+EXTRA=()
+IFS=':' read -r -a EXTRA_DIRS <<< "${DMCS_EXTRA_MODS:-}"
+for dir in "${EXTRA_DIRS[@]}"; do
+  [ -n "$dir" ] && EXTRA+=(--mod "$dir")
+done
 exec python3 "$HARNESS/runner/bas_harness.py" \
-  --mod "$ROOT/src/DMCS/bin/Release/net472" \
+  --mod "$ROOT/src/DMCS/bin/Release/net472" "${EXTRA[@]}" \
   --artifacts "$ROOT/artifacts/harness" --fresh-prefix "$@"

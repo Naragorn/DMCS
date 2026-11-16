@@ -16,6 +16,7 @@ Every feature can be toggled and tuned in the in-game Mod Menu. Full spec: `CLAU
 | 1. Project setup, SDK check, mod loads, Debug Logging, Mod Menu skeleton | **Done. Unit tests + in-game harness PASS (2026-11-16).** Menu look in the headset not checked. |
 | 2. Charge Stagger | **Done. Unit tests + in-game harness PASS (2026-11-16).** Feel in the headset (real sprint + real swing) not checked. |
 | 3. Disarm Strike | **Built, unit tests PASS, in-game harness PASS (2026-11-16).** Not checked in the headset yet. |
+| 3b. Body Hit Drop, filters, Threat link, shields, fling | **Built, unit tests PASS, in-game harness PASS (2026-11-16).** Not checked in the headset; Twist Disarm not built (with step 5). |
 | 4. Adrenaline | not started |
 | 5. Clash of Might | not started |
 
@@ -127,8 +128,34 @@ Release goes through `RagdollHand.TryRelease` and `EventManager.InvokeDisarm`, l
 - with *Stand Still* the NPC gets the game's `HumanDummy` brain (`Brain.Load`, which swaps the brain at runtime) — it stands,
   does not attack or flee — and gets its own brain back when the time ends.
 
-Not yet verified in game: the brain swap and swap-back on a fighting NPC, that `HumanDummy` never picks anything up, and how
-the release looks. `DisarmStrike.Disarmed` is raised per disarm (for Adrenaline).
+Not yet verified in game: that `HumanDummy` never picks anything up, and how the release looks.
+`DisarmStrike.Disarmed` is raised per disarm (for Adrenaline).
+
+### Body Hit Drop, shields, fling (step 3b)
+
+- **Body Hit Drop:** a player hit anywhere but the hand (forearm counts as body while *Include Forearm* is off) on an NPC
+  that was staggered before the hit drops its weapons with *Body Hit Drop Chance* (25 %). Each body hit in the same stagger
+  that did not drop adds *Drop Chance Per Extra Hit* (25 %): 25 / 50 / 75 / 100 %. The count is cleared once the NPC is no
+  longer staggered. The defaults are a first guess, not tuned in the headset.
+- A body hit that does not drop shows sparks at each held weapon (the game's `HitMaterialMetal` effect: metal sound +
+  `Bas.Particle.Collision.Metal`) and gives a `RagdollHand.HapticTick` in the player's hitting hand.
+- **Fling:** a weapon knocked out by a hand or body hit gets `PhysicBody.AddForce(direction * Fling Force, VelocityChange)`
+  along the hit's `impactVelocity` (3 m/s, a first guess).
+- **Shields** stay in the hand unless *Shields Can Be Disarmed*; a shield is what the game's own disarm calls one
+  (`ItemModuleAI.primaryClass == Shield`).
+- **Filters** (Body Hit Drop only, both off by default): *Only Female* (`CreatureData.gender == Female`), *Only Smaller*
+  (NPC shorter than the player by at least *Smaller By* cm, default 0; `Creature.GetHeight()` = `morphology.height *
+  lossyScale.y` for both).
+- **Threat mod:** with [Threat](https://www.nexusmods.com/bladeandsorcery/mods/6830) (HuJohner, 3.0.0) loaded, an NPC it
+  holds at weapon point counts as staggered and a hand or body hit disarms it at 100 % (*Surrender Always Drops*, on).
+  DMCS reads Threat's public static `Threat.ThreatBehaviour.threatenedCreatures` (`HashSet<Creature>`) by reflection — no
+  reference, DMCS runs without Threat. Note: with Threat's own *Threaten* skill, Threat itself makes the NPC drop its
+  weapons after `minTimeBeforeDisarmInSeconds` (2 s); DMCS's 100 % matters before that, or with *Recruit* only.
+  Verified in game: only that DMCS finds the field (`harness/optional/step3c-threat.txt`); a real threat needs a blade at
+  the neck, which the harness cannot do yet.
+- Not built: "grab the handle while staggered to take the weapon". The base game already gives a dagger or short sword to
+  whoever grabs its handle, staggered or not (`Handle.OnGrab` → `Release()` when `axisLength == 0`; seen in a harness probe
+  2026-11-16 with `DaggerCommon` and `SwordShortCommon`).
 
 ## API verification
 
@@ -202,7 +229,9 @@ Results land in `artifacts/harness/<time>/<scenario>/summary.md` (with Player.lo
 | `step1-b-persist-set` | set Debug Logging on, Disarm Strike off, Charge Stagger preset Realistic then Speed Threshold 6 and Strength Knock Down |
 | `step1-c-persist-check` | new game start: all values back (menu value and live member), preset row shows Custom and the rest of Realistic (chance 75 %, window 0.15 s) survived — the preset row did not reset them on load; Reset To Defaults → Gamey |
 | `step2-charge-stagger` | all nine settings with type/slider/Gamey defaults; Realistic sets its six values, one change → Custom, back → Realistic, Gamey restores; NPC (`HumanDummy` brain) beside the player; standing / walking (2.8 m/s) → TooSlow; sprint (6 m/s) → `Brain.currentStagger = Full`; second charge hit → knocked down and held, then up; hit 0.2 s after stopping (2.3 m/s) counts through the 0.5 s window; threshold 8 → TooSlow; min swing 6 → 5 m/s SwingTooWeak, 7 m/s staggers; chance 0 % → ChanceFailed; thrown, spell, held weapon → staggered (source logged); thrown/spells off → RangedNotCounted; second-hit switch off → AlreadyStaggered; Knock Down 4 s → down 4.2 s, control 0.5 s → up after 1.4 s; feature off → none (all live) |
-| `step3-disarm-strike` | Settings and defaults; fighting NPC with a dagger in each hand; not staggered → NotStaggered; forearm off → WrongPart; staggered + hand hit → both drop, brain `HumanDummy`, a re-grabbed dagger is released, after 4 s the own brain is back and it can hold again; drop-both off → only the hit hand drops, the other keeps its dagger; charge hit then hand hit → the charge hit staggers without disarming, the next one disarms; feature off → none |
+| `step3-disarm-strike` | Settings and defaults (Body Hit Drop switched off: this scenario checks the hand rule); fighting NPC with a dagger in each hand; not staggered → NotStaggered; forearm off → no disarm; staggered + hand hit → both drop, brain `HumanDummy`, a re-grabbed dagger is released, after 4 s the own brain is back and it can hold again; drop-both off → only the hit hand drops, the other keeps its dagger; charge hit then hand hit → the charge hit staggers without disarming, the next one disarms; feature off → none |
+| `step3b-body-hit-drop` | Eleven settings and defaults; body hit without stagger → nothing even at 100 %; 0 % + 100 % per extra hit → first body hit fails (sparks, haptic pulse logged), the second drops the dagger (flung 3 m/s); the count starts over with the next stagger; a buckler in the other hand stays while the dagger drops; Only Female on a male NPC → NotFemale, on a female NPC → drops; Only Smaller by 50 cm → NotSmaller; no Threat mod → no surrender; Body Hit Drop off / Disarm Strike off → nothing drops (live) |
+| `optional/step3c-threat` | Not in the default run. With `DMCS_EXTRA_MODS=<HJ_Threat folder>`: DMCS finds Threat's surrender set |
 
 The harness hits the NPC through `Creature.Damage` with the player's hand as damager and `pushLevel = -1`, so the
 game's own hit reaction does not push and any stagger comes from DMCS.
@@ -215,6 +244,7 @@ a real physical weapon hit (held-weapon attribution) and how the stagger *feels*
 | Date | Step | Result |
 |---|---|---|
 | 2026-11-16 | 1 | Harness: `step1-a-menu`, `-b-persist-set`, `-c-persist-check` **PASS** (70 s). First run found that saved values apply after script load; the load banner claimed default states — fixed (Settings line at level load). |
+| 2026-11-16 | 3b | Body Hit Drop, filters (female, smaller), Threat link, shields, fling. Harness: all six scenarios **PASS**, plus `optional/step3c-threat` with the Threat mod 3.0.0 loaded **PASS** (DMCS finds its surrender set). Found on the way: a "grab the handle" steal is pointless, because the game itself gives a dagger or short sword to whoever grabs it; an NPC holding a buckler did not stagger from the push=1 test hit; a fighting NPC picks up shields and maces lying around during waits → step3b uses `HumanDummy`, step3 hands the left dagger over right before the hits. Not checked: a real Threat surrender (needs a blade at the neck), the height filter on a really smaller NPC (unit-tested only), sparks and pulse in the headset. |
 | 2026-11-16 | 3 | Harness: all five scenarios **PASS** (3 min). First run found: with Drops Both Hands off, the no-regrab check also emptied the hand that was not hit → only the disarmed hands are kept empty now. Also: a fighting brain may put its left-hand item away for a rock throw (`BrainModuleThrow`), so the scenario gives the left dagger right before the hit. |
 | 2026-11-16 | 2b | Presets (Gamey/Realistic/Custom), chance, min swing speed, thrown/spells, second hit knocks down. Harness: all four scenarios **PASS** (2.5 min). |
 | 2026-11-16 | 2 | Harness: all four scenarios **PASS** (2 min). Found on the way: a fighting NPC (`HumanMedium`) lands real hits whose own pushes blur the result → scenario uses `HumanDummy`; runs into a wall stop the player → runs go back and forth. |
