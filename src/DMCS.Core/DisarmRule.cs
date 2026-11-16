@@ -150,6 +150,9 @@ namespace DMCS.Core
         public bool Left { get; }
         public bool Right { get; }
 
+        /// <summary>Hands to keep empty after another disarm: those of earlier disarms still running, plus these.</summary>
+        public DisarmHands With(DisarmHands other) => new DisarmHands(Left || other.Left, Right || other.Right);
+
         /// <summary>The hit side; both hands when <paramref name="dropBoth"/> (two-handed and dual-wielded weapons).</summary>
         public static DisarmHands ToRelease(HitPart part, bool dropBoth)
         {

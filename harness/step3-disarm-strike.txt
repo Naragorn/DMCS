@@ -61,12 +61,14 @@ expect-npc brain HumanMedium within=0
 npc-grab DaggerCommon hand=right
 expect-npc holding true within=1
 
-# 4. Only the hit hand, with the setting off
+# 4. Only the hit hand, with the setting off. The left dagger is given right before the hit: during
+#    a wait the fighting brain may put its left-hand item away for a rock throw (BrainModuleThrow
+#    grabs rocks with the left hand), which has nothing to do with DMCS.
 set-option DMCS "Disarm Drops Both Hands" false
-npc-grab DaggerCommon hand=left
 wait 3
 hit-npc Torso push=1
 expect-npc staggered true
+npc-grab DaggerCommon hand=left
 mark
 hit-npc LeftHand
 expect-log disarmed

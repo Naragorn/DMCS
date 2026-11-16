@@ -24,6 +24,7 @@ namespace DMCS
 
         private static readonly StaggerWindows<int> DisarmedWindows = new StaggerWindows<int>();
         private static readonly Dictionary<int, Creature> Creatures = new Dictionary<int, Creature>();
+        private static readonly Dictionary<int, DisarmHands> EmptyHands = new Dictionary<int, DisarmHands>();
         private static readonly Dictionary<int, string> OriginalBrains = new Dictionary<int, string>();
         private static readonly System.Random Dice = new System.Random();
         private static bool _hooked;
@@ -150,7 +151,7 @@ namespace DMCS
             }
         }
 
-        /// <summary>Every frame: keep disarmed hands empty, give back brains whose time is up.</summary>
+        /// <summary>Every frame: keep the disarmed hands empty (a hand that kept its weapon keeps it), give back brains whose time is up.</summary>
         public static void Update()
         {
             foreach (var id in DisarmedWindows.TakeExpired(Time.time))
@@ -164,8 +165,18 @@ namespace DMCS
                 {
                     continue;
                 }
-                ReleaseIfHolding(creature, creature.handLeft, "picked up or drew");
-                ReleaseIfHolding(creature, creature.handRight, "picked up or drew");
+                if (!EmptyHands.TryGetValue(pair.Key, out var empty))
+                {
+                    continue;
+                }
+                if (empty.Left)
+                {
+                    ReleaseIfHolding(creature, creature.handLeft, "picked up or drew");
+                }
+                if (empty.Right)
+                {
+                    ReleaseIfHolding(creature, creature.handRight, "picked up or drew");
+                }
             }
         }
 
@@ -242,6 +253,7 @@ namespace DMCS
             var seconds = DisarmStrikeSettings.NoRegrabSeconds(StayDisarmed, NoRegrabTime);
             DisarmedWindows.Mark(id, Time.time, seconds);
             Creatures[id] = target;
+            EmptyHands[id] = EmptyHands.TryGetValue(id, out var earlier) ? earlier.With(hands) : hands;
             var stands = StandStill && MakePassive(target, id);
             Dmcs.Log.Debug(Channel, "disarmed " + target.name + " (" + part + "): dropped " + string.Join(", ", dropped)
                 + ", no regrab " + (StayDisarmed ? "permanent" : seconds.ToString("0", CultureInfo.InvariantCulture) + " s")
@@ -302,6 +314,7 @@ namespace DMCS
         {
             Creatures.TryGetValue(id, out var creature);
             Creatures.Remove(id);
+            EmptyHands.Remove(id);
             if (!OriginalBrains.TryGetValue(id, out var original))
             {
                 return;
@@ -325,6 +338,7 @@ namespace DMCS
             var id = creature.GetInstanceID();
             DisarmedWindows.Remove(id);
             Creatures.Remove(id);
+            EmptyHands.Remove(id);
             OriginalBrains.Remove(id);
         }
     }

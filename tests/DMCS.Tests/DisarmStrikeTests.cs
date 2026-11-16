@@ -111,6 +111,18 @@ public class DisarmHandsTests
         Assert.Equal(left, hands.Left);
     }
 
+    [Theory]
+    [InlineData(false, true, true, false, true, true)]
+    [InlineData(false, true, false, true, false, true)]
+    [InlineData(false, false, false, false, false, false)]
+    public void HandsKeptEmpty_AddUpOverDisarms(bool l1, bool r1, bool l2, bool r2, bool left, bool right)
+    {
+        var hands = new DisarmHands(l1, r1).With(new DisarmHands(l2, r2));
+
+        Assert.Equal(left, hands.Left);
+        Assert.Equal(right, hands.Right);
+    }
+
     [Fact]
     public void OtherParts_DropNothing()
     {
