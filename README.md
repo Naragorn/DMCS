@@ -17,7 +17,7 @@ Every feature can be toggled and tuned in the in-game Mod Menu. Full spec: `CLAU
 | 2. Charge Stagger | **Done. Unit tests + in-game harness PASS (2026-11-16).** Feel in the headset (real sprint + real swing) not checked. |
 | 3. Disarm Strike | **Built, unit tests PASS, in-game harness PASS (2026-11-16).** Not checked in the headset yet. |
 | 3b. Body Hit Drop, chances per NPC type, shields, fling | **Built, unit tests + in-game harness PASS (2026-11-16, chance-per-type version).** Not checked in the headset; Twist Disarm not built (with step 5). |
-| 4. Adrenaline | **4a (meter, gains, decay, window) built, unit tests + in-game harness PASS (2026-11-16).** Block/parry and damage-taken gains are unit-tested only (the harness cannot force them yet). 4b–4e (critical, kneel/execution, signals/vignette, dodge/catch) not built; design in `CLAUDE.md` 4b. |
+| 4. Adrenaline | **4a (meter, gains, decay, window) and 4b (critical / fatality) built, unit tests + in-game harness PASS (2026-11-16).** Block/parry and damage taken are unit-tested only (the harness cannot force them yet). Not checked in the headset. 4c–4e (kneel/execution, signals/vignette, dodge/catch) not built; design in `CLAUDE.md` 4b. |
 | 5. Clash of Might | not started |
 
 ## Versions (checked 2026-11-16)
@@ -80,15 +80,30 @@ Game path defaults to `~/.local/share/Steam/steamapps/common/Blade & Sorcery`; o
 | Adrenaline | Enabled | toggle | | on |
 | Adrenaline | Adrenaline Meter Max | slider | 50–300, step 10 | 100 |
 | Adrenaline | Adrenaline Window | slider | 2–20 s, step 1 | 6 s |
+| Adrenaline | Adrenaline Decay | toggle | | off (for testing) |
 | Adrenaline | Adrenaline Decay Per Second | slider | 0–20, step 0.5 | 2 |
 | Adrenaline | Adrenaline Decay Delay | slider | 0–30 s, step 1 | 0 s |
 | Adrenaline | Adrenaline Per Hit | slider | 0–50 | 5 |
 | Adrenaline | Adrenaline Per Block Or Parry | slider | 0–50 | 10 |
 | Adrenaline | Adrenaline Per Damage Taken | slider | 0–50 | 5 |
+| Adrenaline | Damage Taken Lowers Adrenaline | toggle | | on |
 | Adrenaline | Adrenaline Per Charge Stagger | slider | 0–50 | 15 |
 | Adrenaline | Adrenaline Per Disarm | slider | 0–50 | 15 |
+| Adrenaline | Critical Time Mode | dropdown | Hyperfocus, Slow Time | Hyperfocus |
+| Adrenaline | Critical Hyperfocus Time Scale | slider | 0.05–0.5, step 0.05 | 0.1 |
+| Adrenaline | Critical Hyperfocus Duration | slider | 0.5–10 s, step 0.5 | 3 s |
+| Adrenaline | Critical Slow Time Scale | slider | 0.25–0.75, step 0.25 | 0.5 |
+| Adrenaline | Critical Slow Time Duration | slider | 0.5–10 s, step 0.5 | 3 s |
+| Adrenaline | Critical Needs Hard Swing | toggle | | on |
+| Adrenaline | Critical Min Swing Speed | slider | 0–10 m/s, step 0.25 | 1 m/s |
+| Adrenaline | Critical Thrown And Spells | toggle | | off |
+| Adrenaline | Critical Kills | toggle | | on |
+| Adrenaline | Critical Dismember | toggle | | on |
+| Adrenaline | Critical Knockback | slider | 0–20 m/s, step 1 | 8 m/s |
+| Adrenaline | Critical Battle Cry | toggle | | on |
+| Adrenaline | Chest Stab Kneels | toggle | | on |
 
-Feature settings are added to their group as each feature is built (spec build order). Clash of Might has no gameplay effect yet. Adrenaline fills its meter and opens the window, but the critical is not built yet (4b).
+Feature settings are added to their group as each feature is built (spec build order). Clash of Might has no gameplay effect yet. Adrenaline fills its meter, opens the window and does the critical (4b); kneel/execution and the signals are not built yet.
 
 ## Charge Stagger (step 2)
 
@@ -171,8 +186,26 @@ Not yet verified in game: that `HumanDummy` never picks anything up, and how the
 - Decay: a filling meter loses *Decay Per Second* after *Decay Delay* seconds without a gain.
 - Debug log (channel `Adrenaline`): `+5 Hit (<npc>): 5/100`, `meter full: window open for 6 s`,
   `window over unused: meter emptied`, `meter drained to 0`.
+- Damage taken lowers the meter by *Per Damage Taken* (*Damage Taken Lowers Adrenaline*, on); a full meter keeps its
+  window. Decay is switched off by default for now.
 - Harness `step4a-adrenaline-meter`: hit, disarm, full + expiry, decay, off. Not covered in game: block/parry and damage
   taken (no harness step for them yet).
+
+### Critical / fatality (step 4b)
+
+- The next player hit with a full meter that is melee (weapon, fist, kick; thrown and spells behind a switch) and at least
+  *Critical Min Swing Speed* fast. It is judged at the hit's start, before the game's damage, and done at its end.
+- Battle cry: the player's own voice module (`BrainModuleSpeak.Play("attackmelee")`, voice `HumanMale1`/`HumanFemale3`).
+- Slow-motion: `TimeManager.SetSlowMotion` with the game's `Hyperfocus` or `SpellSlowTime` effect; in Hyperfocus mode the
+  player gets the Hyperfocus skill's buffs scaled with 1/scale (joints, speed, drag), removed at the end. Skipped when
+  another slow-motion runs; ended only if it is still ours (or forced on feature off / level unload).
+- Otherwise: `RagdollPart.SafeSlice()` on the hit part, `Creature.Kill(hit)`, then `BrainModuleDeath.StopDying()` and a
+  velocity change on every part along the hit.
+- Chest stab (torso + penetration or Pierce): that NPC's `BrainModuleDeath.stabAnimationData`/`defaultAnimationData` are
+  set to a kneeling-only copy of `HumanStabDeaths` for the kill (the game picks the clip inside `Kill`), then restored.
+- Harness `step4b-adrenaline-critical` (2026-11-16): light hit → `TooLight`, thrown → `Ranged`; arm hit → battle cry
+  `Success (male_1_attack_11)`, Hyperfocus 0.1× for 3 s, `cut off LeftArm`, killed, thrown, time back after 3 s; chest stab
+  → `kneels (Bas.Animation.Death_KneelBackward)`; Slow Time 0.5× without player buffs. Look and feel: headset only.
 
 ## API verification
 

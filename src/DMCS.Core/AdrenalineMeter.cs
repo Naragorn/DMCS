@@ -24,6 +24,9 @@ namespace DMCS.Core
 
         /// <summary>Decay drained the meter to zero.</summary>
         Drained,
+
+        /// <summary>Points were taken off a filling meter (damage taken).</summary>
+        Lost,
     }
 
     /// <summary>
@@ -55,6 +58,17 @@ namespace DMCS.Core
             State = AdrenalineState.Ready;
             WindowEndsAt = now + windowSeconds;
             return AdrenalineEvent.Filled;
+        }
+
+        /// <summary>Takes points off a filling meter (not below 0). A full meter keeps its window.</summary>
+        public AdrenalineEvent Lose(float amount)
+        {
+            if (amount <= 0f || State == AdrenalineState.Ready || Value <= 0f)
+            {
+                return AdrenalineEvent.None;
+            }
+            Value = Math.Max(0f, Value - amount);
+            return AdrenalineEvent.Lost;
         }
 
         /// <summary>Every frame: ends an expired window, drains a filling meter after the delay since the last gain.</summary>

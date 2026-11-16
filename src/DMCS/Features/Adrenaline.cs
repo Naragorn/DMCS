@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using DMCS.Core;
@@ -8,7 +9,8 @@ using UnityEngine;
 namespace DMCS
 {
     /// <summary>
-    /// Adrenaline (step 4a): combat fills a meter; when it is full a window opens for the critical (built in 4b).
+    /// Adrenaline (steps 4a, 4b): combat fills a meter; when it is full a window opens, and the next qualifying hit is
+    /// the critical (<see cref="AdrenalineCritical"/>).
     /// Sources: player hits on NPCs and NPC damage on the player (EventManager.onCreatureHit), blocks and parries
     /// (EventManager.onCreatureAttackParry, raised by BrainModuleMelee/BrainModuleDefense), charge staggers and
     /// disarms (DMCS's own events). Clock: real time (Time.unscaledTime), so slow-mo does not stretch the window.
@@ -20,6 +22,9 @@ namespace DMCS
         public static readonly FeatureToggle Toggle = new FeatureToggle(DmcsCategories.Adrenaline, true, Dmcs.Log);
 
         private static readonly AdrenalineMeter Meter = new AdrenalineMeter();
+
+        /// <summary>Hits judged critical at their start (before the game's damage), executed at their end.</summary>
+        private static readonly HashSet<CollisionInstance> PendingCritical = new HashSet<CollisionInstance>();
         private static bool _hooked;
         private static float _meterMax = AdrenalineSettings.MeterMax.Default;
 
@@ -65,12 +70,20 @@ namespace DMCS
         public static float WindowDuration { get; set; } = AdrenalineSettings.WindowDuration.Default;
 
         [ModOption(
+            name = AdrenalineSettings.DecayEnabledName,
+            tooltip = "The meter drains over time while it is not full.",
+            category = DmcsCategories.Adrenaline,
+            categoryOrder = DmcsCategories.AdrenalineOrder,
+            order = 3)]
+        public static bool DecayEnabled { get; set; } = AdrenalineSettings.DefaultDecayEnabled;
+
+        [ModOption(
             name = AdrenalineSettings.DecayPerSecondName,
             tooltip = "Points per second the meter loses while it is not full. 0 = it never drains.",
             valueSourceName = nameof(DecayPerSecondValues),
             category = DmcsCategories.Adrenaline,
             categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 3)]
+            order = 4)]
         [ModOptionSlider]
         public static float DecayPerSecond { get; set; } = AdrenalineSettings.DecayPerSecond.Default;
 
@@ -80,7 +93,7 @@ namespace DMCS
             valueSourceName = nameof(DecayDelayValues),
             category = DmcsCategories.Adrenaline,
             categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 4)]
+            order = 5)]
         [ModOptionSlider]
         public static float DecayDelay { get; set; } = AdrenalineSettings.DecayDelay.Default;
 
@@ -90,7 +103,7 @@ namespace DMCS
             valueSourceName = nameof(GainValues),
             category = DmcsCategories.Adrenaline,
             categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 5)]
+            order = 6)]
         [ModOptionSlider]
         public static int GainHit { get; set; } = AdrenalineSettings.DefaultGainHit;
 
@@ -100,19 +113,27 @@ namespace DMCS
             valueSourceName = nameof(GainValues),
             category = DmcsCategories.Adrenaline,
             categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 6)]
+            order = 7)]
         [ModOptionSlider]
         public static int GainBlockParry { get; set; } = AdrenalineSettings.DefaultGainBlockParry;
 
         [ModOption(
             name = AdrenalineSettings.GainDamageTakenName,
-            tooltip = "Points for each hit an enemy lands on you.",
+            tooltip = "Points for each hit an enemy lands on you (taken off or added, see the next option).",
             valueSourceName = nameof(GainValues),
             category = DmcsCategories.Adrenaline,
             categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 7)]
+            order = 8)]
         [ModOptionSlider]
         public static int GainDamageTaken { get; set; } = AdrenalineSettings.DefaultGainDamageTaken;
+
+        [ModOption(
+            name = AdrenalineSettings.DamageTakenLowersName,
+            tooltip = "Hits you take lower the meter by 'Per Damage Taken' instead of raising it.",
+            category = DmcsCategories.Adrenaline,
+            categoryOrder = DmcsCategories.AdrenalineOrder,
+            order = 9)]
+        public static bool DamageTakenLowers { get; set; } = AdrenalineSettings.DefaultDamageTakenLowers;
 
         [ModOption(
             name = AdrenalineSettings.GainChargeStaggerName,
@@ -120,7 +141,7 @@ namespace DMCS
             valueSourceName = nameof(GainValues),
             category = DmcsCategories.Adrenaline,
             categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 8)]
+            order = 10)]
         [ModOptionSlider]
         public static int GainChargeStagger { get; set; } = AdrenalineSettings.DefaultGainChargeStagger;
 
@@ -130,7 +151,7 @@ namespace DMCS
             valueSourceName = nameof(GainValues),
             category = DmcsCategories.Adrenaline,
             categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 9)]
+            order = 11)]
         [ModOptionSlider]
         public static int GainDisarm { get; set; } = AdrenalineSettings.DefaultGainDisarm;
 
@@ -147,6 +168,9 @@ namespace DMCS
 
         private static AdrenalineGains Gains =>
             new AdrenalineGains(GainHit, GainBlockParry, GainDamageTaken, GainChargeStagger, GainDisarm);
+
+        /// <summary>Raised for each critical (later steps hook in here).</summary>
+        public static event Action<Creature> Critical;
 
         /// <summary>The meter is full and waits for the critical.</summary>
         public static bool IsReady => Meter.State == AdrenalineState.Ready;
@@ -184,15 +208,19 @@ namespace DMCS
         public static void ResetAll()
         {
             Meter.Reset();
+            PendingCritical.Clear();
+            AdrenalineCritical.StopAll();
         }
 
         public static void Update()
         {
+            PendingCritical.Clear();
+            AdrenalineCritical.Update();
             if (!Toggle.Enabled)
             {
                 return;
             }
-            var e = Meter.Tick(Time.unscaledTime, Time.unscaledDeltaTime, DecayPerSecond, DecayDelay);
+            var e = Meter.Tick(Time.unscaledTime, Time.unscaledDeltaTime, DecayEnabled ? DecayPerSecond : 0f, DecayDelay);
             if (e == AdrenalineEvent.WindowExpired)
             {
                 Dmcs.Log.Debug(Channel, "window over unused: meter emptied");
@@ -219,15 +247,54 @@ namespace DMCS
                 {
                     return;
                 }
-                var source = AdrenalineSources.FromHit(eventTime == EventTime.OnEnd, HitInfo.SourceOf(hit), target.isPlayer, hit.damageStruct.damage);
-                if (source.HasValue)
+                var source = HitInfo.SourceOf(hit);
+                if (eventTime == EventTime.OnStart)
                 {
-                    Add(source.Value, target.isPlayer ? "you" : target.name);
+                    var atStart = AdrenalineCritical.Decide(Toggle.Enabled, Meter.State == AdrenalineState.Ready, target, hit, source);
+                    if (atStart == CriticalDecision.Critical)
+                    {
+                        PendingCritical.Add(hit);
+                        AdrenalineCritical.Prepare(target, hit);
+                    }
+                    else if (atStart == CriticalDecision.TooLight || atStart == CriticalDecision.Ranged)
+                    {
+                        Dmcs.Log.Debug(Channel, "no critical on " + target.name + ": " + atStart + " (swing "
+                            + hit.impactVelocity.magnitude.ToString("0.00", CultureInfo.InvariantCulture) + " m/s)");
+                    }
+                    return;
+                }
+                if (PendingCritical.Remove(hit) && Meter.Consume())
+                {
+                    AdrenalineCritical.Execute(target, hit, source);
+                    Critical?.Invoke(target);
+                    return;
+                }
+                var gain = AdrenalineSources.FromHit(true, source, target.isPlayer, hit.damageStruct.damage);
+                if (gain == AdrenalineSource.DamageTaken && DamageTakenLowers)
+                {
+                    Lose(target.name);
+                }
+                else if (gain.HasValue)
+                {
+                    Add(gain.Value, target.isPlayer ? "you" : target.name);
                 }
             }
             catch (Exception ex)
             {
                 Dmcs.Log.Info("Adrenaline error: " + ex);
+            }
+        }
+
+        private static void Lose(string who)
+        {
+            if (!Toggle.Enabled)
+            {
+                return;
+            }
+            if (Meter.Lose(GainDamageTaken) == AdrenalineEvent.Lost)
+            {
+                Dmcs.Log.Debug(Channel, "-" + GainDamageTaken + " DamageTaken (" + who + "): "
+                    + Meter.Value.ToString("0", CultureInfo.InvariantCulture) + "/" + MeterMax.ToString("0", CultureInfo.InvariantCulture));
             }
         }
 

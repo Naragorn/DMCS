@@ -1,0 +1,90 @@
+# Step 4b: the critical (fatality). With a full meter the next hard player hit is the critical: battle cry,
+# slow-motion (Hyperfocus or Slow Time), cut-off part, kill, throw. A critical stab into the chest makes the NPC
+# kneel and die instead. Light hits and thrown weapons are no critical. Expects the defaults at the start.
+
+wait-level
+option-exists DMCS "Critical Time Mode" category=Adrenaline type=String save=true
+option-exists DMCS "Critical Hyperfocus Time Scale" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Critical Hyperfocus Duration" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Critical Slow Time Scale" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Critical Slow Time Duration" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Critical Needs Hard Swing" category=Adrenaline type=Boolean save=true
+option-exists DMCS "Critical Min Swing Speed" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Critical Thrown And Spells" category=Adrenaline type=Boolean save=true
+option-exists DMCS "Critical Kills" category=Adrenaline type=Boolean save=true
+option-exists DMCS "Critical Dismember" category=Adrenaline type=Boolean save=true
+option-exists DMCS "Critical Knockback" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Critical Battle Cry" category=Adrenaline type=Boolean save=true
+option-exists DMCS "Chest Stab Kneels" category=Adrenaline type=Boolean save=true
+expect-option DMCS "Critical Time Mode" Hyperfocus
+expect-option DMCS "Critical Hyperfocus Time Scale" 0.1
+expect-option DMCS "Critical Hyperfocus Duration" 3
+expect-option DMCS "Critical Slow Time Scale" 0.5
+expect-option DMCS "Critical Slow Time Duration" 3
+expect-option DMCS "Critical Needs Hard Swing" true
+expect-option DMCS "Critical Thrown And Spells" false
+expect-option DMCS "Critical Kills" true
+expect-option DMCS "Critical Dismember" true
+expect-option DMCS "Critical Knockback" 8
+expect-option DMCS "Critical Battle Cry" true
+expect-option DMCS "Chest Stab Kneels" true
+set-option DMCS "Debug Logging" true
+# Two hits fill the meter; the window waits long enough for every case.
+set-option DMCS "Adrenaline Per Hit" 50
+set-option DMCS "Adrenaline Window" 20
+set-option DMCS "Critical Min Swing Speed" 6
+
+spawn-npc HumanMale distance=3 angle=60 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+expect-log meter full: window open for 20 s
+
+# 1. A light hit and a thrown weapon are no critical; the window stays open
+mark
+hit-npc LeftArm velocity=3
+expect-log no critical on
+expect-log TooLight
+hit-npc LeftArm velocity=8 by=thrown
+expect-log Ranged
+expect-npc state Alive within=0
+
+# 2. A hard hit on the arm: the critical (Hyperfocus)
+mark
+hit-npc LeftArm velocity=8 type=Slash damage=1
+expect-log CRITICAL on
+expect-log battle cry:
+expect-log slow-motion Hyperfocus: 0.10× for 3.0 s, you keep your speed
+expect-log LeftArm
+expect-log killed
+expect-log threw
+expect-npc state Dead within=2
+expect-log slow-motion over: time back to normal
+
+# 3. Chest stab: kneels and dies
+spawn-npc HumanMale distance=3 angle=-60 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+mark
+hit-npc Torso velocity=8 type=Pierce damage=1
+expect-log CRITICAL on
+expect-log chest-stab fatality:
+expect-log kneels (Bas.Animation.Death_Kneel
+expect-no-log threw
+expect-npc state Dead within=2
+expect-log slow-motion over: time back to normal
+
+# 4. Slow Time mode: the player slows too
+set-option DMCS "Critical Time Mode" "Slow Time"
+spawn-npc HumanMale distance=3 angle=0 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+mark
+hit-npc RightLeg velocity=8 type=Slash damage=1
+expect-log slow-motion Slow Time: 0.50× for 3.0 s
+expect-no-log you keep your speed
+expect-log slow-motion over: time back to normal
+
+press DMCS "Reset To Defaults"
+expect-no-log Exception
+screenshot step4b-adrenaline-critical
+quit

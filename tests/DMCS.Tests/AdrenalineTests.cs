@@ -293,3 +293,187 @@ public class AdrenalineSettingsTests
         Assert.Equal(expected, gains.For(source));
     }
 }
+
+public class AdrenalineLoseTests
+{
+    [Fact]
+    public void Lose_TakesPointsOff_NotBelowZero()
+    {
+        var m = new AdrenalineMeter();
+        m.Gain(8f, 0f, 100f, 6f);
+
+        Assert.Equal(AdrenalineEvent.Lost, m.Lose(5f));
+        Assert.Equal(3f, m.Value);
+        Assert.Equal(AdrenalineEvent.Lost, m.Lose(5f));
+        Assert.Equal(0f, m.Value);
+        Assert.Equal(AdrenalineEvent.None, m.Lose(5f));
+    }
+
+    [Fact]
+    public void Lose_KeepsAFullMetersWindow()
+    {
+        var m = new AdrenalineMeter();
+        m.Gain(100f, 0f, 100f, 6f);
+
+        Assert.Equal(AdrenalineEvent.None, m.Lose(5f));
+        Assert.Equal(AdrenalineState.Ready, m.State);
+    }
+
+    [Fact]
+    public void Lose_ZeroDoesNothing()
+    {
+        var m = new AdrenalineMeter();
+        m.Gain(8f, 0f, 100f, 6f);
+
+        Assert.Equal(AdrenalineEvent.None, m.Lose(0f));
+    }
+
+    [Fact]
+    public void NewDefaults_DamageLowers_DecayOff()
+    {
+        Assert.True(AdrenalineSettings.DefaultDamageTakenLowers);
+        Assert.False(AdrenalineSettings.DefaultDecayEnabled);
+    }
+}
+
+public class CriticalRuleTests
+{
+    private static CriticalHit Hit(
+        bool enabled = true, bool ready = true, HitSource source = HitSource.HeldWeapon, bool rangedCounts = false,
+        bool targetIsPlayer = false, bool targetDead = false, bool needsHard = true, float impact = 5f, float minSwing = 3f) =>
+        new CriticalHit(enabled, ready, source, rangedCounts, targetIsPlayer, targetDead, needsHard, impact, minSwing);
+
+    [Theory]
+    [InlineData(HitSource.HeldWeapon)]
+    [InlineData(HitSource.PlayerBody)]
+    public void AHardMeleeHit_WithAFullMeter_IsTheCritical(HitSource source)
+    {
+        Assert.Equal(CriticalDecision.Critical, CriticalRule.Decide(Hit(source: source)));
+    }
+
+    [Theory]
+    [InlineData(HitSource.PlayerThrown)]
+    [InlineData(HitSource.PlayerSpell)]
+    public void ThrownAndSpells_OnlyWhenSwitchedOn(HitSource source)
+    {
+        Assert.Equal(CriticalDecision.Ranged, CriticalRule.Decide(Hit(source: source)));
+        Assert.Equal(CriticalDecision.Critical, CriticalRule.Decide(Hit(source: source, rangedCounts: true)));
+    }
+
+    [Fact]
+    public void ALightHit_IsNotTheCritical_WhileAHardSwingIsNeeded()
+    {
+        Assert.Equal(CriticalDecision.TooLight, CriticalRule.Decide(Hit(impact: 2.9f)));
+        Assert.Equal(CriticalDecision.Critical, CriticalRule.Decide(Hit(impact: 3f)));
+        Assert.Equal(CriticalDecision.Critical, CriticalRule.Decide(Hit(impact: 0.5f, needsHard: false)));
+    }
+
+    [Fact]
+    public void TheRefusals_ComeInOrder()
+    {
+        Assert.Equal(CriticalDecision.Disabled, CriticalRule.Decide(Hit(enabled: false, source: HitSource.NotPlayer)));
+        Assert.Equal(CriticalDecision.NotByPlayer, CriticalRule.Decide(Hit(source: HitSource.NotPlayer, targetIsPlayer: true)));
+        Assert.Equal(CriticalDecision.TargetIsPlayer, CriticalRule.Decide(Hit(targetIsPlayer: true, targetDead: true)));
+        Assert.Equal(CriticalDecision.TargetDead, CriticalRule.Decide(Hit(targetDead: true, ready: false)));
+        Assert.Equal(CriticalDecision.NotReady, CriticalRule.Decide(Hit(ready: false, source: HitSource.PlayerThrown)));
+        Assert.Equal(CriticalDecision.Ranged, CriticalRule.Decide(Hit(source: HitSource.PlayerThrown, impact: 0f)));
+    }
+
+    [Theory]
+    [InlineData(true, true, false, true)]
+    [InlineData(true, false, true, true)]
+    [InlineData(true, false, false, false)]
+    [InlineData(false, true, true, false)]
+    public void AChestStab_IsATorsoHitThatWentIn(bool torso, bool penetrating, bool pierce, bool expected)
+    {
+        Assert.Equal(expected, CriticalRule.IsChestStab(torso, penetrating, pierce));
+    }
+}
+
+public class KneelClipsTests
+{
+    private static readonly string[] StabDeaths =
+    {
+        "Bas.Animation.Death_Backward", "Bas.Animation.Death_KneelBackward", "Bas.Animation.Death_KneelMid",
+        "Bas.Animation.Death_2", "Bas.Animation.Death1", "Bas.Animation.Death2", "Bas.Animation.Death_KneelForward",
+        "Bas.Animation.Death_KneelForward2", "Bas.Animation.Death_KneelForward3", "Bas.Animation.Death_back",
+        "Bas.Animation.Death_Left", "Bas.Animation.Death.SimpleRight",
+    };
+
+    [Fact]
+    public void AStabFromTheFront_KneelsBackwardOrMid()
+    {
+        Assert.Equal(
+            new[] { "Bas.Animation.Death_KneelBackward", "Bas.Animation.Death_KneelMid" },
+            KneelClips.For(DeathDirection.Backward, StabDeaths));
+    }
+
+    [Fact]
+    public void AStabFromBehind_KneelsForward()
+    {
+        Assert.Equal(
+            new[] { "Bas.Animation.Death_KneelForward", "Bas.Animation.Death_KneelForward2", "Bas.Animation.Death_KneelForward3" },
+            KneelClips.For(DeathDirection.Forward, StabDeaths));
+    }
+
+    [Theory]
+    [InlineData(DeathDirection.Left)]
+    [InlineData(DeathDirection.Right)]
+    public void FromTheSide_KneelsMid(DeathDirection direction)
+    {
+        Assert.Equal(new[] { "Bas.Animation.Death_KneelMid" }, KneelClips.For(direction, StabDeaths));
+    }
+
+    [Fact]
+    public void WithoutAFittingClip_AnyKneelingOneIsUsed()
+    {
+        Assert.Equal(new[] { "X.KneelForward" }, KneelClips.For(DeathDirection.Left, new[] { "X.KneelForward", "X.Death" }));
+    }
+
+    [Fact]
+    public void WithoutAnyKneelingClip_NothingIsReturned()
+    {
+        Assert.Empty(KneelClips.For(DeathDirection.Backward, new[] { "X.Death" }));
+        Assert.Empty(KneelClips.For(DeathDirection.Backward, null));
+    }
+}
+
+public class CriticalTimeModeTests
+{
+    [Fact]
+    public void HyperfocusBuffsThePlayer_SlowTimeDoesNot()
+    {
+        Assert.True(CriticalTimeModes.BuffsPlayer(CriticalTimeModes.Hyperfocus));
+        Assert.False(CriticalTimeModes.BuffsPlayer(CriticalTimeModes.SlowTime));
+        Assert.Equal(CriticalTimeModes.Hyperfocus, AdrenalineSettings.DefaultTimeMode);
+    }
+
+    [Fact]
+    public void AtTheGamesHyperfocusScale_TheBuffsAreTheSkills()
+    {
+        var (joint, speed, drag) = CriticalTimeModes.Buffs(0.1f);
+
+        Assert.Equal(10f, joint, 3);
+        Assert.Equal(20f, speed, 3);
+        Assert.Equal(10f, drag, 3);
+    }
+
+    [Fact]
+    public void CriticalSliderDefaults_AreOnTheirSliders()
+    {
+        foreach (var s in AdrenalineSettings.CriticalSliders)
+        {
+            Assert.True(SliderValues.IndexOf(s.Values(), s.Default) >= 0, s.Name);
+        }
+    }
+
+    [Fact]
+    public void CriticalToggleDefaults_MatchTheSpec()
+    {
+        Assert.True(AdrenalineSettings.DefaultNeedsHardSwing);
+        Assert.False(AdrenalineSettings.DefaultRangedCounts);
+        Assert.True(AdrenalineSettings.DefaultKills);
+        Assert.True(AdrenalineSettings.DefaultBattleCry);
+        Assert.True(AdrenalineSettings.DefaultChestStabKneels);
+    }
+}
