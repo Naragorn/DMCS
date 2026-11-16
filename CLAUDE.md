@@ -65,6 +65,27 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 
 **Config:** `includeForearm`, `disarmedNoRegrabTime`, `requireStagger` (default true).
 
+### 2b. Disarm Strike extensions (designed 2026-11-16, not built)
+
+Three more ways to disarm, each switchable, each with its own success chance:
+
+- **Twist Disarm** (default on, chance default **open**): the player's weapon hits the NPC's **weapon** (blade on blade, not the hand) while the blade rolls around its own long axis (wrist twist) faster than `twistMinRollSpeed` (deg/s). Total angular speed is not used, because every swing rotates around shoulder and elbow. On success the NPC drops the weapon. Whether it needs a stagger: **open**. Shares the weapon-on-weapon contact code with Clash of Might.
+- **Grip Steal while staggered** (default on, chance default 50 %): the player grabs the handle of a weapon a staggered NPC holds (`Item.OnGrabEvent`); on success the NPC's hand lets go.
+- **Grip Steal after hit** (default on, chance default 75 %): a hit of any kind on a staggered NPC loosens its grip; grabbing the handle then succeeds with the higher chance. Window: `loosenedGripDuration`.
+- One roll per NPC per stagger / loosened window, so re-grabbing cannot retry the chance (proposal, **open**).
+- After every disarm path: the same no-regrab lock as Disarm Strike.
+
+Extras:
+- Every disarm path adds to the Adrenaline meter (own gain value).
+- Loosened grip is signalled with a spark and haptics.
+- A disarm by twist or hit throws the weapon away with an impulse in swing direction (`disarmFlingForce`).
+- Shields are excluded (`shieldsCanBeDisarmed`, default off), matching the game's own hand-hit disarm.
+- Catch bonus: catching a disarmed weapon in the air before it lands adds extra Adrenaline.
+
+Existing behaviour stays: a plain hit on a staggered NPC's hand disarms; forearm hits only with `includeForearm` (default off).
+
+**Config:** `twistEnabled`, `twistChance`, `twistMinRollSpeed`, `gripStealStaggeredEnabled`, `gripStealStaggeredChance`, `gripStealAfterHitEnabled`, `gripStealAfterHitChance`, `loosenedGripDuration`, `disarmFlingForce`, `shieldsCanBeDisarmed`, Adrenaline gains for disarm and catch.
+
 ## 3. Charge Stagger
 
 **Behavior**
