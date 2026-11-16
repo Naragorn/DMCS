@@ -129,7 +129,7 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 
 **Config:** gain values per event, `meterMax`, `adrenalineWindowDuration`, `slowMoScale`, `slowMoDuration`, `knockbackForce`, toggles for each visual effect.
 
-### 4b. Adrenaline design (draft 2026-11-16, not built; open decisions below)
+### 4b. Adrenaline design (2026-11-16, not built; two points still open, see end)
 
 Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSON.
 
@@ -137,7 +137,7 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 
 **State machine** (pure logic in `DMCS.Core`, unit-tested over every flow): `Filling → Ready (window timer) → Critical → Filling`; an unused window empties the meter. `meterMax` default 100, `adrenalineWindowDuration` default 6 s, optional `meterDecay` per second (open decision, proposed default 0 = no decay).
 
-**Gains** (each its own slider; defaults are first guesses, untested):
+**Gains** (each its own slider; defaults confirmed by the user 2026-11-16, not tried in game yet):
 
 | Source | Detection (as read in the code) | Default |
 |---|---|---|
@@ -150,7 +150,10 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 | Dodge | no game event: an NPC melee attack on the player reaches `AttackStage.Attack` (`onCreatureAttacking`) and ends without a hit on the player and without a parry, while the player moved faster than a threshold (reuse `SpeedHistory`). An approximation; needs the headset | 10 |
 | Clash win | step 5; leave the hook | 25 |
 
-**Critical** (the next landed player hit during the window; melee, fist and kick; thrown and spells behind a switch, default off, as Charge Stagger):
+**Critical = Fatality** (the next landed player hit during the window; melee, fist and kick; thrown and spells behind a switch, default off, as Charge Stagger). As Dark Messiah's fatality (manual: a power strike with a full adrenaline bar slays the enemy; aimed at the head it beheads):
+- `criticalNeedsHardSwing` (default on): only a hit at least as fast as `criticalMinSwingSpeed` (default = Charge Stagger's `minSwingSpeed`) is critical; a lighter hit is a normal hit and keeps the window open. VR stand-in for the power strike.
+- `criticalKills` (default on): the critical kills the NPC (`Creature.Kill`), also when nothing could be cut off.
+- Battle cry (`battleCry`, default on): the player shouts on the critical, with the game's own player voice (the player creature has voice `HumanMale1` / female counterpart; dialog `attackmelee` = `Bas.AudioGroup.Voice.Male1.Attack`). The exact call to play a creature dialog is to be read in the code at build time. Dark Messiah's own sounds are not shipped (copyright, see below).
 - Dismember: `RagdollPart.TrySlice()` on the hit part. The game refuses it when dismemberment is off in its content settings and for the root part (torso); then the rest still happens.
 - Slow-mo: the game's `TimeManager.SetSlowMotion` (it also sets `fixedDeltaTime` and the slow-mo audio snapshot), then `SetSlowMotion(false, …)`. If a slow-mo is already running (`TimeManager.slowMotionState` not `Disabled`, e.g. the player's Focus), DMCS skips its own and never stops the other one. Always restore on feature off, level unload and player death.
 - Knockback: destabilize the ragdoll and push all parts along the hit (as the disarm fling).
@@ -161,11 +164,18 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 - Weapon glow: catalog particle `Bas.Particle.Spell.Hyperfocus.Hand` at the weapon hand (look needs the headset).
 - No meter display while filling (a wrist display would need a UI asset; later at most).
 
-**Deviations from the spec (open decisions, recommendation first):**
-1. Vignette: the game's vignette belongs to the health display and is overwritten on every hit and heal. Recommended: desaturation instead, via `CameraEffects.SetSepia(handler, value)` / `ClearSepia(handler)` (built for several users at once). Alternatives: own vignette mesh (needs an Unity SDK asset bundle; medium–large), or writing into the game's vignette (a hack the game undoes).
-2. Screen distortion: the game has no API for it. Recommended: a short `CameraEffects.DoTimedEffect(Flash)` plus a desaturation pulse on the critical. Alternatives: own distortion shader (asset bundle; large), or none.
-3. The gain defaults and "critical only for melee/fist/kick" above: to be confirmed by the user.
-4. Meter decay: proposed a slider, default 0.
+**Adrenaline vignette (decided 2026-11-16): Dark Messiah style, own drawing.**
+- Dark Messiah's effect (read in its own files, `materials/hud/fullscreen_adrenaline.vmt` in the VPKs): a fullscreen `UnlitGeneric` overlay, `$additive`, texture `hud/fullscreen_adrenaline2_` = 25 frames of 256×256 DXT1 played at 25 fps (1 s loop): red and orange streaks reaching in from the edges, black (= see-through) centre, the streaks sit elsewhere in every frame, which makes them flicker.
+- DMCS rebuilds it very close in look and technique, but with its own frames: DMCS generates the flipbook at startup (no Unity SDK asset), draws it additively on a head-locked mesh in front of the eyes (both eyes see it right), plays it while the window is open and flares it once on the critical. Colours, streak length, density and frame rate are Mod Menu sliders.
+- Never ship, trace or load Dark Messiah's files: copyrighted, and Nexus forbids it without the rights holder's permission (File Submission Guidelines; wiki "Porting content"); a free mod changes nothing.
+- Risk: an additive shader the game ships (else borrow one from a catalog particle effect). First step before 4c: a harness probe that only logs which shader is found.
+- The game's own vignette is not used: it belongs to the health display and `CameraEffects.RefreshHealth` overwrites it on every hit and heal.
+
+**Meter decay (decided 2026-11-16):** the meter drains over time by default. Delay before draining 0 s; rate proposed 2 per second (a full meter of 100 drains in 50 s) — the rate is not confirmed yet. Both are sliders.
+
+**Still open:**
+- Screen distortion from the spec: the game has no API for it, and a fullscreen warp is a known VR comfort problem. Proposed: drop it; the vignette's flare on the critical takes its place.
+- The decay rate (proposed 2/s).
 
 **Build order:** 4a meter, gains (hit, damage, parry, stagger, disarm), window, Mod Menu, debug log; 4b critical (dismember, slow-mo, knockback); 4c signals; 4d dodge and catch bonus (marked "not verified in game" until a headset check). Each: unit tests first, then a harness scenario (the harness can deal hits and damage and read `Time.timeScale` and `isSliced`; parry and dodge are hard to force there).
 
