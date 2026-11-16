@@ -15,8 +15,6 @@ namespace DMCS.Core
         DisarmPart,
 
         NotStaggered,
-        NotFemale,
-        NotSmaller,
         NothingToDrop,
         ChanceFailed,
     }
@@ -27,14 +25,8 @@ namespace DMCS.Core
         public BodyHit(
             bool enabled, bool modeOn, HitSource source, bool targetIsPlayer, bool targetKilled, HitPart part,
             bool includeForearm, bool staggered, bool holdsDroppable, int earlierHits, float roll, float baseChance,
-            float perExtraHit, bool femaleOnly = false, bool isFemale = false, bool smallerOnly = false, bool isSmaller = false,
-            bool surrendered = false)
+            float perExtraHit)
         {
-            FemaleOnly = femaleOnly;
-            IsFemale = isFemale;
-            SmallerOnly = smallerOnly;
-            IsSmaller = isSmaller;
-            Surrendered = surrendered;
             Enabled = enabled;
             ModeOn = modeOn;
             Source = source;
@@ -74,16 +66,6 @@ namespace DMCS.Core
         public float Roll { get; }
         public float BaseChance { get; }
         public float PerExtraHit { get; }
-
-        public bool FemaleOnly { get; }
-        public bool IsFemale { get; }
-        public bool SmallerOnly { get; }
-
-        /// <summary>Shorter than the player by at least the set margin (<see cref="SizeFilter"/>).</summary>
-        public bool IsSmaller { get; }
-
-        /// <summary>Surrendered (threatened through the Threat mod) with "Surrender Always Drops" on: counts as staggered, chance 100 %.</summary>
-        public bool Surrendered { get; }
     }
 
     public readonly struct BodyHitResult
@@ -128,24 +110,31 @@ namespace DMCS.Core
             {
                 return Refuse(BodyHitDecision.DisarmPart);
             }
-            if (!h.Staggered && !h.Surrendered)
+            if (!h.Staggered)
             {
                 return Refuse(BodyHitDecision.NotStaggered);
-            }
-            if (h.FemaleOnly && !h.IsFemale)
-            {
-                return Refuse(BodyHitDecision.NotFemale);
-            }
-            if (h.SmallerOnly && !h.IsSmaller)
-            {
-                return Refuse(BodyHitDecision.NotSmaller);
             }
             if (!h.HoldsDroppable)
             {
                 return Refuse(BodyHitDecision.NothingToDrop);
             }
-            var chance = h.Surrendered ? 1f : Chance(h.BaseChance, h.PerExtraHit, h.EarlierHits);
+            var chance = Chance(h.BaseChance, h.PerExtraHit, h.EarlierHits);
             return new BodyHitResult(h.Roll < chance ? BodyHitDecision.Drop : BodyHitDecision.ChanceFailed, chance);
+        }
+
+        /// <summary>The first-hit chance for this NPC: the highest of the base chance and the chances of the types it belongs to.</summary>
+        public static float NpcChance(float baseChance, bool isFemale, float femaleChance, bool isSmaller, float smallerChance)
+        {
+            var chance = baseChance;
+            if (isFemale)
+            {
+                chance = Math.Max(chance, femaleChance);
+            }
+            if (isSmaller)
+            {
+                chance = Math.Max(chance, smallerChance);
+            }
+            return chance;
         }
 
         /// <summary>Base chance plus the bonus for each earlier hit, at most certain.</summary>

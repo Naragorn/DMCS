@@ -195,72 +195,38 @@ public class BodyHitDropSettingsTests
     }
 }
 
-public class BodyHitFilterTests
+public class BodyHitNpcChanceTests
 {
-    private static BodyHit Hit(
-        bool staggered = true,
-        bool femaleOnly = false,
-        bool isFemale = false,
-        bool smallerOnly = false,
-        bool isSmaller = false,
-        bool surrendered = false,
-        float roll = 0.99f,
-        bool holdsDroppable = true) =>
-        new BodyHit(true, true, HitSource.HeldWeapon, false, false, HitPart.Other, false, staggered, holdsDroppable, 0, roll, 0.25f, 0.25f,
-            femaleOnly, isFemale, smallerOnly, isSmaller, surrendered);
-
     [Theory]
-    [InlineData(false, false, BodyHitDecision.ChanceFailed)]
-    [InlineData(true, false, BodyHitDecision.NotFemale)]
-    [InlineData(true, true, BodyHitDecision.ChanceFailed)]
-    public void FemaleOnly_SkipsOtherNpcs(bool femaleOnly, bool isFemale, BodyHitDecision expected)
+    [InlineData(false, false, 0.25f)]
+    [InlineData(true, false, 0.5f)]
+    [InlineData(false, true, 0.75f)]
+    [InlineData(true, true, 0.75f)]
+    public void EachNpcType_HasItsOwnChance_AndTheHighestApplies(bool isFemale, bool isSmaller, float expected)
     {
-        Assert.Equal(expected, BodyHitDropRule.Decide(Hit(femaleOnly: femaleOnly, isFemale: isFemale)).Decision);
-    }
-
-    [Theory]
-    [InlineData(false, false, BodyHitDecision.ChanceFailed)]
-    [InlineData(true, false, BodyHitDecision.NotSmaller)]
-    [InlineData(true, true, BodyHitDecision.ChanceFailed)]
-    public void SmallerOnly_SkipsNpcsAsTallAsThePlayer(bool smallerOnly, bool isSmaller, BodyHitDecision expected)
-    {
-        Assert.Equal(expected, BodyHitDropRule.Decide(Hit(smallerOnly: smallerOnly, isSmaller: isSmaller)).Decision);
+        Assert.Equal(expected, BodyHitDropRule.NpcChance(0.25f, isFemale, 0.5f, isSmaller, 0.75f));
     }
 
     [Fact]
-    public void BothFilters_MustPass()
+    public void ALowerTypeChance_DoesNotLowerTheBaseChance()
     {
-        Assert.Equal(BodyHitDecision.NotSmaller, BodyHitDropRule.Decide(Hit(femaleOnly: true, isFemale: true, smallerOnly: true)).Decision);
-        Assert.Equal(BodyHitDecision.NotFemale, BodyHitDropRule.Decide(Hit(femaleOnly: true, smallerOnly: true, isSmaller: true)).Decision);
+        Assert.Equal(0.25f, BodyHitDropRule.NpcChance(0.25f, true, 0f, true, 0.1f));
     }
 
     [Fact]
-    public void ASurrenderedNpc_DropsForCertain_WithoutStagger()
+    public void BaseZero_WithAFemaleChance_WorksOnlyOnFemaleNpcs()
     {
-        var r = BodyHitDropRule.Decide(Hit(staggered: false, surrendered: true, roll: 0.99f));
-
-        Assert.Equal(BodyHitDecision.Drop, r.Decision);
-        Assert.Equal(1f, r.Chance);
+        Assert.Equal(0f, BodyHitDropRule.NpcChance(0f, false, 0.25f, false, 0f));
+        Assert.Equal(0.25f, BodyHitDropRule.NpcChance(0f, true, 0.25f, false, 0f));
     }
 
     [Fact]
-    public void Filters_StillApply_ToASurrenderedNpc()
+    public void TheExtraHitBonus_AddsToTheNpcsChance()
     {
-        Assert.Equal(BodyHitDecision.NotFemale, BodyHitDropRule.Decide(Hit(surrendered: true, femaleOnly: true)).Decision);
-    }
+        var hit = new BodyHit(true, true, HitSource.HeldWeapon, false, false, HitPart.Other, false, true, true, 1, 0.99f,
+            BodyHitDropRule.NpcChance(0.25f, true, 0.5f, false, 0.25f), 0.25f);
 
-    [Fact]
-    public void NotStaggered_ComesBeforeTheFilters_SoUnstaggeredHitsStayQuiet()
-    {
-        Assert.Equal(BodyHitDecision.NotStaggered, BodyHitDropRule.Decide(Hit(staggered: false, femaleOnly: true)).Decision);
-    }
-
-    [Theory]
-    [InlineData(BodyHitDecision.NotFemale)]
-    [InlineData(BodyHitDecision.NotSmaller)]
-    public void FilterRefusals_AreLogged(BodyHitDecision decision)
-    {
-        Assert.False(BodyHitDropRule.IsQuiet(decision));
+        Assert.Equal(0.75f, BodyHitDropRule.Decide(hit).Chance, 5);
     }
 }
 
@@ -288,29 +254,11 @@ public class SizeFilterTests
     }
 
     [Fact]
-    public void Defaults_MatchTheRequest()
+    public void TypeChances_DefaultToTheBaseChance_SoTheyChangeNothingUntilSet()
     {
-        Assert.False(DisarmStrikeSettings.DefaultFemaleOnly);
-        Assert.False(DisarmStrikeSettings.DefaultSmallerOnly);
-        Assert.True(DisarmStrikeSettings.DefaultSurrenderAlwaysDrops);
-    }
-}
-
-public class DisarmSurrenderTests
-{
-    private static DisarmHit Hit(bool staggered, bool surrendered, float roll, float chance) =>
-        new DisarmHit(true, true, HitSource.HeldWeapon, false, false, HitPart.RightHand, false, true, staggered, true, roll, chance, surrendered);
-
-    [Fact]
-    public void ASurrenderedNpcsHand_Disarms_WithoutStagger_AndForCertain()
-    {
-        Assert.Equal(DisarmDecision.Disarm, DisarmRule.Decide(Hit(false, true, 0.99f, 0f)));
-    }
-
-    [Fact]
-    public void WithoutSurrender_TheRulesStay()
-    {
-        Assert.Equal(DisarmDecision.NotStaggered, DisarmRule.Decide(Hit(false, false, 0f, 1f)));
-        Assert.Equal(DisarmDecision.ChanceFailed, DisarmRule.Decide(Hit(true, false, 0.99f, 0.5f)));
+        Assert.Equal(DisarmStrikeSettings.DefaultBodyHitDropChance, DisarmStrikeSettings.DefaultFemaleChance);
+        Assert.Equal(DisarmStrikeSettings.DefaultBodyHitDropChance, DisarmStrikeSettings.DefaultSmallerChance);
+        Assert.Contains(DisarmStrikeSettings.DefaultFemaleChance, DisarmStrikeSettings.ChanceValues());
+        Assert.Contains(DisarmStrikeSettings.DefaultSmallerChance, DisarmStrikeSettings.ChanceValues());
     }
 }

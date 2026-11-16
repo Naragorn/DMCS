@@ -175,10 +175,9 @@ public class ModOptionMetadataTests
                 (DisarmStrikeSettings.LoosenedHapticsName, "System.Boolean", "ArrowList"),
                 (DisarmStrikeSettings.ShieldsName, "System.Boolean", "ArrowList"),
                 (DisarmStrikeSettings.FlingForceName, "System.Single", "Slider"),
-                (DisarmStrikeSettings.FemaleOnlyName, "System.Boolean", "ArrowList"),
-                (DisarmStrikeSettings.SmallerOnlyName, "System.Boolean", "ArrowList"),
+                (DisarmStrikeSettings.FemaleChanceName, "System.Int32", "Slider"),
+                (DisarmStrikeSettings.SmallerChanceName, "System.Int32", "Slider"),
                 (DisarmStrikeSettings.SmallerMarginName, "System.Single", "Slider"),
-                (DisarmStrikeSettings.SurrenderAlwaysDropsName, "System.Boolean", "ArrowList"),
             },
             group.Select(o => (o.Name, o.DataType, o.InteractionType)));
         Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));

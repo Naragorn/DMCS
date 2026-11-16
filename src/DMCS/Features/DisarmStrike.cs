@@ -172,24 +172,28 @@ namespace DMCS
         public static float FlingForce { get; set; } = DisarmStrikeSettings.FlingForce.Default;
 
         [ModOption(
-            name = DisarmStrikeSettings.FemaleOnlyName,
-            tooltip = "Body Hit Drop works only on female enemies.",
+            name = DisarmStrikeSettings.FemaleChanceName,
+            tooltip = "First body hit drop chance (%) for female enemies. The highest chance that fits the enemy applies.",
+            valueSourceName = nameof(ChanceOptionValues),
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
             order = 15)]
-        public static bool FemaleOnly { get; set; } = DisarmStrikeSettings.DefaultFemaleOnly;
+        [ModOptionSlider]
+        public static int FemaleChance { get; set; } = DisarmStrikeSettings.DefaultFemaleChance;
 
         [ModOption(
-            name = DisarmStrikeSettings.SmallerOnlyName,
-            tooltip = "Body Hit Drop works only on enemies shorter than you (by at least the margin below).",
+            name = DisarmStrikeSettings.SmallerChanceName,
+            tooltip = "First body hit drop chance (%) for enemies shorter than you (by at least the margin below). The highest chance that fits the enemy applies.",
+            valueSourceName = nameof(ChanceOptionValues),
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
             order = 16)]
-        public static bool SmallerOnly { get; set; } = DisarmStrikeSettings.DefaultSmallerOnly;
+        [ModOptionSlider]
+        public static int SmallerChance { get; set; } = DisarmStrikeSettings.DefaultSmallerChance;
 
         [ModOption(
             name = DisarmStrikeSettings.SmallerMarginName,
-            tooltip = "How much shorter than you (cm) an enemy must be to count as smaller. 0: any shorter.",
+            tooltip = "How much shorter than you (cm) an enemy must be for the smaller chance. 0: any shorter.",
             valueSourceName = nameof(SmallerMarginValues),
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
@@ -197,13 +201,6 @@ namespace DMCS
         [ModOptionSlider]
         public static float SmallerMargin { get; set; } = DisarmStrikeSettings.SmallerMargin.Default;
 
-        [ModOption(
-            name = DisarmStrikeSettings.SurrenderAlwaysDropsName,
-            tooltip = "With the Threat mod: an enemy held at weapon point counts as staggered and drops their weapon on any hit (100 %).",
-            category = DmcsCategories.DisarmStrike,
-            categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 18)]
-        public static bool SurrenderAlwaysDrops { get; set; } = DisarmStrikeSettings.DefaultSurrenderAlwaysDrops;
 
         public static ModOptionInt[] ChanceOptionValues() =>
             DisarmStrikeSettings.ChanceValues().Select(v => new ModOptionInt(v.ToString(CultureInfo.InvariantCulture) + " %", v)).ToArray();
@@ -353,8 +350,7 @@ namespace DMCS
                 staggered,
                 holds,
                 (float)Dice.NextDouble(),
-                Chance / 100f,
-                Surrendered(target)));
+                Chance / 100f));
             if (DisarmRule.IsQuiet(decision))
             {
                 return;
@@ -416,13 +412,13 @@ namespace DMCS
                 droppable,
                 earlier,
                 (float)Dice.NextDouble(),
-                BodyHitDropChance / 100f,
-                DropChancePerExtraHit / 100f,
-                FemaleOnly,
-                target.data != null && target.data.gender == CreatureData.Gender.Female,
-                SmallerOnly,
-                IsSmaller(target),
-                Surrendered(target)));
+                BodyHitDropRule.NpcChance(
+                    BodyHitDropChance / 100f,
+                    target.data != null && target.data.gender == CreatureData.Gender.Female,
+                    FemaleChance / 100f,
+                    IsSmaller(target),
+                    SmallerChance / 100f),
+                DropChancePerExtraHit / 100f));
             if (BodyHitDropRule.IsQuiet(result.Decision))
             {
                 return;
@@ -503,11 +499,6 @@ namespace DMCS
                 return holding ?? (handler.item.lastHandler != null && handler.item.lastHandler.creature == player ? handler.item.lastHandler : null);
             }
             return handler.ragdollPart is RagdollHand punching && punching.creature == player ? punching : null;
-        }
-
-        private static bool Surrendered(Creature target)
-        {
-            return SurrenderAlwaysDrops && ThreatSupport.IsSurrendered(target);
         }
 
         /// <summary>Creature.GetHeight = morphology.height * lossyScale.y, for the NPC and the player's body alike.</summary>

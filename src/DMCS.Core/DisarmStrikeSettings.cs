@@ -35,14 +35,14 @@ namespace DMCS.Core
         public const bool DefaultLoosenedHaptics = true;
         public const bool DefaultShieldsCanBeDisarmed = false;
 
-        public const string FemaleOnlyName = "Body Hit Drop Only Female";
-        public const string SmallerOnlyName = "Body Hit Drop Only Smaller";
+        public const string FemaleChanceName = "Body Hit Drop Chance Female";
+        public const string SmallerChanceName = "Body Hit Drop Chance Smaller";
         public const string SmallerMarginName = "Smaller By";
-        public const string SurrenderAlwaysDropsName = "Surrender Always Drops";
 
-        public const bool DefaultFemaleOnly = false;
-        public const bool DefaultSmallerOnly = false;
-        public const bool DefaultSurrenderAlwaysDrops = true;
+        /// <summary>Same as the base chance, so the type chances change nothing until set.</summary>
+        public const int DefaultFemaleChance = DefaultBodyHitDropChance;
+
+        public const int DefaultSmallerChance = DefaultBodyHitDropChance;
 
         /// <summary>How much shorter than the player (cm) an NPC must be to count as smaller; 0 = any shorter.</summary>
         public static readonly SliderSpec SmallerMargin = new SliderSpec(SmallerMarginName, 0f, 50f, 5f, 0f);

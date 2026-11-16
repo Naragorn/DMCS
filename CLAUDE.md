@@ -72,8 +72,8 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 - A knocked-out weapon flies off in the hit's direction (`disarmFlingForce`, m/s, 0 = just drops). Applies to hand hits and body hits.
 - Shields stay in the hand (`shieldsCanBeDisarmed`, default off), as the game's own hand-hit disarm keeps them.
 - After every disarm path: the same no-regrab lock as Disarm Strike.
-- Filters for Body Hit Drop (both default off, built): `femaleOnly` (`CreatureData.gender == Female`) and `smallerOnly` (NPC shorter than the player by at least `smallerMargin` cm, default 0; `Creature.GetHeight`).
-- **Threat mod link** (built, `surrenderAlwaysDrops`, default on): an NPC the Threat mod (HuJohner, Nexus 6830) holds at weapon point counts as staggered, and hand hits and body hits on it disarm at 100 %. Read by reflection from `Threat.ThreatBehaviour.threatenedCreatures`, no hard dependency.
+- Chances per NPC type for Body Hit Drop (built): `femaleChance` (`CreatureData.gender == Female`) and `smallerChance` (NPC shorter than the player by at least `smallerMargin` cm, default 0; `Creature.GetHeight`), both default 25 % = the base chance. The first-hit chance is the highest of base and the fitting type chances; the extra-hit bonus adds to it. Base 0 % + female 25 % = only female NPCs.
+- Dropped: a Threat mod (HuJohner, Nexus 6830) surrender link, as it cannot be tested yet (2026-11-16).
 - The existing hand-hit rule stays: a hit on a staggered NPC's hand disarms (`disarmChance`, default 100 %); forearm only with `includeForearm` (default off).
 - Dropped design: "grab the handle to take the weapon while staggered". The base game already hands a weapon with a short handle (dagger, short sword) to whoever grabs it, staggered or not (`Handle.OnGrab` releases all other holders when `axisLength == 0`; seen in a BasHarness run 2026-11-16). A chance on top would need DMCS to block the game's own grab.
 
@@ -82,7 +82,7 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 - Maybe `Gamey` / `Realistic` / `Custom` presets for the disarm values (as Charge Stagger has); Realistic values need the headset.
 - Adrenaline gain per disarm path and a catch bonus (catching a disarmed weapon in the air before it lands); with step 4.
 
-**Config:** `bodyHitDrop`, `bodyHitDropChance`, `dropChancePerExtraHit`, `femaleOnly`, `smallerOnly`, `smallerMargin`, `surrenderAlwaysDrops`, `loosenedGripSpark`, `loosenedGripHaptics`, `shieldsCanBeDisarmed`, `disarmFlingForce`; later `twistEnabled`, `twistChance`, `twistMinRollSpeed`, Adrenaline gains for disarm and catch.
+**Config:** `bodyHitDrop`, `bodyHitDropChance`, `dropChancePerExtraHit`, `femaleChance`, `smallerChance`, `smallerMargin`, `loosenedGripSpark`, `loosenedGripHaptics`, `shieldsCanBeDisarmed`, `disarmFlingForce`; later `twistEnabled`, `twistChance`, `twistMinRollSpeed`, Adrenaline gains for disarm and catch.
 
 ## 3. Charge Stagger
 

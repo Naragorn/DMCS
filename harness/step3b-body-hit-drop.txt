@@ -11,10 +11,9 @@ option-exists DMCS "Loosened Grip Spark" category="Disarm Strike" type=Boolean s
 option-exists DMCS "Loosened Grip Haptics" category="Disarm Strike" type=Boolean save=true
 option-exists DMCS "Shields Can Be Disarmed" category="Disarm Strike" type=Boolean save=true
 option-exists DMCS "Disarm Fling Force" category="Disarm Strike" type=Single interaction=Slider save=true
-option-exists DMCS "Body Hit Drop Only Female" category="Disarm Strike" type=Boolean save=true
-option-exists DMCS "Body Hit Drop Only Smaller" category="Disarm Strike" type=Boolean save=true
+option-exists DMCS "Body Hit Drop Chance Female" category="Disarm Strike" type=Int32 interaction=Slider save=true
+option-exists DMCS "Body Hit Drop Chance Smaller" category="Disarm Strike" type=Int32 interaction=Slider save=true
 option-exists DMCS "Smaller By" category="Disarm Strike" type=Single interaction=Slider save=true
-option-exists DMCS "Surrender Always Drops" category="Disarm Strike" type=Boolean save=true
 expect-option DMCS "Body Hit Drop" true
 expect-option DMCS "Body Hit Drop Chance" 25
 expect-option DMCS "Drop Chance Per Extra Hit" 25
@@ -22,10 +21,9 @@ expect-option DMCS "Loosened Grip Spark" true
 expect-option DMCS "Loosened Grip Haptics" true
 expect-option DMCS "Shields Can Be Disarmed" false
 expect-option DMCS "Disarm Fling Force" 3
-expect-option DMCS "Body Hit Drop Only Female" false
-expect-option DMCS "Body Hit Drop Only Smaller" false
+expect-option DMCS "Body Hit Drop Chance Female" 25
+expect-option DMCS "Body Hit Drop Chance Smaller" 25
 expect-option DMCS "Smaller By" 0
-expect-option DMCS "Surrender Always Drops" true
 set-option DMCS "Debug Logging" true
 set-option DMCS "Disarm No Regrab Time" 4
 
@@ -101,33 +99,32 @@ expect-npc holding true within=0.5
 expect-no-log body hit
 set-option DMCS "Body Hit Drop" true
 
-# 6. Only female: the male NPC keeps its dagger
-set-option DMCS "Body Hit Drop Only Female" true
+# 6. Female chance 100 %, base 0 %: the male NPC keeps its dagger (chance 0 % logged)
+set-option DMCS "Body Hit Drop Chance" 0
+set-option DMCS "Drop Chance Per Extra Hit" 0
+set-option DMCS "Body Hit Drop Chance Female" 100
 wait 3
 hit-npc Torso push=1
 expect-npc staggered true
 mark
 hit-npc Torso
-expect-log NotFemale
+expect-log ChanceFailed at 0 %
 expect-npc holding true within=0
-set-option DMCS "Body Hit Drop Only Female" false
 
-# 7. Only smaller, by at least 50 cm: an adult NPC is not (the real height check is unit-tested)
-set-option DMCS "Body Hit Drop Only Smaller" true
+# 7. Smaller chance 100 % with "Smaller By" 50 cm: an adult NPC is not smaller (the height check is unit-tested)
+set-option DMCS "Body Hit Drop Chance Smaller" 100
 set-option DMCS "Smaller By" 50
 wait 3
 hit-npc Torso push=1
 expect-npc staggered true
 mark
 hit-npc Torso
-expect-log NotSmaller
+expect-log ChanceFailed at 0 %
 expect-npc holding true within=0
-set-option DMCS "Body Hit Drop Only Smaller" false
+set-option DMCS "Body Hit Drop Chance Smaller" 25
+set-option DMCS "Body Hit Drop Chance" 100
 
-# 8. Without the Threat mod nothing counts as surrendered (logged once, on the first hit that asks)
-expect-no-log Threat mod found
-
-# 9. Disarm Strike off: nothing drops either
+# 8. Disarm Strike off: nothing drops either
 set-option DMCS "Disarm Strike Enabled" false
 wait 3
 hit-npc Torso push=1
@@ -138,8 +135,8 @@ expect-npc holding true within=0.5
 expect-no-log body hit
 set-option DMCS "Disarm Strike Enabled" true
 
-# 10. Only female, on a female NPC: it drops
-set-option DMCS "Body Hit Drop Only Female" true
+# 9. Female chance 100 %, base 0 %, on a female NPC: it drops
+set-option DMCS "Body Hit Drop Chance" 0
 spawn-npc HumanFemale distance=4 angle=-90 brain=HumanDummy
 npc-grab DaggerCommon hand=right
 hit-npc Torso push=1
