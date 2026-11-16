@@ -129,7 +129,7 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 
 **Config:** gain values per event, `meterMax`, `adrenalineWindowDuration`, `slowMoScale`, `slowMoDuration`, `knockbackForce`, toggles for each visual effect.
 
-### 4b. Adrenaline design (2026-11-16, decided, not built)
+### 4b. Adrenaline design (2026-11-16; 4a–4c built, see README)
 
 Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSON.
 
@@ -151,7 +151,7 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 | Clash win | step 5; leave the hook | 25 |
 
 **Critical = Fatality** (the next landed player hit during the window; melee, fist and kick; thrown and spells behind a switch, default off, as Charge Stagger). As Dark Messiah's fatality (manual: a power strike with a full adrenaline bar slays the enemy; aimed at the head it beheads):
-- `criticalNeedsHardSwing` (default on): only a hit at least as fast as `criticalMinSwingSpeed` (default = Charge Stagger's `minSwingSpeed`) is critical; lighter hits count towards the kneel (see "Kneel and execution"). VR stand-in for the power strike.
+- `criticalNeedsHardSwing` (default on): only a hit at least as fast as `criticalMinSwingSpeed` (default 3 m/s, user 2026-11-16) is critical; lighter hits count towards the kneel (see "Kneel and execution"). VR stand-in for the power strike.
 - `criticalKills` (default on): the critical kills the NPC (`Creature.Kill`), also when nothing could be cut off.
 - Battle cry (`battleCry`, default on): the player shouts on the critical, with the game's own player voice (the player creature has voice `HumanMale1` / female counterpart; dialog `attackmelee` = `Bas.AudioGroup.Voice.Male1.Attack`). The exact call to play a creature dialog is to be read in the code at build time. Dark Messiah's own sounds are not shipped (copyright, see below).
 - Dismember: `RagdollPart.TrySlice()` on the hit part. The game refuses it when dismemberment is off in its content settings and for the root part (torso); then the rest still happens.
@@ -180,22 +180,22 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 - `Slow Time`: as the game's plain slow time on the B button (`Spell_SlowTime`: scale 0.5); the player slows too.
 - Both through `TimeManager.SetSlowMotion`; duration in real time (proposed 3 s).
 
-**Chest-stab fatality (decided 2026-11-16):** a critical that stabs the torso (`damageStruct.penetration != None`, hit part Torso) always makes the NPC sink to its knees and die; it then falls over, or the player kicks it away with the game's normal kick.
-- The game already has kneeling deaths: `BrainModuleDeath` plays a dying animation when a penetrating hit kills a standing, slow NPC (`stabAnimationId` = `HumanStabDeaths`, which holds `Death_KneelBackward`, `Death_KneelMid`, `Death_KneelForward`, `…2`, `…3` among non-kneeling ones; picked by hit direction; a stab from the front is "Backward": only 2 of 6 clips kneel). The velocity gate is off in the HumanMedium/HumanHard brains (`useDamagerDyingAnimMaxVelocity: false`), so a hard swing still gets it.
-- DMCS guarantees the kneel by setting that NPC's `BrainModuleDeath.stabAnimationData` (a public field) to a copy holding only the kneeling clips just before it kills it with `Creature.Kill(collisionInstance)` of the stab, then restores it. Not tried yet; a harness scenario logs the clip played.
-- Kick away: no DMCS code; the game ends the dying animation when a hit faster than the damager's `dyingAnimationMaxVelocity` lands (kick: 8 m/s; `BrainModuleDeath.OnDamage` → `StopDying` → inert ragdoll).
-- No knockback and no dismember on this fatality (they would cut the kneel short).
+**Chest-stab fatality (decided 2026-11-16, flow corrected by the user the same day):** a critical stab into the torso: the NPC sinks to its knees with the blade in it and dies; there is no slow-motion yet. Within `executionWindow` the player finishes it:
+- a kick (a player body hit with a foot or leg): slow-motion starts and the NPC flies away (`criticalKnockback`);
+- a cut to the neck or head (Slash): the head comes off (`RagdollPart.SafeSlice` on the head), slow-motion starts and the head flies away. The game's cut runs in a coroutine (`Ragdoll.SliceCoroutine` sets `isSliced` later), so the push on the head waits for it.
+- Nothing in time: the dying animation ends and the body falls.
+- Kneeling death: `BrainModuleDeath` picks its dying clip inside `Creature.Kill` (`TryPlayAnimation` → `DyingCoroutine` → `AnimationData.Pick` before its first yield); DMCS sets that NPC's `stabAnimationData` and `defaultAnimationData` to a kneeling-only copy of `HumanStabDeaths` (`Death_KneelBackward`/`KneelMid` from the front, `Death_KneelForward…` from behind, `KneelMid` from the side) for the kill and restores them right after. Harness 2026-11-16: `Death_KneelBackward`/`Death_KneelMid` played.
 
 **Kneel and execution (decided 2026-11-16)** — what happens in the adrenaline window besides a hard hit:
 1. The meter is full, the adrenaline window opens.
 2. A hard hit (`criticalNeedsHardSwing`) is the critical as above.
 3. The NPC goes down on its knees, alive, when either
-   - no player hit lands for `kneelAfterNoHit` seconds (proposed 2 s; must be shorter than the window), or
-   - the player lands only short, light hits (below the hard-swing speed): after `kneelAfterLightHits` of them (proposed 2).
+   - no hard player hit lands for `kneelAfterNoHit` seconds (2 s, confirmed; must be shorter than the window), or
+   - the player lands only short, light hits (below the hard-swing speed): after `kneelAfterLightHits` of them (2, confirmed).
    Which NPC: the one the player hit last; if none yet in this fight, the nearest enemy attacking the player.
-4. The kneeling replaces the adrenaline window with an execution window (`executionWindow`, proposed 5 s). Any player hit on the kneeling NPC is the execution: it counts as the critical (time mode, battle cry, kill); a stab plays the kneeling death, anything else ragdolls it.
+4. The kneeling replaces the adrenaline window with an execution window (`executionWindow`, 5 s, confirmed; shared with the chest-stab finish). Any player hit on the kneeling NPC is the execution: it counts as the critical (time mode, battle cry, kill); a stab plays the kneeling death, anything else ragdolls it.
 5. No execution in time: the NPC stands up again and fights on, or with `kneelDeathChance` (default 0 %) it dies and falls over. The meter is empty either way.
-- Kneeling alive needs an animation the game has no fight version of; candidate: catalog `HumanIdleExamineKneel`. The brain is held as in Disarm Strike (`HumanDummy`). A harness probe decides; until then this part is "not verified".
+- Kneeling alive: the catalog animation `HumanIdleExamineKneel` (KneelingStart / ExamineKneel loop / KneelingEnd), held the way the game's `BrainModuleFear.Panic` holds a cowering NPC (`brain.isIncapacitated`, behaviour tree reset and `updateTree = false`, stance Idle, `StopAnimation(true)`, `PlayAnimation`); released as `StopPanic` does. A first try with a brain swap to `HumanDummy` left the NPC standing (harness screenshot 2026-11-16).
 
 **Build order:** 4a meter, gains (hit, damage, parry, stagger, disarm), decay, window, Mod Menu, debug log; 4b critical (time mode, kill, dismember, knockback, battle cry, chest-stab fatality); 4c kneel and execution; 4d signals and the vignette (shader probe first); 4e dodge and catch bonus (marked "not verified in game" until a headset check). Each: unit tests first, then a harness scenario (the harness can deal hits and damage and read `Time.timeScale` and `isSliced`; parry and dodge are hard to force there).
 

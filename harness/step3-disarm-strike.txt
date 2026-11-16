@@ -19,6 +19,8 @@ expect-option DMCS "Disarm No Regrab Time" 10
 expect-option DMCS "Disarm Stays Permanent" false
 expect-option DMCS "Disarmed Stand Still" true
 set-option DMCS "Debug Logging" true
+# Adrenaline (step 4) would fill its meter from these hits and kill the NPC with a critical; tested in step4*.
+set-option DMCS "Adrenaline Enabled" false
 set-option DMCS "Disarm No Regrab Time" 4
 # This scenario checks the hand rule; body hits (Body Hit Drop, random) are covered by step3b.
 set-option DMCS "Body Hit Drop" false

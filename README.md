@@ -17,7 +17,7 @@ Every feature can be toggled and tuned in the in-game Mod Menu. Full spec: `CLAU
 | 2. Charge Stagger | **Done. Unit tests + in-game harness PASS (2026-11-16).** Feel in the headset (real sprint + real swing) not checked. |
 | 3. Disarm Strike | **Built, unit tests PASS, in-game harness PASS (2026-11-16).** Not checked in the headset yet. |
 | 3b. Body Hit Drop, chances per NPC type, shields, fling | **Built, unit tests + in-game harness PASS (2026-11-16, chance-per-type version).** Not checked in the headset; Twist Disarm not built (with step 5). |
-| 4. Adrenaline | **4a (meter, gains, decay, window) and 4b (critical / fatality) built, unit tests + in-game harness PASS (2026-11-16).** Block/parry and damage taken are unit-tested only (the harness cannot force them yet). Not checked in the headset. 4c–4e (kneel/execution, signals/vignette, dodge/catch) not built; design in `CLAUDE.md` 4b. |
+| 4. Adrenaline | **4a (meter), 4b (critical / fatality, chest-stab finish) and 4c (kneel and execution) built, unit tests + in-game harness PASS (2026-11-16).** Block/parry and damage taken are unit-tested only. Not checked in the headset. 4d–4e (signals/vignette, dodge/catch) not built; design in `CLAUDE.md` 4b. |
 | 5. Clash of Might | not started |
 
 ## Versions (checked 2026-11-16)
@@ -95,13 +95,18 @@ Game path defaults to `~/.local/share/Steam/steamapps/common/Blade & Sorcery`; o
 | Adrenaline | Critical Slow Time Scale | slider | 0.25–0.75, step 0.25 | 0.5 |
 | Adrenaline | Critical Slow Time Duration | slider | 0.5–10 s, step 0.5 | 3 s |
 | Adrenaline | Critical Needs Hard Swing | toggle | | on |
-| Adrenaline | Critical Min Swing Speed | slider | 0–10 m/s, step 0.25 | 1 m/s |
+| Adrenaline | Critical Min Swing Speed | slider | 0–10 m/s, step 0.25 | 3 m/s |
 | Adrenaline | Critical Thrown And Spells | toggle | | off |
 | Adrenaline | Critical Kills | toggle | | on |
 | Adrenaline | Critical Dismember | toggle | | on |
 | Adrenaline | Critical Knockback | slider | 0–20 m/s, step 1 | 8 m/s |
 | Adrenaline | Critical Battle Cry | toggle | | on |
 | Adrenaline | Chest Stab Kneels | toggle | | on |
+| Adrenaline | Execution Window | slider | 1–15 s, step 1 | 5 s |
+| Adrenaline | Kneel And Execution | toggle | | on |
+| Adrenaline | Kneel After No Hit | slider | 0.5–5 s, step 0.5 | 2 s |
+| Adrenaline | Kneel After Light Hits | slider | 1–10 | 2 |
+| Adrenaline | Kneel Death Chance | slider | 0–100 %, step 5 | 0 % |
 
 Feature settings are added to their group as each feature is built (spec build order). Clash of Might has no gameplay effect yet. Adrenaline fills its meter, opens the window and does the critical (4b); kneel/execution and the signals are not built yet.
 
@@ -201,11 +206,33 @@ Not yet verified in game: that `HumanDummy` never picks anything up, and how the
   another slow-motion runs; ended only if it is still ours (or forced on feature off / level unload).
 - Otherwise: `RagdollPart.SafeSlice()` on the hit part, `Creature.Kill(hit)`, then `BrainModuleDeath.StopDying()` and a
   velocity change on every part along the hit.
-- Chest stab (torso + penetration or Pierce): that NPC's `BrainModuleDeath.stabAnimationData`/`defaultAnimationData` are
+- Chest stab (torso + penetration or Pierce): no slow-motion yet; the NPC kneels with the blade in it and dies. Within
+  *Execution Window* a kick (player body hit by a foot or leg) starts the slow-motion and throws it; a slash on the neck or
+  head cuts the head off (`SafeSlice`; the cut runs in the game's `SliceCoroutine`, so the head's push waits until
+  `isSliced`), starts the slow-motion and throws the head. The kneeling death: that NPC's `BrainModuleDeath.stabAnimationData`/`defaultAnimationData` are
   set to a kneeling-only copy of `HumanStabDeaths` for the kill (the game picks the clip inside `Kill`), then restored.
 - Harness `step4b-adrenaline-critical` (2026-11-16): light hit → `TooLight`, thrown → `Ranged`; arm hit → battle cry
   `Success (male_1_attack_11)`, Hyperfocus 0.1× for 3 s, `cut off LeftArm`, killed, thrown, time back after 3 s; chest stab
-  → `kneels (Bas.Animation.Death_KneelBackward)`; Slow Time 0.5× without player buffs. Look and feel: headset only.
+  → `kneels (Bas.Animation.Death_KneelBackward)`, then a kick (`hit-npc by=foot dead=true`) → `kicked … away` with
+  slow-motion, and on a second NPC a neck slash → `beheaded`, `the head flies`; Slow Time 0.5× without player buffs.
+  Look and feel: headset only.
+
+### Kneel and execution (step 4c)
+
+- With the window open, the NPC hit last (else the nearest NPC targeting the player) goes down on its knees, alive, when
+  no hard hit lands for *Kneel After No Hit* or after *Kneel After Light Hits* light hits (below the hard-swing speed).
+  The meter is spent; the execution window (*Execution Window*) replaces the adrenaline window.
+- Held as the game's `BrainModuleFear.Panic` holds a cowering NPC: `brain.isIncapacitated`, behaviour tree reset and
+  `updateTree = false`, stance Idle, `StopAnimation(true)`, `PlayAnimation("HumanIdleExamineKneel")` (KneelingStart 2.77 s,
+  Examine_Kneeling loop, KneelingEnd); each frame the dynamic-animation flag is kept as `BrainModuleFear.OnUpdate` keeps it.
+  A first try with a brain swap to `HumanDummy` left the NPC standing (harness screenshot).
+- Any player hit on it is the execution (the critical; a stab kneels it into death with the kick/behead finish).
+  Not executed: it stands up (`StopAnimation`, brain runs again) or dies with *Kneel Death Chance*.
+- Harness `step4c-adrenaline-kneel` (2026-11-16): no hit → kneels, animator FullBody `KneelingStart` → `Examine_Kneeling`,
+  head height 1.76 → 1.27 m (probe), side screenshot shows it crouched; executed; light hits → kneels → stands up; death
+  chance 100 % → dies; a stab execution → kneeling death → kick.
+- `step2`, `step3`, `step3b` switch Adrenaline off: its critical would kill their test NPC. `step3` (fighting
+  `HumanMedium` brain) once failed to stagger on `push=1` and passed on the rerun (known flake of the fighting brain).
 
 ## API verification
 

@@ -164,3 +164,37 @@ namespace DMCS.Core
         }
     }
 }
+
+namespace DMCS.Core
+{
+    public enum FinishMove
+    {
+        None,
+
+        /// <summary>A kick sends the kneeling enemy flying (slow-motion).</summary>
+        Kick,
+
+        /// <summary>A cut to the neck or head takes the head off (slow-motion).</summary>
+        Behead,
+    }
+
+    /// <summary>
+    /// What a player hit on an enemy kneeling after a chest-stab fatality does, while its window is open.
+    /// Kick: a player body hit with a foot or leg. Behead: a slash on the head or neck.
+    /// </summary>
+    public static class FinishRule
+    {
+        public static FinishMove Decide(bool inWindow, HitSource source, bool byFootOrLeg, bool hitHeadOrNeck, bool slash)
+        {
+            if (!inWindow || source == HitSource.NotPlayer)
+            {
+                return FinishMove.None;
+            }
+            if (source == HitSource.PlayerBody && byFootOrLeg)
+            {
+                return FinishMove.Kick;
+            }
+            return hitHeadOrNeck && slash ? FinishMove.Behead : FinishMove.None;
+        }
+    }
+}

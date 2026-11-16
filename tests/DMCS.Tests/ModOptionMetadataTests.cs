@@ -216,6 +216,11 @@ public class ModOptionMetadataTests
                 (AdrenalineSettings.KnockbackName, "System.Single", "Slider"),
                 (AdrenalineSettings.BattleCryName, "System.Boolean", "ArrowList"),
                 (AdrenalineSettings.ChestStabKneelsName, "System.Boolean", "ArrowList"),
+                (AdrenalineSettings.ExecutionWindowName, "System.Single", "Slider"),
+                (AdrenalineSettings.KneelEnabledName, "System.Boolean", "ArrowList"),
+                (AdrenalineSettings.KneelAfterNoHitName, "System.Single", "Slider"),
+                (AdrenalineSettings.KneelAfterLightHitsName, "System.Int32", "Slider"),
+                (AdrenalineSettings.KneelDeathChanceName, "System.Int32", "Slider"),
             },
             group.Select(o => (o.Name, o.DataType, o.InteractionType)));
         Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));

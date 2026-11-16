@@ -25,6 +25,11 @@ namespace DMCS
 
         /// <summary>Hits judged critical at their start (before the game's damage), executed at their end.</summary>
         private static readonly HashSet<CollisionInstance> PendingCritical = new HashSet<CollisionInstance>();
+
+        /// <summary>Step 4c: who kneels and when (the enemy hit last; no hit or only light hits in the window).</summary>
+        private static readonly KneelTracker<int> Kneel = new KneelTracker<int>();
+
+        private static readonly Dictionary<int, Creature> HitCreatures = new Dictionary<int, Creature>();
         private static bool _hooked;
         private static float _meterMax = AdrenalineSettings.MeterMax.Default;
 
@@ -209,6 +214,8 @@ namespace DMCS
         {
             Meter.Reset();
             PendingCritical.Clear();
+            Kneel.WindowClosed();
+            HitCreatures.Clear();
             AdrenalineCritical.StopAll();
         }
 
@@ -223,7 +230,12 @@ namespace DMCS
             var e = Meter.Tick(Time.unscaledTime, Time.unscaledDeltaTime, DecayEnabled ? DecayPerSecond : 0f, DecayDelay);
             if (e == AdrenalineEvent.WindowExpired)
             {
+                Kneel.WindowClosed();
                 Dmcs.Log.Debug(Channel, "window over unused: meter emptied");
+            }
+            else if (Meter.State == AdrenalineState.Ready)
+            {
+                CheckKneel();
             }
             else if (e == AdrenalineEvent.Drained)
             {
@@ -250,6 +262,11 @@ namespace DMCS
                 var source = HitInfo.SourceOf(hit);
                 if (eventTime == EventTime.OnStart)
                 {
+                    if (AdrenalineCritical.IsKneeling(target))
+                    {
+                        AdrenalineCritical.Prepare(target, hit);
+                        return;
+                    }
                     var atStart = AdrenalineCritical.Decide(Toggle.Enabled, Meter.State == AdrenalineState.Ready, target, hit, source);
                     if (atStart == CriticalDecision.Critical)
                     {
@@ -263,11 +280,28 @@ namespace DMCS
                     }
                     return;
                 }
+                if (AdrenalineCritical.TryFinish(target, hit, source))
+                {
+                    return;
+                }
+                if (AdrenalineCritical.TryExecute(target, hit, source))
+                {
+                    Critical?.Invoke(target);
+                    return;
+                }
                 if (PendingCritical.Remove(hit) && Meter.Consume())
                 {
+                    Kneel.WindowClosed();
                     AdrenalineCritical.Execute(target, hit, source);
                     Critical?.Invoke(target);
                     return;
+                }
+                if (source != HitSource.NotPlayer && !target.isPlayer && !target.isKilled)
+                {
+                    var id = target.GetInstanceID();
+                    HitCreatures[id] = target;
+                    var light = AdrenalineCritical.NeedsHardSwing && hit.impactVelocity.magnitude < AdrenalineCritical.MinSwingSpeed;
+                    Kneel.PlayerHit(id, Time.unscaledTime, light);
                 }
                 var gain = AdrenalineSources.FromHit(true, source, target.isPlayer, hit.damageStruct.damage);
                 if (gain == AdrenalineSource.DamageTaken && DamageTakenLowers)
@@ -283,6 +317,46 @@ namespace DMCS
             {
                 Dmcs.Log.Info("Adrenaline error: " + ex);
             }
+        }
+
+        /// <summary>Step 4c: with the window open, no hit for a while or only light hits put the enemy on its knees.</summary>
+        private static void CheckKneel()
+        {
+            var reason = Kneel.Check(Time.unscaledTime, AdrenalineCritical.KneelEnabled, AdrenalineCritical.KneelAfterNoHit,
+                AdrenalineCritical.KneelAfterLightHits);
+            if (reason == KneelReason.None)
+            {
+                return;
+            }
+            var target = KneelTarget();
+            if (target == null || !AdrenalineCritical.KneelAlive(target, reason))
+            {
+                return;
+            }
+            Meter.Consume();
+            Kneel.WindowClosed();
+        }
+
+        /// <summary>The enemy hit last, if alive; else the nearest living enemy that targets the player.</summary>
+        private static Creature KneelTarget()
+        {
+            if (Kneel.HasLastHit && HitCreatures.TryGetValue(Kneel.LastHit, out var last))
+            {
+                if (last != null && !last.isKilled)
+                {
+                    return last;
+                }
+                Kneel.Forget(Kneel.LastHit);
+            }
+            var player = Player.currentCreature;
+            if (player == null)
+            {
+                return null;
+            }
+            return Creature.allActive
+                .Where(c => c != null && !c.isPlayer && !c.isKilled && c.brain != null && c.brain.currentTarget == player)
+                .OrderBy(c => (c.transform.position - player.transform.position).sqrMagnitude)
+                .FirstOrDefault();
         }
 
         private static void Lose(string who)
@@ -334,6 +408,7 @@ namespace DMCS
                 + Meter.Value.ToString("0", CultureInfo.InvariantCulture) + "/" + MeterMax.ToString("0", CultureInfo.InvariantCulture));
             if (e == AdrenalineEvent.Filled)
             {
+                Kneel.WindowOpened(Time.unscaledTime);
                 Dmcs.Log.Debug(Channel, "meter full: window open for " + WindowDuration.ToString("0", CultureInfo.InvariantCulture) + " s");
             }
         }

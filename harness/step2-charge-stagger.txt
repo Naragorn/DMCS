@@ -27,6 +27,8 @@ expect-option DMCS "Charge Stagger Strength" Full
 expect-option DMCS "Charge Stagger Duration" 2.5
 expect-option DMCS "Charge Second Hit Knocks Down" true
 set-option DMCS "Debug Logging" true
+# Adrenaline (step 4) would fill its meter from these hits and kill the NPC with a critical; tested in step4*.
+set-option DMCS "Adrenaline Enabled" false
 
 # Presets: Realistic sets its values, one change makes it Custom, Gamey sets the defaults again
 set-option DMCS "Charge Stagger Preset" Realistic

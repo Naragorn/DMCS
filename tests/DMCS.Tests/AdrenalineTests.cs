@@ -477,3 +477,153 @@ public class CriticalTimeModeTests
         Assert.True(AdrenalineSettings.DefaultChestStabKneels);
     }
 }
+
+public class FinishRuleTests
+{
+    [Fact]
+    public void AKick_InTheWindow_SendsTheKneelingEnemyFlying()
+    {
+        Assert.Equal(FinishMove.Kick, FinishRule.Decide(true, HitSource.PlayerBody, true, false, false));
+    }
+
+    [Fact]
+    public void ASlashOnTheNeckOrHead_InTheWindow_Beheads()
+    {
+        Assert.Equal(FinishMove.Behead, FinishRule.Decide(true, HitSource.HeldWeapon, false, true, true));
+    }
+
+    [Theory]
+    [InlineData(false, HitSource.PlayerBody, true, false, false)]
+    [InlineData(false, HitSource.HeldWeapon, false, true, true)]
+    [InlineData(true, HitSource.NotPlayer, true, true, true)]
+    [InlineData(true, HitSource.PlayerBody, false, false, false)]
+    [InlineData(true, HitSource.HeldWeapon, true, false, false)]
+    [InlineData(true, HitSource.HeldWeapon, false, true, false)]
+    [InlineData(true, HitSource.HeldWeapon, false, false, true)]
+    public void EverythingElse_DoesNothing(bool inWindow, HitSource source, bool foot, bool headOrNeck, bool slash)
+    {
+        Assert.Equal(FinishMove.None, FinishRule.Decide(inWindow, source, foot, headOrNeck, slash));
+    }
+
+    [Fact]
+    public void ConfirmedDefaults()
+    {
+        Assert.Equal(3f, AdrenalineSettings.MinSwingSpeed.Default);
+        Assert.Equal(5f, AdrenalineSettings.ExecutionWindow.Default);
+    }
+}
+
+public class KneelTrackerTests
+{
+    private static KneelTracker<int> Open(float now = 0f)
+    {
+        var k = new KneelTracker<int>();
+        k.PlayerHit(7, now, false);
+        k.WindowOpened(now);
+        return k;
+    }
+
+    [Fact]
+    public void NoHitForTheSetTime_Kneels()
+    {
+        var k = Open();
+
+        Assert.Equal(KneelReason.None, k.Check(1.9f, true, 2f, 2));
+        Assert.Equal(KneelReason.NoHit, k.Check(2f, true, 2f, 2));
+        Assert.Equal(7, k.LastHit);
+    }
+
+    [Fact]
+    public void AHardHit_RestartsTheNoHitTime()
+    {
+        var k = Open();
+        k.PlayerHit(7, 1.5f, false);
+
+        Assert.Equal(KneelReason.None, k.Check(3f, true, 2f, 2));
+        Assert.Equal(KneelReason.NoHit, k.Check(3.5f, true, 2f, 2));
+    }
+
+    [Fact]
+    public void OnlyLightHits_Kneel()
+    {
+        var k = Open();
+        k.PlayerHit(7, 0.5f, true);
+
+        Assert.Equal(KneelReason.None, k.Check(0.6f, true, 2f, 2));
+        k.PlayerHit(7, 0.7f, true);
+        Assert.Equal(KneelReason.LightHits, k.Check(0.8f, true, 2f, 2));
+    }
+
+    [Fact]
+    public void LightHits_DoNotRestartTheNoHitTime()
+    {
+        var k = Open();
+        k.PlayerHit(7, 1.5f, true);
+
+        Assert.Equal(KneelReason.NoHit, k.Check(2f, true, 2f, 5));
+    }
+
+    [Fact]
+    public void TheEnemyHitLast_IsTheOneThatKneels()
+    {
+        var k = Open();
+        k.PlayerHit(9, 0.5f, false);
+
+        Assert.Equal(9, k.LastHit);
+    }
+
+    [Fact]
+    public void NothingHappens_WhileTheWindowIsClosed_OrSwitchedOff()
+    {
+        var k = new KneelTracker<int>();
+        k.PlayerHit(7, 0f, true);
+        k.PlayerHit(7, 0f, true);
+        Assert.Equal(KneelReason.None, k.Check(10f, true, 2f, 2));
+
+        var open = Open();
+        Assert.Equal(KneelReason.None, open.Check(10f, false, 2f, 2));
+        open.WindowClosed();
+        Assert.Equal(KneelReason.None, open.Check(10f, true, 2f, 2));
+    }
+
+    [Fact]
+    public void LightHitsBeforeTheWindow_DoNotCount()
+    {
+        var k = new KneelTracker<int>();
+        k.PlayerHit(7, 0f, true);
+        k.WindowOpened(1f);
+        k.PlayerHit(7, 1.1f, true);
+
+        Assert.Equal(KneelReason.None, k.Check(1.2f, true, 2f, 2));
+    }
+
+    [Fact]
+    public void Forget_DropsTheEnemy_OnlyIfItIsTheLastHit()
+    {
+        var k = Open();
+        k.Forget(3);
+        Assert.True(k.HasLastHit);
+        k.Forget(7);
+        Assert.False(k.HasLastHit);
+    }
+
+    [Theory]
+    [InlineData(0.5f, 0f, KneelEnd.StandsUp)]
+    [InlineData(0f, 0f, KneelEnd.StandsUp)]
+    [InlineData(0.99f, 1f, KneelEnd.Dies)]
+    [InlineData(0.3f, 0.5f, KneelEnd.Dies)]
+    [InlineData(0.5f, 0.5f, KneelEnd.StandsUp)]
+    public void AfterTheWindow_TheEnemyStandsUp_OrDiesWithTheChance(float roll, float chance, KneelEnd expected)
+    {
+        Assert.Equal(expected, KneelOutcome.AfterWindow(roll, chance));
+    }
+
+    [Fact]
+    public void KneelDefaults_AsConfirmed()
+    {
+        Assert.True(AdrenalineSettings.DefaultKneelEnabled);
+        Assert.Equal(2f, AdrenalineSettings.KneelAfterNoHit.Default);
+        Assert.Equal(2, AdrenalineSettings.DefaultKneelAfterLightHits);
+        Assert.Equal(0, AdrenalineSettings.DefaultKneelDeathChance);
+    }
+}

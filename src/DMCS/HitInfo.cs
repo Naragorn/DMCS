@@ -86,6 +86,31 @@ namespace DMCS
                 || creature.state == Creature.State.Destabilized;
         }
 
+        /// <summary>A kick: the hit came from a foot or leg part of a ragdoll (the player's, as <see cref="SourceOf"/> tells).</summary>
+        public static bool IsByFootOrLeg(CollisionInstance hit)
+        {
+            var handler = hit.damageStruct.damager != null ? hit.damageStruct.damager.collisionHandler : null;
+            if (handler == null && hit.sourceColliderGroup != null)
+            {
+                handler = hit.sourceColliderGroup.collisionHandler;
+            }
+            var part = handler != null ? handler.ragdollPart : null;
+            if (part == null)
+            {
+                return false;
+            }
+            switch (part.type)
+            {
+                case RagdollPart.Type.LeftFoot:
+                case RagdollPart.Type.RightFoot:
+                case RagdollPart.Type.LeftLeg:
+                case RagdollPart.Type.RightLeg:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         public static HitPart PartOf(CollisionInstance hit)
         {
             var part = hit.damageStruct.hitRagdollPart;

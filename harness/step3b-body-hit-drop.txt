@@ -25,6 +25,8 @@ expect-option DMCS "Body Hit Drop Chance Female" 25
 expect-option DMCS "Body Hit Drop Chance Smaller" 25
 expect-option DMCS "Smaller By" 0
 set-option DMCS "Debug Logging" true
+# Adrenaline (step 4) would fill its meter from these hits and kill the NPC with a critical; tested in step4*.
+set-option DMCS "Adrenaline Enabled" false
 set-option DMCS "Disarm No Regrab Time" 4
 
 # Passive brain: a fighting HumanMedium picks up items (a mace, seen 2026-11-16) and does not always stagger from

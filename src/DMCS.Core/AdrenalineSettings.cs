@@ -56,6 +56,10 @@ namespace DMCS.Core
         public const string KnockbackName = "Critical Knockback";
         public const string BattleCryName = "Critical Battle Cry";
         public const string ChestStabKneelsName = "Chest Stab Kneels";
+        public const string ExecutionWindowName = "Execution Window";
+
+        /// <summary>Seconds a kneeling enemy waits for the kick or the beheading (user, 2026-11-16: 5).</summary>
+        public static readonly SliderSpec ExecutionWindow = new SliderSpec(ExecutionWindowName, 1f, 15f, 1f, 5f);
 
         public const string DefaultTimeMode = CriticalTimeModes.Hyperfocus;
         public const bool DefaultNeedsHardSwing = true;
@@ -77,13 +81,28 @@ namespace DMCS.Core
         public static readonly SliderSpec SlowTimeDuration = new SliderSpec(SlowTimeDurationName, 0.5f, 10f, 0.5f, 3f);
 
         /// <summary>m/s of the hit; default = Charge Stagger's min swing speed (spec).</summary>
-        public static readonly SliderSpec MinSwingSpeed = new SliderSpec(MinSwingSpeedName, 0f, 10f, 0.25f, ChargeStaggerSettings.MinSwingSpeed.Default);
+        /// <summary>m/s of the hit (user, 2026-11-16: 3, as Charge Stagger's Realistic preset; 1 let nearly every hit count).</summary>
+        public static readonly SliderSpec MinSwingSpeed = new SliderSpec(MinSwingSpeedName, 0f, 10f, 0.25f, 3f);
 
         /// <summary>m/s every ragdoll part gets along the hit; 0 = none (a first guess).</summary>
         public static readonly SliderSpec Knockback = new SliderSpec(KnockbackName, 0f, 20f, 1f, 8f);
 
+        public const string KneelEnabledName = "Kneel And Execution";
+        public const string KneelAfterNoHitName = "Kneel After No Hit";
+        public const string KneelAfterLightHitsName = "Kneel After Light Hits";
+        public const string KneelDeathChanceName = "Kneel Death Chance";
+
+        public const bool DefaultKneelEnabled = true;
+        public const int DefaultKneelAfterLightHits = 2;
+        public const int DefaultKneelDeathChance = 0;
+
+        /// <summary>Seconds without a player hit in the adrenaline window before the enemy kneels (user, 2026-11-16: 2).</summary>
+        public static readonly SliderSpec KneelAfterNoHit = new SliderSpec(KneelAfterNoHitName, 0.5f, 5f, 0.5f, 2f);
+
+        public static int[] LightHitValues() => Enumerable.Range(1, 10).ToArray();
+
         public static readonly SliderSpec[] CriticalSliders =
-            { HyperfocusScale, SlowTimeScale, HyperfocusDuration, SlowTimeDuration, MinSwingSpeed, Knockback };
+            { HyperfocusScale, SlowTimeScale, HyperfocusDuration, SlowTimeDuration, MinSwingSpeed, Knockback, ExecutionWindow, KneelAfterNoHit };
 
         public static int[] GainValues() => Enumerable.Range(0, 51).ToArray();
     }

@@ -1,0 +1,78 @@
+# Step 4c: kneel and execution. With a full meter, the enemy hit last goes down on its knees (alive, brain paused as the game's
+# own fear module pauses a cowering NPC, the game's kneeling animation) when no hit lands for a while or only light hits land. Any hit then executes it
+# (the critical); unexecuted, it stands up again, or dies with the death chance. Expects the defaults at the start.
+
+wait-level
+option-exists DMCS "Execution Window" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Kneel And Execution" category=Adrenaline type=Boolean save=true
+option-exists DMCS "Kneel After No Hit" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Kneel After Light Hits" category=Adrenaline type=Int32 interaction=Slider save=true
+option-exists DMCS "Kneel Death Chance" category=Adrenaline type=Int32 interaction=Slider save=true
+expect-option DMCS "Execution Window" 5
+expect-option DMCS "Kneel And Execution" true
+expect-option DMCS "Kneel After No Hit" 2
+expect-option DMCS "Kneel After Light Hits" 2
+expect-option DMCS "Kneel Death Chance" 0
+set-option DMCS "Debug Logging" true
+set-option DMCS "Adrenaline Per Hit" 50
+set-option DMCS "Adrenaline Window" 20
+set-option DMCS "Critical Min Swing Speed" 6
+
+# 1. No hit for 2 s: the enemy hit last kneels; a hit executes it
+spawn-npc HumanMale distance=3 angle=60
+mark
+hit-npc Torso velocity=8
+hit-npc Torso velocity=8
+expect-log meter full: window open for 20 s
+expect-log kneels (NoHit): execute within 5 s (dynamic animation playing
+wait 3
+screenshot step4c-kneeling of=npc angle=90
+mark
+hit-npc Torso velocity=8 type=Slash damage=1
+expect-log execution of
+expect-log CRITICAL on
+expect-log slow-motion Hyperfocus
+expect-npc state Dead within=2
+expect-log slow-motion over: time back to normal
+
+# 2. Only light hits: kneels; not executed, it stands up again
+set-option DMCS "Execution Window" 2
+spawn-npc HumanMale distance=3 angle=-60
+hit-npc Torso velocity=8
+hit-npc Torso velocity=8
+mark
+hit-npc LeftArm velocity=3
+hit-npc LeftArm velocity=3
+expect-log kneels (LightHits)
+expect-log was not executed and stands up
+expect-npc state Alive within=1
+expect-no-log CRITICAL on
+
+# 3. Death chance 100 %: not executed, it dies
+set-option DMCS "Kneel Death Chance" 100
+spawn-npc HumanMale distance=3 angle=0 brain=HumanDummy
+hit-npc Torso velocity=8
+hit-npc Torso velocity=8
+mark
+expect-log kneels (NoHit)
+expect-log was not executed and dies
+expect-npc state Dead within=2
+
+# 4. Executed with a stab: it kneels into death and can be kicked away
+set-option DMCS "Kneel Death Chance" 0
+set-option DMCS "Execution Window" 5
+spawn-npc HumanMale distance=3 angle=30 brain=HumanDummy
+hit-npc Torso velocity=8
+hit-npc Torso velocity=8
+mark
+expect-log kneels (NoHit)
+hit-npc Torso velocity=8 type=Pierce damage=1
+expect-log execution of
+expect-log chest-stab fatality:
+hit-npc Torso by=foot velocity=9 dead=true
+expect-log kicked
+
+press DMCS "Reset To Defaults"
+expect-no-log Exception
+screenshot step4c-adrenaline-kneel
+quit

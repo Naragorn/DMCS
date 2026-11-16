@@ -1,6 +1,6 @@
 # Step 4b: the critical (fatality). With a full meter the next hard player hit is the critical: battle cry,
 # slow-motion (Hyperfocus or Slow Time), cut-off part, kill, throw. A critical stab into the chest makes the NPC
-# kneel and die instead. Light hits and thrown weapons are no critical. Expects the defaults at the start.
+# kneel and die instead; a kick then sends it flying, a cut to the neck beheads it, both in slow-motion. Light hits and thrown weapons are no critical. Expects the defaults at the start.
 
 wait-level
 option-exists DMCS "Critical Time Mode" category=Adrenaline type=String save=true
@@ -22,6 +22,7 @@ expect-option DMCS "Critical Hyperfocus Duration" 3
 expect-option DMCS "Critical Slow Time Scale" 0.5
 expect-option DMCS "Critical Slow Time Duration" 3
 expect-option DMCS "Critical Needs Hard Swing" true
+expect-option DMCS "Critical Min Swing Speed" 3
 expect-option DMCS "Critical Thrown And Spells" false
 expect-option DMCS "Critical Kills" true
 expect-option DMCS "Critical Dismember" true
@@ -33,6 +34,8 @@ set-option DMCS "Debug Logging" true
 set-option DMCS "Adrenaline Per Hit" 50
 set-option DMCS "Adrenaline Window" 20
 set-option DMCS "Critical Min Swing Speed" 6
+# Kneel and execution (step 4c) would put the waiting NPCs on their knees here; step4c covers it.
+set-option DMCS "Kneel And Execution" false
 
 spawn-npc HumanMale distance=3 angle=60 brain=HumanDummy
 hit-npc Torso velocity=2
@@ -60,7 +63,7 @@ expect-log threw
 expect-npc state Dead within=2
 expect-log slow-motion over: time back to normal
 
-# 3. Chest stab: kneels and dies
+# 3. Chest stab: the NPC kneels with the blade in it, no slow-motion yet; a kick sends it flying in slow-motion
 spawn-npc HumanMale distance=3 angle=-60 brain=HumanDummy
 hit-npc Torso velocity=2
 hit-npc Torso velocity=2
@@ -69,8 +72,29 @@ hit-npc Torso velocity=8 type=Pierce damage=1
 expect-log CRITICAL on
 expect-log chest-stab fatality:
 expect-log kneels (Bas.Animation.Death_Kneel
+expect-no-log slow-motion Hyperfocus
 expect-no-log threw
 expect-npc state Dead within=2
+wait 0.5
+screenshot step4b-chest-stab-kneel of=npc
+mark
+hit-npc Torso by=foot velocity=9 dead=true
+expect-log kicked
+expect-log slow-motion Hyperfocus: 0.10× for 3.0 s
+expect-log threw
+expect-log slow-motion over: time back to normal
+
+# 3b. Chest stab, then a cut to the neck: the head comes off in slow-motion
+spawn-npc HumanMale distance=3 angle=-30 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+mark
+hit-npc Torso velocity=8 type=Pierce damage=1
+expect-log chest-stab fatality:
+hit-npc Neck velocity=8 type=Slash dead=true
+expect-log beheaded
+expect-log the head flies
+expect-log slow-motion Hyperfocus: 0.10× for 3.0 s
 expect-log slow-motion over: time back to normal
 
 # 4. Slow Time mode: the player slows too

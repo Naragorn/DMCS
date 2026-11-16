@@ -9,7 +9,7 @@ using UnityEngine;
 namespace DMCS
 {
     /// <summary>
-    /// Adrenaline step 4b: the critical (Dark Messiah's fatality), the hit the full meter waits for.
+    /// Adrenaline steps 4b/4c: the critical (Dark Messiah's fatality), the hit the full meter waits for.
     /// Time: the game's TimeManager.SetSlowMotion, with the Hyperfocus skill's player buffs in Hyperfocus mode
     /// (SpellPowerSlowTime.BuffPlayer: Creature.AddJointForceMultiplier, Locomotion.SetSpeedModifier/SetPhysicModifier).
     /// Chest stab: BrainModuleDeath picks its dying clip from stabAnimationData/defaultAnimationData synchronously
@@ -24,7 +24,21 @@ namespace DMCS
         /// <summary>Handler key for the game's modifier lists (joint force, speed, physics).</summary>
         private static readonly object Handler = new object();
 
+        private const string KneelAnimationId = "HumanIdleExamineKneel";
+
         private static readonly Dictionary<int, SwappedDeath> Swapped = new Dictionary<int, SwappedDeath>();
+
+        /// <summary>Enemies dying on their knees after a chest stab: kick or behead them until the time.</summary>
+        private static readonly Dictionary<int, Victim> Finishers = new Dictionary<int, Victim>();
+
+        /// <summary>Enemies kneeling alive (step 4c): any hit executes them until the time.</summary>
+        private static readonly Dictionary<int, Victim> Kneeling = new Dictionary<int, Victim>();
+
+        private static readonly System.Random Dice = new System.Random();
+
+        /// <summary>Cut-off heads waiting for the game's cut to finish before they get their push.</summary>
+        private static readonly List<HeadPush> FlyingHeads = new List<HeadPush>();
+
 
         private static bool _timeOwned;
         private static bool _playerBuffed;
@@ -76,6 +90,35 @@ namespace DMCS
         [ModOption(name = AdrenalineSettings.ChestStabKneelsName, tooltip = "A critical stab into the chest makes the enemy sink to its knees and die. Kick it away or let it fall.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 24)]
         public static bool ChestStabKneels { get; set; } = AdrenalineSettings.DefaultChestStabKneels;
 
+        [ModOption(name = AdrenalineSettings.ExecutionWindowName, tooltip = "Seconds a kneeling enemy waits for you: after a chest stab, kick it away or behead it; after it went down on its own, any hit executes it.", valueSourceName = nameof(ExecutionWindowValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 25)]
+        [ModOptionSlider]
+        public static float ExecutionWindow { get; set; } = AdrenalineSettings.ExecutionWindow.Default;
+
+        [ModOption(name = AdrenalineSettings.KneelEnabledName, tooltip = "With a full meter, the enemy goes down on its knees when you land no hit for a while or only light hits.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 26)]
+        public static bool KneelEnabled { get; set; } = AdrenalineSettings.DefaultKneelEnabled;
+
+        [ModOption(name = AdrenalineSettings.KneelAfterNoHitName, tooltip = "Seconds without a hit (meter full) before the enemy kneels.", valueSourceName = nameof(KneelAfterNoHitValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 27)]
+        [ModOptionSlider]
+        public static float KneelAfterNoHit { get; set; } = AdrenalineSettings.KneelAfterNoHit.Default;
+
+        [ModOption(name = AdrenalineSettings.KneelAfterLightHitsName, tooltip = "Light hits (meter full) after which the enemy kneels.", valueSourceName = nameof(LightHitValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 28)]
+        [ModOptionSlider]
+        public static int KneelAfterLightHits { get; set; } = AdrenalineSettings.DefaultKneelAfterLightHits;
+
+        [ModOption(name = AdrenalineSettings.KneelDeathChanceName, tooltip = "Chance (%) that a kneeling enemy you did not execute dies instead of standing up.", valueSourceName = nameof(KneelDeathChanceValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 29)]
+        [ModOptionSlider]
+        public static int KneelDeathChance { get; set; } = AdrenalineSettings.DefaultKneelDeathChance;
+
+        public static ModOptionFloat[] ExecutionWindowValues() => Floats(AdrenalineSettings.ExecutionWindow, "0", " s");
+
+        public static ModOptionFloat[] KneelAfterNoHitValues() => Floats(AdrenalineSettings.KneelAfterNoHit, "0.0", " s");
+
+        public static ModOptionInt[] LightHitValues() =>
+            AdrenalineSettings.LightHitValues().Select(v => new ModOptionInt(v.ToString(CultureInfo.InvariantCulture), v)).ToArray();
+
+        public static ModOptionInt[] KneelDeathChanceValues() =>
+            DisarmStrikeSettings.ChanceValues().Select(v => new ModOptionInt(v.ToString(CultureInfo.InvariantCulture) + " %", v)).ToArray();
+
         public static ModOptionString[] TimeModeValues() => CriticalTimeModes.Names.Select(n => new ModOptionString(n, null, n)).ToArray();
 
         public static ModOptionFloat[] HyperfocusScaleValues() => Floats(AdrenalineSettings.HyperfocusScale, "0.00", "×");
@@ -98,6 +141,13 @@ namespace DMCS
                 NeedsHardSwing, hit.impactVelocity.magnitude, MinSwingSpeed));
         }
 
+        private static bool IsStab(CollisionInstance hit) =>
+            hit.damageStruct.penetration != DamageStruct.Penetration.None || hit.damageStruct.damageType == DamageType.Pierce;
+
+        public static bool IsKneeling(Creature target) => target != null && Kneeling.ContainsKey(target.GetInstanceID());
+
+        public static bool IsFinishable(Creature target) => target != null && Finishers.ContainsKey(target.GetInstanceID());
+
         public static bool IsChestStab(CollisionInstance hit)
         {
             var part = hit.damageStruct.hitRagdollPart;
@@ -113,14 +163,14 @@ namespace DMCS
         /// </summary>
         public static void Prepare(Creature target, CollisionInstance hit)
         {
-            if (IsChestStab(hit))
+            if (IsChestStab(hit) || (IsKneeling(target) && IsStab(hit)))
             {
                 SwapToKneel(target);
             }
         }
 
         /// <summary>At the hit's end: the critical itself.</summary>
-        public static void Execute(Creature target, CollisionInstance hit, HitSource source)
+        public static void Execute(Creature target, CollisionInstance hit, HitSource source, bool stabKneels = false)
         {
             var part = hit.damageStruct.hitRagdollPart;
             var partName = part != null ? part.type.ToString() : "?";
@@ -130,12 +180,13 @@ namespace DMCS
             {
                 Shout();
             }
-            StartTime();
-            if (IsChestStab(hit))
+            if (IsChestStab(hit) || (stabKneels && IsStab(hit)))
             {
+                // The slow-motion waits for the finish: the kick or the beheading.
                 ChestStab(target, hit);
                 return;
             }
+            StartTime();
             Restore(target);
             if (Dismember && part != null)
             {
@@ -152,10 +203,168 @@ namespace DMCS
 
         public static void Update()
         {
-            if (_timeOwned && Time.unscaledTime >= _timeEndsAt)
+            var now = Time.unscaledTime;
+            if (_timeOwned && now >= _timeEndsAt)
             {
                 EndTime(force: false);
             }
+            for (var i = FlyingHeads.Count - 1; i >= 0; i--)
+            {
+                var push = FlyingHeads[i];
+                if (push.Head == null || now >= push.GiveUpAt)
+                {
+                    FlyingHeads.RemoveAt(i);
+                    continue;
+                }
+                if (push.Head.isSliced)
+                {
+                    push.Head.physicBody?.AddForce(push.Velocity, ForceMode.VelocityChange);
+                    FlyingHeads.RemoveAt(i);
+                    Dmcs.Log.Debug(Channel, "the head flies");
+                }
+            }
+            foreach (var id in Finishers.Where(f => now >= f.Value.Until || f.Value.Creature == null).Select(f => f.Key).ToList())
+            {
+                Finishers.Remove(id);
+            }
+            // As BrainModuleFear.OnUpdate keeps a cowering NPC's animation: the creature's own UpdateDynamicAnimation
+            // clears the flag when the animator is not busy for a frame, while the loop still runs.
+            foreach (var victim in Kneeling.Values)
+            {
+                var c = victim.Creature;
+                if (c != null && !c.isKilled && !c.isPlayingDynamicAnimation && c.animator != null && c.animator.GetBool(Creature.hashDynamicLoop3))
+                {
+                    c.isPlayingDynamicAnimation = true;
+                }
+            }
+            foreach (var pair in Kneeling.Where(k => now >= k.Value.Until || k.Value.Creature == null || k.Value.Creature.isKilled).ToList())
+            {
+                EndKneel(pair.Key, pair.Value);
+            }
+        }
+
+        /// <summary>A hit on an enemy dying on its knees after a chest stab: kick it away or behead it (slow-motion).</summary>
+        public static bool TryFinish(Creature target, CollisionInstance hit, HitSource source)
+        {
+            if (!Finishers.TryGetValue(target.GetInstanceID(), out var victim))
+            {
+                return false;
+            }
+            var part = hit.damageStruct.hitRagdollPart;
+            var headOrNeck = part != null && (part.type == RagdollPart.Type.Head || part.type == RagdollPart.Type.Neck);
+            var move = FinishRule.Decide(Time.unscaledTime < victim.Until, source, HitInfo.IsByFootOrLeg(hit), headOrNeck,
+                hit.damageStruct.damageType == DamageType.Slash);
+            if (move == FinishMove.None)
+            {
+                return false;
+            }
+            Finishers.Remove(target.GetInstanceID());
+            if (move == FinishMove.Kick)
+            {
+                StartTime();
+                Throw(target, hit);
+                Dmcs.Log.Debug(Channel, "kicked " + target.name + " away");
+                return true;
+            }
+            // Ragdoll.TrySlice only starts the cut (SliceCoroutine sets isSliced later): the push waits for it in Update.
+            var head = target.ragdoll != null ? target.ragdoll.headPart : null;
+            var cut = head != null && (head.isSliced || head.SafeSlice());
+            if (!cut)
+            {
+                Dmcs.Log.Debug(Channel, "no beheading on " + target.name + ": the game refused the cut");
+                return true;
+            }
+            StartTime();
+            if (Knockback > 0f)
+            {
+                FlyingHeads.Add(new HeadPush(head, Direction(target, hit) * Knockback, Time.unscaledTime + 1f));
+            }
+            Dmcs.Log.Debug(Channel, "beheaded " + target.name);
+            return true;
+        }
+
+        /// <summary>
+        /// Step 4c: the enemy goes down on its knees, alive. Held the way the game's own BrainModuleFear.Panic holds a
+        /// cowering NPC: brain incapacitated, behaviour tree reset and paused, stance idle, then the animation
+        /// (a running behaviour tree stops dynamic animations, e.g. BrainModuleMove.StopAnimation while moving).
+        /// </summary>
+        public static bool KneelAlive(Creature target, KneelReason reason)
+        {
+            if (target == null || target.isKilled || target.brain == null || target.brain.instance == null || IsKneeling(target))
+            {
+                return false;
+            }
+            var brain = target.brain;
+            brain.isIncapacitated = true;
+            brain.instance.tree.Reset();
+            brain.instance.updateTree = false;
+            brain.instance.GetModule<BrainModuleStance>(false)?.SetStance(BrainModuleStance.Stance.Idle);
+            target.StopAnimation(true);
+            var data = Catalog.GetData<AnimationData>(KneelAnimationId, false);
+            if (data == null || data.animationClips.Any(c => c.animationClip == null))
+            {
+                Dmcs.Log.Debug(Channel, "kneel animation '" + KneelAnimationId + "' not loaded: "
+                    + (data == null ? "no catalog entry" : string.Join(", ", data.animationClips.Select(c => c.address + "=" + (c.animationClip != null ? "ok" : "null")))));
+            }
+            target.PlayAnimation(KneelAnimationId);
+            Kneeling[target.GetInstanceID()] = new Victim(target, Time.unscaledTime + ExecutionWindow);
+            Dmcs.Log.Debug(Channel, target.name + " kneels (" + reason + "): execute within "
+                + ExecutionWindow.ToString("0", CultureInfo.InvariantCulture) + " s (dynamic animation "
+                + (target.isPlayingDynamicAnimation ? "playing" : "NOT playing") + "; clips "
+                + (data != null ? string.Join(", ", data.animationClips.Select(c => c.step + " " + (c.animationClip != null
+                    ? c.animationClip.length.ToString("0.00", CultureInfo.InvariantCulture) + " s" : "null"))) : "-") + ")");
+            return true;
+        }
+
+        /// <summary>As BrainModuleFear.StopPanic: the brain runs again, the kneeling animation ends.</summary>
+        private static void Release(Creature creature)
+        {
+            if (creature == null || creature.brain == null)
+            {
+                return;
+            }
+            creature.brain.isIncapacitated = false;
+            if (creature.brain.instance != null)
+            {
+                creature.brain.instance.updateTree = true;
+            }
+            if (!creature.isKilled)
+            {
+                creature.StopAnimation();
+            }
+        }
+
+        /// <summary>Any player hit on a kneeling enemy is the execution: the critical (a stab kneels it into death).</summary>
+        public static bool TryExecute(Creature target, CollisionInstance hit, HitSource source)
+        {
+            var id = target.GetInstanceID();
+            if (source == HitSource.NotPlayer || !Kneeling.TryGetValue(id, out var victim))
+            {
+                return false;
+            }
+            Kneeling.Remove(id);
+            Release(target);
+            Dmcs.Log.Debug(Channel, "execution of " + target.name);
+            Execute(target, hit, source, stabKneels: true);
+            return true;
+        }
+
+        private static void EndKneel(int id, Victim victim)
+        {
+            Kneeling.Remove(id);
+            var creature = victim.Creature;
+            if (creature == null || creature.isKilled)
+            {
+                return;
+            }
+            Release(creature);
+            if (KneelOutcome.AfterWindow((float)Dice.NextDouble(), KneelDeathChance / 100f) == KneelEnd.Dies)
+            {
+                creature.Kill();
+                Dmcs.Log.Debug(Channel, creature.name + " was not executed and dies");
+                return;
+            }
+            Dmcs.Log.Debug(Channel, creature.name + " was not executed and stands up");
         }
 
         /// <summary>Feature off, level unload, script stop: time back, buffs off, every NPC's death data back.</summary>
@@ -165,6 +374,13 @@ namespace DMCS
             foreach (var id in Swapped.Keys.ToList())
             {
                 Restore(id);
+            }
+            Finishers.Clear();
+            FlyingHeads.Clear();
+            foreach (var pair in Kneeling.ToList())
+            {
+                Kneeling.Remove(pair.Key);
+                Release(pair.Value.Creature);
             }
         }
 
@@ -182,8 +398,10 @@ namespace DMCS
                 ? swap.Kneel.animationClips.FirstOrDefault(c => c.lastPicked)
                 : null;
             Dmcs.Log.Debug(Channel, "chest-stab fatality: " + target.name + " kneels ("
-                + (picked != null ? picked.address : "no kneeling clip picked: the game played none") + ")");
+                + (picked != null ? picked.address : "no kneeling clip picked: the game played none") + "), kick or behead within "
+                + ExecutionWindow.ToString("0", CultureInfo.InvariantCulture) + " s");
             Restore(target);
+            Finishers[target.GetInstanceID()] = new Victim(target, Time.unscaledTime + ExecutionWindow);
         }
 
         private static void SwapToKneel(Creature target)
@@ -290,9 +508,7 @@ namespace DMCS
             {
                 return;
             }
-            var direction = hit.impactVelocity.sqrMagnitude > 0.0001f
-                ? hit.impactVelocity.normalized
-                : (target.transform.position - Player.local.transform.position).normalized;
+            var direction = Direction(target, hit);
             var death = target.brain?.instance?.GetModule<BrainModuleDeath>(false);
             if (target.isKilled && death != null)
             {
@@ -308,6 +524,11 @@ namespace DMCS
             }
             Dmcs.Log.Debug(Channel, "threw " + target.name + " at " + Knockback.ToString("0", CultureInfo.InvariantCulture) + " m/s");
         }
+
+        private static Vector3 Direction(Creature target, CollisionInstance hit) =>
+            hit.impactVelocity.sqrMagnitude > 0.0001f
+                ? hit.impactVelocity.normalized
+                : (target.transform.position - Player.local.transform.position).normalized;
 
         private static void Shout()
         {
@@ -395,6 +616,32 @@ namespace DMCS
 
         private static ModOptionFloat[] Floats(SliderSpec spec, string format, string unit) =>
             spec.Values().Select(v => new ModOptionFloat(v.ToString(format, CultureInfo.InvariantCulture) + unit, v)).ToArray();
+
+        private sealed class HeadPush
+        {
+            public HeadPush(RagdollPart head, Vector3 velocity, float giveUpAt)
+            {
+                Head = head;
+                Velocity = velocity;
+                GiveUpAt = giveUpAt;
+            }
+
+            public RagdollPart Head { get; }
+            public Vector3 Velocity { get; }
+            public float GiveUpAt { get; }
+        }
+
+        private sealed class Victim
+        {
+            public Victim(Creature creature, float until)
+            {
+                Creature = creature;
+                Until = until;
+            }
+
+            public Creature Creature { get; }
+            public float Until { get; }
+        }
 
         private sealed class SwappedDeath
         {
