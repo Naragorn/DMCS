@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Same target framework as existing working B&S script mods (verified on HealthRegen.dll). -->
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>DMCS</AssemblyName>
+    <RootNamespace>DMCS</RootNamespace>
+    <Version>0.1.0</Version>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Core logic compiled into the single shipped DLL. -->
+  <ItemGroup>
+    <Compile Include="../DMCS.Core/**/*.cs" Exclude="../DMCS.Core/obj/**;../DMCS.Core/bin/**" Link="Core/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- Game assemblies: referenced from the local install, never copied into the mod. -->
+  <ItemGroup>
+    <Reference Include="ThunderRoad"><HintPath>$(BasManagedDir)/ThunderRoad.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(BasManagedDir)/UnityEngine.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(BasManagedDir)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="manifest.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- dotnet build -p:DeployToGame=true copies DLL + manifest into the game's Mods/DMCS folder. -->
+  <Target Name="DeployToGame" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true'">
+    <Error Condition="!Exists('$(BasModsDir)')" Text="Mods folder not found: $(BasModsDir)" />
+    <Copy SourceFiles="$(TargetPath);$(MSBuildProjectDirectory)/manifest.json" DestinationFolder="$(BasModsDir)/DMCS" />
+    <Message Importance="high" Text="DMCS deployed to $(BasModsDir)/DMCS" />
+  </Target>
+
+</Project>

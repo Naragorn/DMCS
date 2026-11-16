@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Pure logic, no ThunderRoad/Unity references, so every decision path is unit-testable
+    outside the game. The mod project compiles these sources into DMCS.dll (single DLL ships).
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>DMCS.Core</RootNamespace>
+  </PropertyGroup>
+
+</Project>

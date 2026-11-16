@@ -1,0 +1,22 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <Deterministic>true</Deterministic>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <!-- Needed so IDE0005 (unused usings) is enforced on build; missing XML docs are not an error. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+    <!--
+      Blade & Sorcery install. Override per machine with
+      `dotnet build -p:BasGameDir=/path/to/Blade & Sorcery` or the BAS_GAME_DIR env var.
+    -->
+    <BasGameDir Condition="'$(BasGameDir)' == '' and '$(BAS_GAME_DIR)' != ''">$(BAS_GAME_DIR)</BasGameDir>
+    <BasGameDir Condition="'$(BasGameDir)' == ''">$(HOME)/.local/share/Steam/steamapps/common/Blade &amp; Sorcery</BasGameDir>
+    <BasManagedDir>$(BasGameDir)/BladeAndSorcery_Data/Managed</BasManagedDir>
+    <BasModsDir>$(BasGameDir)/BladeAndSorcery_Data/StreamingAssets/Mods</BasModsDir>
+  </PropertyGroup>
+</Project>

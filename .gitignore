@@ -6,8 +6,7 @@
 [Bb]uilds/
 [Ll]ogs/
 [Uu]ser[Ss]ettings/
-*.csproj
-*.sln
+# *.csproj / *.sln are NOT ignored: this is a plain dotnet project, not a Unity-generated one.
 *.user
 *.pidb
 *.booproj
@@ -24,3 +23,7 @@ crashlytics-buildid.txt
 bin/
 *.dll
 !**/Plugins/**/*.dll
+
+# dotnet
+TestResults/
+*.binlog
