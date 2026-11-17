@@ -129,7 +129,7 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 
 **Config:** gain values per event, `meterMax`, `adrenalineWindowDuration`, `slowMoScale`, `slowMoDuration`, `knockbackForce`, toggles for each visual effect.
 
-### 4b. Adrenaline design (2026-11-16; 4a–4e built, see README)
+### 4b. Adrenaline design (2026-11-16; 4a–4e built, see docs/IMPLEMENTATION.md)
 
 Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSON.
 
@@ -158,7 +158,7 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 - Slow-mo (see "Critical time mode"): the game's `TimeManager.SetSlowMotion` (it also sets `fixedDeltaTime` and the slow-mo audio snapshot), then `SetSlowMotion(false, …)`. If a slow-mo is already running (`TimeManager.slowMotionState` not `Disabled`, e.g. the player's Focus), DMCS skips its own and never stops the other one. Always restore on feature off, level unload and player death.
 - Knockback: destabilize the ragdoll and push all parts along the hit (as the disarm fling).
 
-**Ready sound (decided 2026-11-17, built):** Dark Messiah plays `Adrenaline_Reached` ("// Full Adrenaline", volume 0.6) when the bar fills. DMCS rebuilds it very close as its own synthesis (dark thunder roar at the start + rumble + hiss + metallic ring at ~1021 Hz, measured in DM's file; see README 4d). DM's file is never shipped; since 2026-11-17 the player can pick "Dark Messiah" and DMCS reads the original from the player's own install at runtime (user's request).
+**Ready sound (decided 2026-11-17, built):** Dark Messiah plays `Adrenaline_Reached` ("// Full Adrenaline", volume 0.6) when the bar fills. DMCS rebuilds it very close as its own synthesis (dark thunder roar at the start + rumble + hiss + metallic ring at ~1021 Hz, measured in DM's file; see docs/IMPLEMENTATION.md, 4d). DM's file is never shipped; since 2026-11-17 the player can pick "Dark Messiah" and DMCS reads the original from the player's own install at runtime (user's request).
 
 **Dark Messiah's heartbeat (read in its `server.dll`, 2026-11-17):** not an adrenaline signal but a low-health warning. `Heartbeat_1` plays once when the player's health falls to 10 % or below, `Heartbeat_2` once at 50 % or below (above 10 %); both re-arm when health is back above 50 %. The convars `mm_player_heartbeat_fast` (0.6) and `mm_player_heartbeat_slow` (1) are registered but never read. B&S has its own low-health heartbeat (`CameraEffects`), so DMCS does not add one; its heartbeat while the window is open stays as designed.
 
@@ -201,7 +201,7 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 5. No execution in time: the NPC stands up again and fights on, or with `kneelDeathChance` (default 0 %) it dies and falls over. The meter is empty either way.
 - Kneeling alive: the catalog animation `HumanIdleExamineKneel` (KneelingStart / ExamineKneel loop / KneelingEnd), held the way the game's `BrainModuleFear.Panic` holds a cowering NPC (`brain.isIncapacitated`, behaviour tree reset and `updateTree = false`, stance Idle, `StopAnimation(true)`, `PlayAnimation`); released as `StopPanic` does. A first try with a brain swap to `HumanDummy` left the NPC standing (harness screenshot 2026-11-16).
 
-**API for other mods (approved by the user 2026-11-17, built):** `DMCS.Adrenaline.AddExternal(float amount, string source)`, public static, found by name through reflection (no hard dependency); same gain path as DMCS's own sources; false when Adrenaline is off, the amount is not positive or the window is open. Keep name and signature stable. Used by the Achilles Tendon mod (`AchillesHeelCut`, `AchillesCrippledKill`); details in README.
+**API for other mods (approved by the user 2026-11-17, built):** `DMCS.Adrenaline.AddExternal(float amount, string source)`, public static, found by name through reflection (no hard dependency); same gain path as DMCS's own sources; false when Adrenaline is off, the amount is not positive or the window is open. Keep name and signature stable. Used by the Achilles Tendon mod (`AchillesHeelCut`, `AchillesCrippledKill`); details in docs/IMPLEMENTATION.md.
 
 **Build order:** 4a meter, gains (hit, damage, parry, stagger, disarm), decay, window, Mod Menu, debug log; 4b critical (time mode, kill, dismember, knockback, battle cry, chest-stab fatality); 4c kneel and execution; 4d signals, ready sound and the vignette (built 2026-11-17); 4e dodge and catch bonus (marked "not verified in game" until a headset check; design below). Each: unit tests first, then a harness scenario (the harness can deal hits and damage and read `Time.timeScale` and `isSliced`; parry and dodge are hard to force there).
 
@@ -213,7 +213,7 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 
 **Open work (listed 2026-11-17, in this order):**
 1. Headset check of 4a–4d: meter, critical, kneel/execution, signals (vignette size, haptics, sounds, DMCS 1–4 against Dark Messiah). Cost: small for code, the user's time in the headset; brings back the values everything else rests on (hard-swing 3 m/s, vignette 50°, haptics strength, volumes).
-2. ~~4e dodge and catch bonus~~ built 2026-11-17 (see above and README); the dodge speed needs the headset.
+2. ~~4e dodge and catch bonus~~ built 2026-11-17 (see above and docs/IMPLEMENTATION.md); the dodge speed needs the headset.
 3. Step 5: Clash of Might + Twist Disarm (shared weapon-on-weapon contact code). Cost: large; contact duration and controller micro-movement intensity are tuned only in the headset.
 4. DMCS 4 vignette fine-tuning: Dark Messiah's streaks are a bit more brownish and blurrier. Cost: small (colour and blur in the generator plus a statistics test); only when the headset shows it matters.
 5. Later, not scheduled: `Gamey` / `Realistic` presets for the disarm values (Realistic needs headset values), and features as skill-tree powers (below). Cost: medium to large; whether a mod can add a skill to the Body tree is not checked yet.
@@ -239,4 +239,4 @@ To verify before building: how a mod adds a skill to an existing tree (the game'
 4. Adrenaline System (meter + window + critical effects).
 5. Clash of Might (hardest — collision duration + controller intensity tuning).
 
-After each step: build, test in game, and note what was verified vs. assumed (in README).
+After each step: build, test in game, and note what was verified vs. assumed (in docs/IMPLEMENTATION.md; README.md stays player-facing).
