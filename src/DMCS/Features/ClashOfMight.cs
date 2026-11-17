@@ -413,7 +413,8 @@ namespace DMCS
             _timeOwned = false;
             var playerDead = Player.currentCreature == null || Player.currentCreature.isKilled;
             // Only end our own slow-motion: the player's Focus, a critical or the game's death slow-motion may have taken over.
-            if (playerDead || (!force && Mathf.Abs(Time.timeScale - _timeScale) > 0.01f))
+            var starting = TimeManager.slowMotionState == TimeManager.SlowMotionState.Starting;
+            if (playerDead || (!force && !ClashRules.StillOurSlowMotion(starting, Time.timeScale, _timeScale)))
             {
                 Dmcs.Log.Debug(Channel, "slow-motion over; another slow-motion took over, left running");
                 return;

@@ -272,7 +272,9 @@ Design and probe results: `CLAUDE.md`, section 1.
   the player's held blade (handle → tip of either hand) within *Block Reach* of the flash point, and the angle between the
   player's blade and the swing plane's normal (blade axis × velocity at the flash point, `GetItemPointVelocity`) within
   *Block Angle Tolerance*. Go → `TimeManager.SetSlowMotion(scale)` with the `SpellSlowTime` effect, until the attack's End/Cancel
-  (cap 2.5 s real); skipped when another slow-motion runs, ended only if it is still ours. Log: `block ready against <npc>'s swing
+  (cap 2.5 s real); skipped when another slow-motion runs, ended only if it is still ours: while the game still eases the scale
+  down (`TimeManager.slowMotionState == Starting`) it counts as ours (`ClashRules.StillOurSlowMotion`). Without that, a swing that
+  ended 0.14 s after the start (scale still 0.68) left the slow-motion running for good (picture probe 2026-11-17). Log: `block ready against <npc>'s swing
   (enemy 1.40 m, blade 0.30 m, angle 12°): slow-motion 0.30x` or `no slow-motion for <npc>'s swing: BladeTooFar`.
 - Pure logic in Core (`ClashRules`, `ClashGeometry`, `ClashTelegraph`, `Glint`), unit-tested over every flow.
 - Harness `step5a-clash-telegraph` (new BasHarness options `spawn-npc … container=<id>` and `player-invincible`): a real
@@ -282,15 +284,21 @@ Design and probe results: `CLAUDE.md`, section 1.
   Found on the way: the default loadout is random (a mace in the left hand); the player dies after about a minute without
   invincibility; the NPC's swings into the standing player counted as player body hits and Body Hit Drop disarmed it (see
   "Open findings").
-- Not covered in game: the slow-motion's go path (the harness cannot hold a blade against a real swing), how the flash looks,
-  whether 0.1 s at the strike start leaves enough time.
+- Picture probe 2026-11-17 (temporary code, not committed): with the player holding a sword and loosened values (block reach
+  1.5 m, 80°, 4 m) the slow-motion started in game (`Time.timeScale` 0.30) and ended with the swing. The flash is hard to see
+  from the player's eye (0.14 m, 60 % glow on bright sand): size, colour and brightness need sliders and the headset.
+- Not covered in game: a block with the default values (the harness cannot move the player's arm), whether 0.1 s at the strike
+  start leaves enough time.
 
 ### Open findings
 
 - 2026-11-17, harness `step5a`: a fighting NPC swinging into the standing (invincible) player was disarmed by DMCS Body Hit
-  Drop (`body hit RightArm, 25 %`). So a contact of the NPC with the player's body counted as a player hit on a staggered NPC.
-  Not investigated yet: which damager the game reported and why the NPC counted as staggered. Possibly real in play (an
-  enemy hitting your arm disarms itself); to check before the headset test.
+  Drop (`body hit RightArm, 25 %`). Diagnosed with a temporary log on every hit DMCS reads as a player body hit: the game
+  reports the NPC's arm/hand running into the player's motionless left hand as a hit *by* the player's `LeftHand` part
+  (5 contacts in 60 s, impact 2–4.8 m/s, the player's hand part moving 1.8–5.5 m/s only because it was knocked). The NPC was
+  staggered by the game's own recoil (`LightAndMedium`), so the next contact rolled the 25 % body-hit chance. Cause: `HitInfo.SourceOf`
+  takes any contact of a player body part as a player strike; the part's physics speed cannot tell a punch from being hit.
+  Not fixed yet.
 
 ## API verification
 

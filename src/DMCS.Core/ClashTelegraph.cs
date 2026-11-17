@@ -66,6 +66,14 @@ namespace DMCS.Core
                 || (itemId ?? "").StartsWith("Sword", StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Whether the running slow-motion is still the clash's own, so ending it does not stop another one (the player's
+        /// Focus, a critical). While the game still eases the scale down (TimeManager state Starting) it is ours: the scale
+        /// is not at our value yet. Once running, only at our scale.
+        /// </summary>
+        public static bool StillOurSlowMotion(bool starting, float timeScale, float ourScale) =>
+            starting || Math.Abs(timeScale - ourScale) <= 0.01f;
+
         public static bool CanFlash(bool onlySwords, bool isSword, bool hasSlashBlade) => hasSlashBlade && (!onlySwords || isSword);
 
         public static bool IsBigSwing(bool isThrust, float windUpSeconds, float minWindUp) => !isThrust && windUpSeconds >= minWindUp;

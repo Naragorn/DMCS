@@ -363,3 +363,23 @@ public class GlintTests
         Assert.Equal(expected, Glint.Pulse(seconds), 2);
     }
 }
+
+public class ClashSlowMoOwnershipTests
+{
+    [Fact]
+    public void Running_AtOurScale_IsOurs() => Assert.True(ClashRules.StillOurSlowMotion(starting: false, timeScale: 0.3f, ourScale: 0.3f));
+
+    [Fact]
+    public void Running_AtAnotherScale_IsSomeoneElses() => Assert.False(ClashRules.StillOurSlowMotion(false, 0.5f, 0.3f));
+
+    [Fact]
+    public void StillEasingIn_IsOurs()
+    {
+        // Found in game 2026-11-17: the swing ended 0.14 s after our slow-motion started, while the game still eased the
+        // time scale down (0.68); comparing the scale alone left the slow-motion running for good.
+        Assert.True(ClashRules.StillOurSlowMotion(starting: true, timeScale: 0.68f, ourScale: 0.3f));
+    }
+
+    [Fact]
+    public void BackToNormalTime_IsNotOurs() => Assert.False(ClashRules.StillOurSlowMotion(false, 1f, 0.3f));
+}
