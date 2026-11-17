@@ -19,14 +19,18 @@ public class ReadySoundTests
     private static float[] Slice(float[] mono, double from, double to) =>
         mono.Skip((int)(from * Rate)).Take((int)((to - from) * Rate)).ToArray();
 
-    /// <summary>Goertzel power at one frequency, normalised by length.</summary>
+    /// <summary>
+    /// Goertzel power at one frequency over a Hann-windowed slice, normalised by length. Without the window the strong
+    /// rumble leaks into every other frequency and drowns what is measured there.
+    /// </summary>
     private static double Power(float[] x, double hz)
     {
         var w = 2 * Math.PI * hz / Rate;
         var c = 2 * Math.Cos(w);
         double s1 = 0, s2 = 0;
-        foreach (var v in x)
+        for (var i = 0; i < x.Length; i++)
         {
+            var v = x[i] * (0.5 - (0.5 * Math.Cos(2 * Math.PI * i / Math.Max(1, x.Length - 1))));
             var s0 = v + (c * s1) - s2;
             s2 = s1;
             s1 = s0;
@@ -96,6 +100,35 @@ public class ReadySoundTests
         Assert.True(peak > 2 * early, "swells in");
         Assert.True(peak > 5 * end, "rings out");
         Assert.True(end > 0, "still rings at the end");
+    }
+
+    /// <summary>
+    /// The thunder at the start (Dark Messiah's file, 100 ms bands: 300–2000 Hz at 98–111 in 0.1–0.3 s, about 25 from
+    /// 0.6 s on): a broadband crack and roar in the mids that the rumble and hiss alone do not have.
+    /// </summary>
+    [Fact]
+    public void Thunder_CracksInTheMids_AtTheStart_ThenRollsOff()
+    {
+        var m = Mono(Sound());
+
+        // Band level as the analyser measured it: root of the summed power, sampled every 10 Hz.
+        double Band(double from, double to, double lo, double hi)
+        {
+            var x = Slice(m, from, to);
+            double sum = 0;
+            for (var hz = lo; hz < hi; hz += 10)
+            {
+                sum += Power(x, hz);
+            }
+            return Math.Sqrt(sum);
+        }
+
+        var earlyMid = Band(0.05, 0.35, 300, 2000);
+        var earlyLow = Band(0.05, 0.35, 20, 80);
+        var lateMid = Band(0.7, 1.0, 300, 2000);
+
+        Assert.True(earlyMid > 0.4 * earlyLow, "the crack roars in the mids: " + (earlyMid / earlyLow).ToString("0.00"));
+        Assert.True(earlyMid > 2.5 * lateMid, "then rolls off: " + (earlyMid / lateMid).ToString("0.00"));
     }
 
     [Fact]

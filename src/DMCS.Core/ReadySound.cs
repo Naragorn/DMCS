@@ -5,7 +5,8 @@ namespace DMCS.Core
     /// <summary>
     /// What the "adrenaline ready" sound is made of. Modelled on what Dark Messiah's own "Adrenaline_Reached"
     /// (game_sounds_inventory.txt, "// Full Adrenaline", volume 0.6) does, measured in its file (2026-11-17):
-    /// 2.29 s stereo; a low rumble (20–160 Hz) that carries the first 1.2 s and is gone at 1.7 s; a bright hiss
+    /// 2.29 s stereo; a thunder crack at the start (a roar across 80–2000 Hz, loudest 0.05–0.35 s, rolling off to a
+    /// quarter by 0.6 s); a low rumble (20–160 Hz) that carries the first 1.2 s and is gone at 1.7 s; a bright hiss
     /// (above 3.5 kHz) that swells in the first 0.2 s and fades by 1.2 s; and a metallic ring at about 1021 Hz with
     /// partials near ×2, ×3 and ×3.85 and sidebands about 60 Hz off, which swells to its loudest near 1 s and rings
     /// out to the end. DMCS builds its own sound from these traits; it never loads or ships Dark Messiah's file.
@@ -16,6 +17,7 @@ namespace DMCS.Core
         public float RingHz { get; set; } = 1021f;
         public float RumbleLevel { get; set; } = 1f;
         public float HissLevel { get; set; } = 0.07f;
+        public float ThunderLevel { get; set; } = 0.25f;
         public float RingLevel { get; set; } = 0.005f;
         public float Peak { get; set; } = 0.9f;
     }
@@ -29,9 +31,13 @@ namespace DMCS.Core
         private const float RingPeakAt = 1.0f;
         private const float RingDecay = 0.42f;
         private const float RumbleHoldUntil = 1.1f;
-        private const float RumbleDecay = 0.24f;
+        private const float RumbleDecay = 0.17f;
         private const float HissPeakAt = 0.12f;
         private const float HissDecay = 0.28f;
+        private const float HissFloor = 0.3f;
+        private const float ThunderHoldUntil = 0.3f;
+        private const float ThunderDecay = 0.13f;
+        private const float ThunderFloor = 0.22f;
         private const float FadeIn = 0.005f;
         private const float FadeOut = 0.06f;
 
@@ -49,15 +55,19 @@ namespace DMCS.Core
                 var rng = new XorShift((seed * 7919) + ((ch + 1) * 104729));
                 var own = Rumble(n, sampleRate, rng);
                 var hiss = Hiss(n, sampleRate, rng);
+                var thunder = Thunder(n, sampleRate, rng);
                 var ring = Ring(n, sampleRate, spec.RingHz * (ch == 0 ? 0.9993f : 1.0007f), rng);
                 for (var i = 0; i < n; i++)
                 {
                     var t = (float)i / sampleRate;
                     var rumble = ((0.4f * shared[i]) + (0.6f * own[i])) * RumbleEnvelope(t);
-                    var v = (spec.RumbleLevel * rumble) + (spec.HissLevel * hiss[i] * HissEnvelope(t)) + (spec.RingLevel * ring[i]);
+                    var v = (spec.RumbleLevel * rumble) + (spec.HissLevel * hiss[i] * HissEnvelope(t))
+                        + (spec.ThunderLevel * thunder[i] * ThunderEnvelope(t)) + (spec.RingLevel * ring[i]);
                     output[(2 * i) + ch] = v * Edges(i, n, sampleRate);
                 }
             }
+            Normalise(output, 1f);
+            SoftLimit(output);
             Normalise(output, spec.Peak);
             return output;
         }
@@ -76,6 +86,26 @@ namespace DMCS.Core
                 var body = low3.Next(low2.Next(low.Next(rng.NextSigned()))) * 1.6f;
                 var am = flutter2.Next(flutter.Next(rng.NextSigned()));
                 x[i] = body * (0.55f + (Math.Abs(am) * 12f));
+            }
+            return x;
+        }
+
+        /// <summary>
+        /// The thunder: noise between ~50 and ~2000 Hz, crackling (its loudness jumps with a fast random flutter).
+        /// </summary>
+        private static float[] Thunder(int n, int rate, XorShift rng)
+        {
+            var high = new OnePole(50f, rate);
+            var low = new OnePole(2000f, rate);
+            var low2 = new OnePole(2000f, rate);
+            var crackle = new OnePole(35f, rate);
+            var x = new float[n];
+            for (var i = 0; i < n; i++)
+            {
+                var w = rng.NextSigned();
+                var band = low2.Next(low.Next(w - high.Next(w)));
+                var burst = Math.Abs(crackle.Next(rng.NextSigned())) * 9f;
+                x[i] = band * (0.4f + burst);
             }
             return x;
         }
@@ -143,8 +173,30 @@ namespace DMCS.Core
             return t < RumbleHoldUntil ? 1f : (float)Math.Exp(-(t - RumbleHoldUntil) / RumbleDecay);
         }
 
+        private static float ThunderEnvelope(float t)
+        {
+            if (t < 0.04f)
+            {
+                return t / 0.04f;
+            }
+            if (t < ThunderHoldUntil)
+            {
+                return 1f;
+            }
+            var rolled = ThunderFloor + ((1f - ThunderFloor) * (float)Math.Exp(-(t - ThunderHoldUntil) / ThunderDecay));
+            return rolled * BodyCutoff(t);
+        }
+
+        /// <summary>Swells in, falls to a floor that lasts as long as the rumble (Dark Messiah's 2 kHz+ band stays at ~40 % to 1.1 s).</summary>
+        /// <summary>
+        /// The noisy layers stop shortly after the body holds (Dark Messiah's mid and high bands fall by 4–5× between 1.1
+        /// and 1.3 s), so only the low rumble's tail and the ring are left.
+        /// </summary>
+        private static float BodyCutoff(float t) => t < RumbleHoldUntil ? 1f : (float)Math.Exp(-(t - RumbleHoldUntil) / 0.09f);
+
         private static float HissEnvelope(float t) =>
-            t < HissPeakAt ? t / HissPeakAt : (float)Math.Exp(-(t - HissPeakAt) / HissDecay);
+            t < HissPeakAt ? t / HissPeakAt
+                : (HissFloor + ((1f - HissFloor) * (float)Math.Exp(-(t - HissPeakAt) / HissDecay))) * BodyCutoff(t);
 
         /// <summary>A short fade at both ends so the clip never clicks; the first and last samples are 0.</summary>
         private static float Edges(int i, int n, int rate)
@@ -162,6 +214,20 @@ namespace DMCS.Core
                 g *= 0.5f * (1f - (float)Math.Cos(Math.PI * left / fadeOut));
             }
             return g;
+        }
+
+        /// <summary>
+        /// Rounds off the thunder's crackle peaks (tanh), so the sound is as loud as Dark Messiah's at the same peak
+        /// (its crest factor is about 2.5; the raw mix's is about 5).
+        /// </summary>
+        private static void SoftLimit(float[] x)
+        {
+            const float drive = 1.5f;
+            var norm = (float)Math.Tanh(drive);
+            for (var i = 0; i < x.Length; i++)
+            {
+                x[i] = (float)Math.Tanh(drive * x[i]) / norm;
+            }
         }
 
         private static void Normalise(float[] x, float peak)

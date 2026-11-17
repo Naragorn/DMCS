@@ -158,7 +158,9 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 - Slow-mo (see "Critical time mode"): the game's `TimeManager.SetSlowMotion` (it also sets `fixedDeltaTime` and the slow-mo audio snapshot), then `SetSlowMotion(false, …)`. If a slow-mo is already running (`TimeManager.slowMotionState` not `Disabled`, e.g. the player's Focus), DMCS skips its own and never stops the other one. Always restore on feature off, level unload and player death.
 - Knockback: destabilize the ragdoll and push all parts along the hit (as the disarm fling).
 
-**Ready sound (decided 2026-11-17, built):** Dark Messiah plays `Adrenaline_Reached` ("// Full Adrenaline", volume 0.6) when the bar fills. DMCS rebuilds it very close as its own synthesis (rumble + hiss + metallic ring at ~1021 Hz, measured in DM's file; see README 4d). Never ship or load DM's file.
+**Ready sound (decided 2026-11-17, built):** Dark Messiah plays `Adrenaline_Reached` ("// Full Adrenaline", volume 0.6) when the bar fills. DMCS rebuilds it very close as its own synthesis (thunder crack at the start + rumble + hiss + metallic ring at ~1021 Hz, measured in DM's file; see README 4d). Never ship or load DM's file.
+
+**Dark Messiah's heartbeat (read in its `server.dll`, 2026-11-17):** not an adrenaline signal but a low-health warning. `Heartbeat_1` plays once when the player's health falls to 10 % or below, `Heartbeat_2` once at 50 % or below (above 10 %); both re-arm when health is back above 50 %. The convars `mm_player_heartbeat_fast` (0.6) and `mm_player_heartbeat_slow` (1) are registered but never read. B&S has its own low-health heartbeat (`CameraEffects`), so DMCS does not add one; its heartbeat while the window is open stays as designed.
 
 **Signals while the window is open** (built in 4d; also while an execution window is open):
 - Heartbeat: the game's clip `Bas.Audio.Misc.HeartBeatLoop` on DMCS's own AudioSource (the game's heartbeat source belongs to the health display and is reset by `CameraEffects.RefreshHealth`).

@@ -253,11 +253,13 @@ Not yet verified in game: that `HumanDummy` never picks anything up, and how the
 
 While the adrenaline window or an execution window is open (`AdrenalineSignalRule`), each switchable on its own:
 - **Ready sound** once when the meter fills. DMCS synthesises it at runtime (`ReadySound`), modelled on what Dark
-  Messiah's own `Adrenaline_Reached.wav` does, measured in its file (2026-11-17): 2.29 s stereo, a low rumble
-  (20–160 Hz) carrying the first 1.2 s, a bright hiss swelling in the first 0.2 s, and a metallic ring at ~1021 Hz with
-  partials near ×2, ×3, ×3.85 and sidebands ~60 Hz off that swells to ~1 s and rings out. The synthesis was tuned until
-  the same band measurements matched (rumble/hiss/ring per 100 ms, L/R correlation 0.26 vs 0.28). Dark Messiah's file is
-  never loaded or shipped.
+  Messiah's own `Adrenaline_Reached.wav` does, measured in its file (2026-11-17): 2.29 s stereo; a thunder crack at the
+  start (a crackling roar across 50–2000 Hz, loudest 0.05–0.3 s, then rolling off); a low rumble (20–160 Hz) carrying
+  the first 1.1 s; a bright hiss swelling in the first 0.2 s with a floor to 1.1 s; and a metallic ring at ~1021 Hz with
+  partials near ×2, ×3, ×3.85 and sidebands ~60 Hz off that swells to ~1 s and rings out. The mix is soft-limited (tanh)
+  to Dark Messiah's loudness at the same peak. Tuned until the same band measurements matched per 100 ms (e.g. 300–2000 Hz
+  against 20–80 Hz in 0.05–0.35 s: 0.88 vs 0.86; loudness early 0.23 vs 0.25–0.27 RMS, body 0.17 vs 0.15–0.18).
+  Dark Messiah's file is never loaded or shipped.
 - **Heartbeat**: the game's own loop (`Catalog.gameData.heartBeatLoopAddress` = `Bas.Audio.Misc.HeartBeatLoop`) on
   DMCS's own 2D AudioSource, faded in and out.
 - **Haptics**: a lub-dub pulse (`HeartbeatPulse`, 100 bpm) in both hands via `RagdollHand.HapticTick`.
@@ -360,6 +362,7 @@ a real physical weapon hit (held-weapon attribution) and how the stagger *feels*
 
 | Date | Step | Result |
 |---|---|---|
+| 2026-11-17 | 4d | Ready sound: thunder crack at the start added (the first version had rumble, hiss and ring only; Dark Messiah's file has a roar across the mids in the first 0.3 s). Unit tests only; the game-side code did not change. The sound tests now window their Goertzel measurement (without it the rumble leaked into every frequency, so the hiss test passed by luck). |
 | 2026-11-17 | 4d | Signals and vignette. Shader probe first (URP Particles/Unlit found). Harness: all ten scenarios **PASS** (step3 on a rerun: one timeout on "may re-arm" after the combo disarm, passed on the rerun). First runs found: frames took 2 s to build (fixed: per-streak pixel boxes, same output, built at level load); at 60° to the edge the streaks sat outside the mirror view → *Vignette Size* slider, 50°. |
 | 2026-11-16 | 1 | Harness: `step1-a-menu`, `-b-persist-set`, `-c-persist-check` **PASS** (70 s). First run found that saved values apply after script load; the load banner claimed default states — fixed (Settings line at level load). |
 | 2026-11-16 | 3b | Body Hit Drop, shields, fling. Harness: all six scenarios **PASS** (with the earlier female/smaller toggles; the chance-per-type version that replaced them is unit-tested, its scenario changes **not run**). Found on the way: a "grab the handle" steal is pointless, because the game itself gives a dagger or short sword to whoever grabs it; an NPC holding a buckler did not stagger from the push=1 test hit; a fighting NPC picks up shields and maces lying around during waits → step3b uses `HumanDummy`, step3 hands the left dagger over right before the hits. Not checked: the height check on a really smaller NPC (unit-tested only), sparks and pulse in the headset. |
