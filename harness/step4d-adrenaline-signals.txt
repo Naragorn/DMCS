@@ -31,7 +31,7 @@ mark
 hit-npc Torso
 hit-npc Torso
 expect-log meter full: window open for 10 s
-expect-log signal: ready sound (2.30 s)
+expect-log signal: ready sound DMCS 3 (2.30 s)
 expect-log signals on: heartbeat on, haptics on
 expect-log signal: vignette shader Universal Render Pipeline/Particles/Unlit
 expect-log signal: vignette cap on camera

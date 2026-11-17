@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using DMCS.Core;
 using ThunderRoad;
 using UnityEngine;
@@ -53,11 +54,17 @@ namespace DMCS
         private static int _shownFrame = -1;
         private static float _vignetteSize = AdrenalineSettings.VignetteSize.Default;
         private static string _vignetteStyle = AdrenalineStyles.DefaultVignette;
+        private static string _readySoundStyle = AdrenalineStyles.DefaultSound;
+        private static string _heartbeatSound = AdrenalineStyles.DefaultHeartbeat;
         private static string _readyClipStyle;
         private static string _heartbeatClipStyle;
         private static AudioClip _gameHeartbeat;
         private static AudioClip _dmHeartbeat;
         private static string _framesStyle;
+        private static Task<byte[][]> _building;
+        private static VignetteSpec _buildingSpec;
+        private static float _buildStarted;
+        private static readonly Dictionary<string, Task<float[]>> SoundTasks = new Dictionary<string, Task<float[]>>();
 
         /// <summary>Saved option values are applied before the first level loads; from then on a picked version may set its look.</summary>
         private static bool _optionsApplied;
@@ -66,7 +73,15 @@ namespace DMCS
         public static bool ReadySoundOn { get; set; } = AdrenalineSettings.DefaultReadySound;
 
         [ModOption(name = AdrenalineSettings.ReadySoundStyleName, tooltip = "Which meter-full sound: DMCS 1–3 are the versions DMCS built (3 = newest), Dark Messiah = the original, read from your own Dark Messiah install (falls back to DMCS 3 when it is not found).", valueSourceName = nameof(SoundStyleValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 31)]
-        public static string ReadySoundStyle { get; set; } = AdrenalineStyles.DefaultSound;
+        public static string ReadySoundStyle
+        {
+            get => _readySoundStyle;
+            set
+            {
+                _readySoundStyle = value;
+                BeginDarkMessiahIfPicked(value);
+            }
+        }
 
         [ModOption(name = AdrenalineSettings.ReadySoundVolumeName, tooltip = "Volume of the meter-full sound.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 32)]
         [ModOptionSlider]
@@ -76,7 +91,15 @@ namespace DMCS
         public static bool HeartbeatOn { get; set; } = AdrenalineSettings.DefaultHeartbeat;
 
         [ModOption(name = AdrenalineSettings.HeartbeatSoundName, tooltip = "Which heartbeat: Blade & Sorcery's own, or Dark Messiah's fast one from your own Dark Messiah install.", valueSourceName = nameof(HeartbeatSoundValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 34)]
-        public static string HeartbeatSound { get; set; } = AdrenalineStyles.DefaultHeartbeat;
+        public static string HeartbeatSound
+        {
+            get => _heartbeatSound;
+            set
+            {
+                _heartbeatSound = value;
+                BeginDarkMessiahIfPicked(value);
+            }
+        }
 
         [ModOption(name = AdrenalineSettings.HeartbeatVolumeName, tooltip = "Volume of the heartbeat.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 35)]
         [ModOptionSlider]
@@ -107,6 +130,7 @@ namespace DMCS
             {
                 var changed = value != _vignetteStyle;
                 _vignetteStyle = value;
+                BeginDarkMessiahIfPicked(value);
                 if (changed && _optionsApplied && !AdrenalineStyles.IsDarkMessiah(value))
                 {
                     var (streaks, length, hue) = AdrenalineStyles.VignetteLook(value);
@@ -183,7 +207,10 @@ namespace DMCS
             _optionsApplied = true;
             try
             {
-                EnsureReadyClip();
+                foreach (var name in new[] { AdrenalineStyles.Dmcs1, AdrenalineStyles.Dmcs2, AdrenalineStyles.Dmcs3 })
+                {
+                    SoundSamples(name);
+                }
                 if (VignetteOn)
                 {
                     EnsureFrames();
@@ -193,6 +220,27 @@ namespace DMCS
             {
                 Dmcs.Log.Info("Adrenaline signals error: " + ex);
             }
+        }
+
+        /// <summary>Dark Messiah's files are read in the background as soon as one of its options is picked.</summary>
+        private static void BeginDarkMessiahIfPicked(string value)
+        {
+            if (AdrenalineStyles.IsDarkMessiah(value))
+            {
+                DarkMessiahAssets.Begin();
+            }
+        }
+
+        /// <summary>A DMCS version's samples, synthesised once in the background (the ring alone takes a while in the game's Mono).</summary>
+        private static Task<float[]> SoundSamples(string name)
+        {
+            if (!SoundTasks.TryGetValue(name, out var task))
+            {
+                var spec = AdrenalineStyles.Sound(name);
+                task = Task.Run(() => ReadySound.Generate(SoundRate, 1, spec));
+                SoundTasks[name] = task;
+            }
+            return task;
         }
 
         private static VignetteSpec CurrentSpec() =>
@@ -218,7 +266,7 @@ namespace DMCS
             }
             else
             {
-                _readyClip = Clip("DMCS Adrenaline Ready (" + used + ")", ReadySound.Generate(SoundRate, 1, AdrenalineStyles.Sound(used)), 2, SoundRate);
+                _readyClip = Clip("DMCS Adrenaline Ready (" + used + ")", SoundSamples(used).Result, 2, SoundRate);
             }
             _readyClip.name = used;
             _readyClipStyle = style;
@@ -277,6 +325,10 @@ namespace DMCS
                 var now = Time.unscaledTime;
                 var level = Fader.Update(on, Time.unscaledDeltaTime);
                 var flare = featureEnabled ? FlareLevel.Level(now) : 0f;
+                if (VignetteOn)
+                {
+                    EnsureFrames();
+                }
                 UpdateHeartbeat(on, level);
                 UpdateHaptics(on, now, level);
                 UpdateVignette(now, level, flare);
@@ -394,7 +446,11 @@ namespace DMCS
             AudioClip clip = null;
             if (AdrenalineStyles.IsDarkMessiah(style))
             {
-                if (_dmHeartbeat == null && DarkMessiahAssets.Heartbeat is WavData w)
+                if (!DarkMessiahAssets.TryHeartbeat(out var w))
+                {
+                    return false;
+                }
+                if (_dmHeartbeat == null && w != null)
                 {
                     _dmHeartbeat = Clip("DMCS Heartbeat (Dark Messiah)", w.Samples, w.Channels, w.Rate);
                 }
@@ -547,7 +603,7 @@ namespace DMCS
                 }
                 _vignette = NewCap(cam);
             }
-            return true;
+            return _frames != null;
         }
 
         /// <summary>Additive transparent setup of URP Particles/Unlit, as its editor GUI would set it (URP ParticlesUnlit.shader).</summary>
@@ -565,30 +621,60 @@ namespace DMCS
             return m;
         }
 
-        /// <summary>Builds the frames again when the version or a look slider changed.</summary>
+        /// <summary>
+        /// Builds the frames again when the version or a look slider changed: drawn on a background thread (about 0.4 s in
+        /// the game's Mono, measured 2026-11-17), uploaded when done; the old frames stay on screen meanwhile.
+        /// </summary>
         private static void EnsureFrames()
         {
             var style = VignetteStyle;
             if (AdrenalineStyles.IsDarkMessiah(style))
             {
-                if (_frames != null && _framesStyle == style)
+                if (_frames != null && _framesStyle == style && _framesSpec.Frames == 0)
                 {
                     return;
                 }
-                var dm = DarkMessiahAssets.Vignette;
+                if (!DarkMessiahAssets.TryVignette(out var dm))
+                {
+                    return;
+                }
                 if (dm != null)
                 {
                     LoadFrames(dm);
                     _framesStyle = style;
+                    _framesSpec = default;
                     return;
                 }
             }
             var spec = CurrentSpec();
-            if (_frames == null || _framesStyle != style || !Same(spec, _framesSpec))
+            if (_frames != null && _framesStyle == style && Same(spec, _framesSpec))
             {
-                BuildFrames(spec);
-                _framesStyle = style;
+                return;
             }
+            if (_building != null)
+            {
+                if (!_building.IsCompleted)
+                {
+                    return;
+                }
+                var done = _building;
+                var doneSpec = _buildingSpec;
+                _building = null;
+                if (done.IsFaulted)
+                {
+                    Dmcs.Log.Info("Adrenaline vignette: drawing failed: " + done.Exception?.GetBaseException().Message);
+                    return;
+                }
+                if (Same(doneSpec, spec))
+                {
+                    Upload(done.Result, spec);
+                    _framesStyle = style;
+                    return;
+                }
+            }
+            _buildingSpec = spec;
+            _buildStarted = Time.realtimeSinceStartup;
+            _building = Task.Run(() => VignetteFlipbook.Generate(spec, 1));
         }
 
         /// <summary>Dark Messiah's own frames (decoded top row first; Unity textures start at the bottom row).</summary>
@@ -626,16 +712,14 @@ namespace DMCS
             return t;
         }
 
-        private static void BuildFrames(VignetteSpec spec)
+        private static void Upload(byte[][] pixels, VignetteSpec spec)
         {
-            var started = Time.realtimeSinceStartup;
             DestroyFrames();
-            var pixels = VignetteFlipbook.Generate(spec, 1);
             _frames = pixels.Select((p, i) => Texture(p, spec.Size, "DMCS Vignette " + i)).ToArray();
             _framesSpec = spec;
             _shownFrame = -1;
             Dmcs.Log.Debug(Channel, "signal: vignette " + VignetteName(spec.Style) + ": " + pixels.Length + " frames built in "
-                + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0", CultureInfo.InvariantCulture) + " ms");
+                + ((Time.realtimeSinceStartup - _buildStarted) * 1000f).ToString("0", CultureInfo.InvariantCulture) + " ms (background)");
         }
 
         private static string VignetteName(VignetteStyle style) =>

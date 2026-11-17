@@ -15,7 +15,7 @@ namespace DMCS
             {
                 return false;
             }
-            var index = Array.FindIndex(option.parameterValues, p => Equals(p.value, value));
+            var index = IndexOf(option.parameterValues.Select(p => p.value).ToArray(), value);
             if (index < 0)
             {
                 Dmcs.Log.Info("Option '" + optionName + "' has no value '" + value + "'.");
@@ -28,6 +28,30 @@ namespace DMCS
             }
             RefreshRow(option);
             return true;
+        }
+
+        /// <summary>
+        /// Exact match, or for floats the nearest value within 0.001: the slider values are start + i × step, and the
+        /// game's Mono can round them differently from the compiler's constant (seen 2026-11-17: 0.1 + 7 × 0.05 ≠ 0.45f).
+        /// </summary>
+        private static int IndexOf(object[] values, object value)
+        {
+            var exact = Array.FindIndex(values, v => Equals(v, value));
+            if (exact >= 0 || !(value is float f))
+            {
+                return exact;
+            }
+            var best = -1;
+            var bestDiff = 0.001f;
+            for (var i = 0; i < values.Length; i++)
+            {
+                if (values[i] is float v && Math.Abs(v - f) < bestDiff)
+                {
+                    best = i;
+                    bestDiff = Math.Abs(v - f);
+                }
+            }
+            return best;
         }
 
         /// <summary>An open mods page shows the new value (UIList.LoadValue(false) reads the saved index).</summary>
