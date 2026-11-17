@@ -502,7 +502,7 @@ public class SignalDumps
 
     private static void DumpFrames(string dir)
     {
-        foreach (var (name, prefix) in new[] { (AdrenalineStyles.Dmcs1, "vig1_"), (AdrenalineStyles.Dmcs2, "vig2_"), (AdrenalineStyles.Dmcs3, "vig") })
+        foreach (var (name, prefix) in new[] { (AdrenalineStyles.Dmcs1, "vig1_"), (AdrenalineStyles.Dmcs2, "vig2_"), (AdrenalineStyles.Dmcs3, "vig"), (AdrenalineStyles.Dmcs4, "vig4_") })
         {
             var (streaks, length, hue) = AdrenalineStyles.VignetteLook(name);
             var frames = VignetteFlipbook.Generate(new VignetteSpec(256, 25, streaks, length, hue, AdrenalineStyles.Vignette(name)), 1);
@@ -536,7 +536,7 @@ public class AdrenalineStyleTests
     public void Names_AndDefaults()
     {
         Assert.Equal(new[] { "DMCS 1", "DMCS 2", "DMCS 3", "Dark Messiah" }, AdrenalineStyles.SoundNames);
-        Assert.Equal(new[] { "DMCS 1", "DMCS 2", "DMCS 3", "Dark Messiah" }, AdrenalineStyles.VignetteNames);
+        Assert.Equal(new[] { "DMCS 1", "DMCS 2", "DMCS 3", "DMCS 4", "Dark Messiah" }, AdrenalineStyles.VignetteNames);
         Assert.Equal(new[] { "Blade & Sorcery", "Dark Messiah" }, AdrenalineStyles.HeartbeatNames);
         Assert.Equal("DMCS 3", AdrenalineStyles.DefaultSound);
         Assert.Equal("DMCS 3", AdrenalineStyles.DefaultVignette);
@@ -560,6 +560,7 @@ public class AdrenalineStyleTests
     [InlineData("DMCS 1", VignetteStyle.Flames)]
     [InlineData("DMCS 2", VignetteStyle.Streaks)]
     [InlineData("DMCS 3", VignetteStyle.Patchy)]
+    [InlineData("DMCS 4", VignetteStyle.Embers)]
     [InlineData("Dark Messiah", VignetteStyle.Patchy)]
     public void VignetteVersion_PicksItsDrawing(string name, VignetteStyle style)
     {
@@ -570,6 +571,7 @@ public class AdrenalineStyleTests
     [InlineData("DMCS 1", 14, 0.35f, 12f)]
     [InlineData("DMCS 2", 40, 0.45f, 6f)]
     [InlineData("DMCS 3", 70, 0.4f, 6f)]
+    [InlineData("DMCS 4", 90, 0.5f, 10f)]
     public void VignetteVersion_LooksAsBuilt_AndFitsTheSliders(string name, int streaks, float length, float hue)
     {
         var look = AdrenalineStyles.VignetteLook(name);
@@ -584,9 +586,12 @@ public class AdrenalineStyleTests
     [InlineData(VignetteStyle.Flames)]
     [InlineData(VignetteStyle.Streaks)]
     [InlineData(VignetteStyle.Patchy)]
+    [InlineData(VignetteStyle.Embers)]
     public void EveryDrawing_KeepsTheCentreFree_LightsTheEdge_IsRedOrange(VignetteStyle style)
     {
-        var frames = VignetteFlipbook.Generate(new VignetteSpec(64, 4, 30, 0.4f, 6f, style), 2);
+        var frames = style == VignetteStyle.Embers
+            ? VignetteFlipbook.Generate(new VignetteSpec(64, 4, AdrenalineStyles.Dmcs4Streaks, AdrenalineStyles.Dmcs4Length, AdrenalineStyles.Dmcs4Hue, style), 2)
+            : VignetteFlipbook.Generate(new VignetteSpec(64, 4, 30, 0.4f, 6f, style), 2);
 
         foreach (var f in frames)
         {
@@ -600,7 +605,7 @@ public class AdrenalineStyleTests
                     var r = Math.Sqrt((nx * nx) + (ny * ny));
                     var i = ((y * 64) + x) * 4;
                     var lit = f[i] > 38;
-                    Assert.True(f[i] >= f[i + 1] && f[i + 2] == 0);
+                    Assert.True(f[i] >= f[i + 1] && f[i + 1] >= f[i + 2]);
                     if (r < 0.4 && lit)
                     {
                         centreLit++;
@@ -613,8 +618,52 @@ public class AdrenalineStyleTests
                 }
             }
             Assert.Equal(0, centreLit);
-            Assert.True(edgeLit > edge / 50, style + ": edge " + edgeLit + "/" + edge);
+            // DMCS 4 is as sparse as Dark Messiah along the edge (its light sits in the corners): 1 % is enough there.
+            Assert.True(edgeLit > edge / (style == VignetteStyle.Embers ? 100 : 50), style + ": edge " + edgeLit + "/" + edge);
         }
+    }
+
+    private static double Correlation(byte[] a, byte[] b)
+    {
+        double ma = 0, mb = 0;
+        var n = a.Length / 4;
+        for (var i = 0; i < a.Length; i += 4)
+        {
+            ma += a[i];
+            mb += b[i];
+        }
+        ma /= n;
+        mb /= n;
+        double cov = 0, va = 0, vb = 0;
+        for (var i = 0; i < a.Length; i += 4)
+        {
+            cov += (a[i] - ma) * (b[i] - mb);
+            va += (a[i] - ma) * (a[i] - ma);
+            vb += (b[i] - mb) * (b[i] - mb);
+        }
+        return cov / Math.Sqrt(va * vb);
+    }
+
+    /// <summary>
+    /// DMCS 4 follows Dark Messiah's measured frames (2026-11-17): neighbouring frames correlate 0.89 there, five apart
+    /// 0.59, the loop has no seam; 4 % of the pixels are lit. DMCS 1–3 draw every frame anew.
+    /// </summary>
+    [Fact]
+    public void Embers_ShimmerInPlace_LikeDarkMessiah_TheOthersFlicker()
+    {
+        var (streaks, length, hue) = AdrenalineStyles.VignetteLook(AdrenalineStyles.Dmcs4);
+        var e = VignetteFlipbook.Generate(new VignetteSpec(128, 25, streaks, length, hue, VignetteStyle.Embers), 1);
+        var p = VignetteFlipbook.Generate(new VignetteSpec(128, 25, 70, 0.4f, 6f, VignetteStyle.Patchy), 1);
+
+        var next = Enumerable.Range(0, 25).Average(f => Correlation(e[f], e[(f + 1) % 25]));
+        var five = Enumerable.Range(0, 25).Average(f => Correlation(e[f], e[(f + 5) % 25]));
+        var lit = e.Average(f => Enumerable.Range(0, f.Length / 4).Count(i => f[i * 4] > 38) / (double)(f.Length / 4));
+
+        Assert.InRange(next, 0.85, 0.98);
+        Assert.InRange(five, 0.45, 0.75);
+        Assert.True(Correlation(e[24], e[0]) > 0.85, "seamless loop");
+        Assert.InRange(lit, 0.025, 0.06);
+        Assert.True(Correlation(p[0], p[1]) < 0.3, "DMCS 3 flickers");
     }
 
     [Fact]

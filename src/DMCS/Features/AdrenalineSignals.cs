@@ -122,7 +122,7 @@ namespace DMCS
         /// Which drawing: DMCS 1–3 (choosing one sets streaks, length and hue as that version was built) or Dark Messiah's
         /// own frames from the player's install. Saved values win on load: the look is only set when the player picks a version.
         /// </summary>
-        [ModOption(name = AdrenalineSettings.VignetteStyleName, tooltip = "Which vignette: DMCS 1 flames, DMCS 2 streaks, DMCS 3 patchy streaks (newest), Dark Messiah = the original frames from your own Dark Messiah install. Picking a DMCS version sets streaks, length and hue as it was built.", valueSourceName = nameof(VignetteStyleValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 40)]
+        [ModOption(name = AdrenalineSettings.VignetteStyleName, tooltip = "Which vignette: DMCS 1 flames, DMCS 2 streaks, DMCS 3 patchy streaks, DMCS 4 nearly as Dark Messiah (shimmers in place), Dark Messiah = the original frames from your own Dark Messiah install. Picking a DMCS version sets streaks, length and hue as it was built.", valueSourceName = nameof(VignetteStyleValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 40)]
         public static string VignetteStyle
         {
             get => _vignetteStyle;
@@ -723,7 +723,10 @@ namespace DMCS
         }
 
         private static string VignetteName(VignetteStyle style) =>
-            style == Core.VignetteStyle.Flames ? AdrenalineStyles.Dmcs1 : style == Core.VignetteStyle.Streaks ? AdrenalineStyles.Dmcs2 : AdrenalineStyles.Dmcs3;
+            style == Core.VignetteStyle.Flames ? AdrenalineStyles.Dmcs1
+            : style == Core.VignetteStyle.Streaks ? AdrenalineStyles.Dmcs2
+            : style == Core.VignetteStyle.Embers ? AdrenalineStyles.Dmcs4
+            : AdrenalineStyles.Dmcs3;
 
         private static bool Same(VignetteSpec a, VignetteSpec b) =>
             a.Size == b.Size && a.Frames == b.Frames && a.Streaks == b.Streaks

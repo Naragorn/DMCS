@@ -117,7 +117,7 @@ Game path defaults to `~/.local/share/Steam/steamapps/common/Blade & Sorcery`; o
 | Adrenaline | Adrenaline Haptics Strength | slider | 0–1, step 0.05 | 0.5 |
 | Adrenaline | Adrenaline Weapon Glow | toggle | | on |
 | Adrenaline | Adrenaline Vignette | toggle | | on |
-| Adrenaline | Adrenaline Vignette Style | dropdown | DMCS 1, DMCS 2, DMCS 3, Dark Messiah (picking a DMCS version sets Streaks, Length, Hue) | DMCS 3 |
+| Adrenaline | Adrenaline Vignette Style | dropdown | DMCS 1, DMCS 2, DMCS 3, DMCS 4, Dark Messiah (picking a DMCS version sets Streaks, Length, Hue) | DMCS 3 |
 | Adrenaline | Adrenaline Vignette Intensity | slider | 0–1, step 0.05 | 1 |
 | Adrenaline | Adrenaline Vignette Hue | slider | 0–40°, step 2 | 6° (red) |
 | Adrenaline | Adrenaline Vignette Streaks | slider | 2–100 | 70 |
@@ -278,7 +278,11 @@ While the adrenaline window or an execution window is open (`AdrenalineSignalRul
 - **Versions to compare** (*Ready Sound Style*, *Vignette Style*, *Heartbeat Sound*): every version DMCS built stays
   selectable, byte for byte as built (checked against the old commits): sound DMCS 1 (rumble, hiss, ring), DMCS 2 (+ a
   crackling thunder crack), DMCS 3 (+ a dark thunder roar, default); vignette DMCS 1 (flames), DMCS 2 (even radial
-  streaks), DMCS 3 (patchy radial streaks, default). Picking a DMCS vignette sets *Streaks*, *Length* and *Hue* to how
+  streaks), DMCS 3 (patchy radial streaks, default), DMCS 4 (tuned to Dark Messiah's frames by their measured
+  statistics: fans of fine radial lines that glow up and fade in place, light rising into the corners with a dim red
+  corner glow; DM vs DMCS 4: mean red 6.3 / 6.2, lit pixels 4.0 % / 4.2 %, G/R 0.18 / 0.17, neighbouring frames
+  correlate 0.89 / 0.95, five apart 0.59 / 0.62, mean red by radius 0.8–1.3: 4 / 7.5 / 12 / 24 / 35 / 36 vs
+  6 / 7 / 9 / 21 / 36 / 41; own drawing, nothing traced). Picking a DMCS vignette sets *Streaks*, *Length* and *Hue* to how
   that version was built (only when picked; saved values win on load).
 - **Dark Messiah** in any of the three reads the original files from the player's own Dark Messiah install at runtime
   (`DarkMessiahAssets`; nothing is shipped): `Adrenaline_Reached.wav`, `Player_Heartbeat01.wav` (the fast one, looped)
@@ -292,6 +296,15 @@ While the adrenaline window or an execution window is open (`AdrenalineSignalRul
   `Head` camera, heartbeat clip loaded and playing; screenshots at 50° and 30° show the streaks (the desktop mirror shows
   less than an eye, so at 50° only the edge shows); critical → flare, signals off; Adrenaline off mid-window → stopped.
   Not checked: how loud, how strong and how it looks in the headset; the glow (the harness player holds nothing).
+
+### API for other mods
+
+`DMCS.Adrenaline.AddExternal(float amount, string source)` (public static, in `DMCS.dll`; found by name through
+reflection, so other mods need no hard dependency; keep it stable): adds `amount` to the meter like any DMCS source and
+opens the window when the meter fills (ready sound, signals, kneel timer). Returns false when Adrenaline is off, the
+amount is not positive, or the window is already open. The debug log shows `+<amount> External:<source> ()`. Used by
+the Achilles Tendon mod (`AchillesHeelCut`, `AchillesCrippledKill`). Unit-tested rule and meter flows; the call itself
+is not exercised by the harness.
 
 ## API verification
 
@@ -378,6 +391,7 @@ a real physical weapon hit (held-weapon attribution) and how the stagger *feels*
 
 | Date | Step | Result |
 |---|---|---|
+| 2026-11-17 | 4d | DMCS 4 vignette (tuned to Dark Messiah's frame statistics), style switches in game (frames, sounds and Dark Messiah's files built/read in the background: the first in-game build took 0.4 s on the main thread), `Adrenaline.AddExternal` for other mods. Harness: all eleven scenarios **PASS**, `step4d-b` switches DMCS 1–4 and Dark Messiah (found on this machine under Proton at `Z:\run\media\…\Programs\Steam`, read in 115 ms). Unit tests 406 **PASS**. |
 | 2026-11-17 | 4d | Style switches: every built sound and vignette version plus Dark Messiah's own files (from the player's install). Unit tests (incl. the readers on the real Dark Messiah files of this machine): 390 **PASS**. Harness `step4d-b-adrenaline-styles`: see the next row. |
 | 2026-11-17 | 4d | Ready sound, second pass (user: the thunder was too harsh and not like DM): the crackle bursts are gone; the roar is now dense and dark (falls off above ~700 Hz), swells in over 60 ms, holds to 0.4 s; the rumble is quieter. Unit tests only. |
 | 2026-11-17 | 4d | Ready sound: thunder crack at the start added (the first version had rumble, hiss and ring only; Dark Messiah's file has a roar across the mids in the first 0.3 s). Unit tests only; the game-side code did not change. The sound tests now window their Goertzel measurement (without it the rumble leaked into every frequency, so the hiss test passed by luck). |

@@ -13,11 +13,12 @@ namespace DMCS.Core
         public const string Dmcs1 = "DMCS 1";
         public const string Dmcs2 = "DMCS 2";
         public const string Dmcs3 = "DMCS 3";
+        public const string Dmcs4 = "DMCS 4";
         public const string DarkMessiah = "Dark Messiah";
         public const string BladeAndSorcery = "Blade & Sorcery";
 
         public static readonly string[] SoundNames = { Dmcs1, Dmcs2, Dmcs3, DarkMessiah };
-        public static readonly string[] VignetteNames = { Dmcs1, Dmcs2, Dmcs3, DarkMessiah };
+        public static readonly string[] VignetteNames = { Dmcs1, Dmcs2, Dmcs3, Dmcs4, DarkMessiah };
         public static readonly string[] HeartbeatNames = { BladeAndSorcery, DarkMessiah };
 
         public const string DefaultSound = Dmcs3;
@@ -49,6 +50,8 @@ namespace DMCS.Core
                     return VignetteStyle.Flames;
                 case Dmcs2:
                     return VignetteStyle.Streaks;
+                case Dmcs4:
+                    return VignetteStyle.Embers;
                 default:
                     return VignetteStyle.Patchy;
             }
@@ -66,10 +69,17 @@ namespace DMCS.Core
                     return (14, 0.35f, 12f);
                 case Dmcs2:
                     return (40, 0.45f, 6f);
+                case Dmcs4:
+                    return (Dmcs4Streaks, Dmcs4Length, Dmcs4Hue);
                 default:
                     return (AdrenalineSettings.DefaultVignetteStreaks, AdrenalineSettings.VignetteLength.Default, AdrenalineSettings.VignetteHue.Default);
             }
         }
+
+        /// <summary>DMCS 4's look, tuned to Dark Messiah's frames (see VignetteFlipbook.EmberFrames).</summary>
+        public const int Dmcs4Streaks = 90;
+        public const float Dmcs4Length = 0.5f;
+        public const float Dmcs4Hue = 10f;
 
         public static bool IsKnown(string[] names, string name) => names.Contains(name);
     }

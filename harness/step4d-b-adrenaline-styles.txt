@@ -62,12 +62,26 @@ wait 0.8
 screenshot step4d-b-dmcs3
 expect-log window over unused: meter emptied
 
+# 3b. DMCS 4 (vignette only; the sound stays DMCS 3)
+mark
+set-option DMCS "Adrenaline Vignette Style" "DMCS 4"
+expect-option DMCS "Adrenaline Vignette Streaks" 90
+expect-option DMCS "Adrenaline Vignette Streak Length" 0.5
+expect-option DMCS "Adrenaline Vignette Hue" 10
+expect-log signal: vignette DMCS 4: 25 frames built
+hit-npc Torso velocity=1
+hit-npc Torso velocity=1
+expect-log signal: ready sound DMCS 3 (2.30 s)
+wait 0.8
+screenshot step4d-b-dmcs4
+expect-log window over unused: meter emptied
+
 # 4. Dark Messiah: sound, heartbeat and frames from the install (read in the background); the look sliders stay
 mark
 set-option DMCS "Adrenaline Ready Sound Style" "Dark Messiah"
 set-option DMCS "Adrenaline Heartbeat Sound" "Dark Messiah"
 set-option DMCS "Adrenaline Vignette Style" "Dark Messiah"
-expect-option DMCS "Adrenaline Vignette Streaks" 70
+expect-option DMCS "Adrenaline Vignette Streaks" 90
 expect-log Dark Messiah found:
 expect-log ready sound 2.29 s, heartbeat 2.39 s, vignette 25 frames
 expect-log signal: vignette Dark Messiah: 25 frames loaded

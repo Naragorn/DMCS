@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace DMCS.Core
 {
@@ -11,8 +12,15 @@ namespace DMCS.Core
         /// <summary>DMCS 2: thin straight radial smears, evenly spread.</summary>
         Streaks,
 
-        /// <summary>DMCS 3: thin radial smears, patchy (brighter around two or three spots per frame), closest to Dark Messiah.</summary>
+        /// <summary>DMCS 3: thin radial smears, patchy (brighter around two or three spots per frame).</summary>
         Patchy,
+
+        /// <summary>
+        /// DMCS 4: tuned to Dark Messiah's frames by their measured statistics: soft radial smears that glow up and fade over
+        /// several frames (neighbouring frames alike, so it shimmers instead of flickering), most light in the corners,
+        /// dim red with a few orange cores, a loop without a seam.
+        /// </summary>
+        Embers,
     }
 
     /// <summary>What the vignette frames look like (Mod Menu values).</summary>
@@ -71,6 +79,10 @@ namespace DMCS.Core
             {
                 throw new ArgumentOutOfRangeException(nameof(spec), "length");
             }
+            if (spec.Style == VignetteStyle.Embers)
+            {
+                return EmberFrames(spec, seed);
+            }
             var frames = new byte[spec.Frames][];
             for (var f = 0; f < spec.Frames; f++)
             {
@@ -87,6 +99,89 @@ namespace DMCS.Core
                 return 0;
             }
             return (int)((long)Math.Floor(seconds * fps) % frameCount);
+        }
+
+        /// <summary>
+        /// DMCS 4. Measured in Dark Messiah's 25 frames (2026-11-17), which this drawing follows: black inside 0.6 of the
+        /// half-width, mean red rising to the corners (r 0.8: 4, 1.0: 12, 1.2+: 35 of 255); 4 % of pixels lit; neighbouring
+        /// frames correlate 0.89, five apart 0.59, and nothing moves (streaks fade in and out in place); a streak is about
+        /// 0.1–0.2 of the half-width long and 3–4° wide; lit pixels have G/R 0.18 and B/R 0.02, the brightest G/R 0.44; the
+        /// mean is uneven around the frame and the same in every frame (lasting hot spots).
+        /// </summary>
+        private static byte[][] EmberFrames(VignetteSpec spec, int seed)
+        {
+            var rng = new XorShift((seed * 9973) + 4049);
+            var hot = HotSpots(rng);
+            var embers = new Ember[spec.Streaks];
+            for (var e = 0; e < embers.Length; e++)
+            {
+                embers[e] = new Ember(rng, spec.Length, spec.Frames, hot);
+            }
+            var size = spec.Size;
+            var radius = new float[size * size];
+            var angle = new float[size * size];
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var nx = (((x + 0.5f) / size) * 2f) - 1f;
+                    var ny = (((y + 0.5f) / size) * 2f) - 1f;
+                    var i = (y * size) + x;
+                    radius[i] = (float)Math.Sqrt((nx * nx) + (ny * ny));
+                    angle[i] = (float)Math.Atan2(ny, nx);
+                }
+            }
+            var innerCut = 1.05f - spec.Length;
+            // A dim red glow fills the corners (Dark Messiah, r 1.1–1.4: even the darkest tenth of the pixels is 8–13 of
+            // 255, the median 16–29), uneven around the frame, slowly breathing over the loop.
+            var cornerGlow = new float[size * size];
+            for (var i = 0; i < cornerGlow.Length; i++)
+            {
+                cornerGlow[i] = 0.12f * SmoothStep(0.98f, 1.3f, radius[i]) * (0.4f + Cluster(hot, angle[i], 0.3f));
+            }
+            var breath = rng.NextUnit() * 6.2832f;
+            var frames = new byte[spec.Frames][];
+            var value = new float[size * size];
+            for (var f = 0; f < spec.Frames; f++)
+            {
+                var pulse = 1f + (0.12f * (float)Math.Sin((2.0 * Math.PI * f / spec.Frames) + breath));
+                for (var i = 0; i < value.Length; i++)
+                {
+                    value[i] = cornerGlow[i] * pulse;
+                }
+                foreach (var e in embers)
+                {
+                    var level = e.LevelAt(f, spec.Frames);
+                    if (level <= 0f)
+                    {
+                        continue;
+                    }
+                    foreach (var line in e.Lines)
+                    {
+                        line.Bounds(size, out var x0, out var y0, out var x1, out var y1);
+                        for (var y = y0; y <= y1; y++)
+                        {
+                            for (var x = x0; x <= x1; x++)
+                            {
+                                var i = (y * size) + x;
+                                value[i] += level * line.At(radius[i], angle[i]);
+                            }
+                        }
+                    }
+                }
+                var pixels = new byte[size * size * 4];
+                for (var i = 0; i < value.Length; i++)
+                {
+                    var v = Math.Min(1f, value[i] * SmoothStep(innerCut, innerCut + 0.25f, radius[i]));
+                    var hot01 = SmoothStep(0.45f, 0.85f, v);
+                    pixels[i * 4] = ToByte(v);
+                    pixels[(i * 4) + 1] = ToByte(v * ((spec.HueDegrees / 60f) + (0.3f * hot01)));
+                    pixels[(i * 4) + 2] = ToByte(v * (0.02f + (0.07f * hot01)));
+                    pixels[(i * 4) + 3] = 255;
+                }
+                frames[f] = pixels;
+            }
+            return frames;
         }
 
         private static byte[] Frame(VignetteSpec spec, XorShift rng)
@@ -169,8 +264,8 @@ namespace DMCS.Core
             return spots;
         }
 
-        /// <summary>0.35 far from every hot spot, up to 1 on one; 1 without hot spots.</summary>
-        private static float Cluster(float[] hot, float angle)
+        /// <summary>0.35 (or <paramref name="floor"/>) far from every hot spot, up to 1 on one; 1 without hot spots.</summary>
+        private static float Cluster(float[] hot, float angle, float floor = 0.35f)
         {
             if (hot == null)
             {
@@ -182,7 +277,7 @@ namespace DMCS.Core
                 var d = Wrap(angle - h) / 0.6f;
                 best = Math.Max(best, (float)Math.Exp(-(d * d)));
             }
-            return 0.35f + (0.65f * best);
+            return floor + ((1f - floor) * best);
         }
 
         private static float Wrap(float d)
@@ -245,6 +340,43 @@ namespace DMCS.Core
             private readonly float _width;
             private readonly float _brightness;
 
+            private Smear(float angle, float centre, float halfLength, float width, float brightness)
+            {
+                _angle = angle;
+                _centre = centre;
+                _halfLength = halfLength;
+                _width = width;
+                _brightness = brightness;
+            }
+
+            /// <summary>
+            /// DMCS 4's shape: a fan of 4–14 thin lines (0.6–1.1° wide, 0.05–0.11 of the half-width long) spread a few
+            /// degrees around one direction, placed by distance to the square's edge (Dark Messiah's light rises towards
+            /// the edge and into the corners), most of them near the edge.
+            /// </summary>
+            public static Smear[] Bundle(XorShift rng, float length, float[] hot)
+            {
+                var angle = rng.NextUnit() * 2f * (float)Math.PI;
+                var u = rng.NextUnit();
+                var edgeDistance = 1.2f - (length * (float)Math.Pow(u, 1.6));
+                var spread = 0.06f + (0.1f * rng.NextUnit());
+                var b = rng.NextUnit();
+                var bundleBrightness = (0.22f + (0.3f * b * b * b * b)) * Cluster(hot, angle, 0.6f);
+                var count = 4 + (int)(rng.NextUnit() * 11f);
+                var lines = new Smear[count];
+                for (var k = 0; k < count; k++)
+                {
+                    var a = angle + (spread * (rng.NextSigned() + rng.NextSigned()) * 0.5f);
+                    var toEdge = Math.Max(Math.Abs((float)Math.Cos(a)), Math.Abs((float)Math.Sin(a)));
+                    var centre = (edgeDistance + (0.06f * rng.NextSigned())) / toEdge;
+                    var halfLength = (0.05f + (0.06f * rng.NextUnit())) / toEdge;
+                    var width = 0.01f + (0.01f * rng.NextUnit());
+                    var brightness = bundleBrightness * (0.4f + (0.6f * rng.NextUnit()));
+                    lines[k] = new Smear(a, centre, halfLength, width, brightness);
+                }
+                return lines;
+            }
+
             public Smear(XorShift rng, float length, float[] hot)
             {
                 var patchy = hot != null;
@@ -272,6 +404,48 @@ namespace DMCS.Core
                     return 0f;
                 }
                 return _brightness * (float)Math.Exp(-(along * along) - (d * d));
+            }
+        }
+
+        /// <summary>
+        /// DMCS 4: a bundle of fine radial lines (Dark Messiah's streaks are fans of thin motion-blur lines, not single
+        /// blobs) that glows up and fades in place over a stretch of the loop.
+        /// </summary>
+        private sealed class Ember
+        {
+            private readonly Smear[] _lines;
+            private readonly float _start;
+            private readonly float _life;
+            private readonly float[] _jitter;
+
+            public Ember(XorShift rng, float length, int frames, float[] hot)
+            {
+                _lines = Smear.Bundle(rng, length, hot);
+                _start = rng.NextUnit() * frames;
+                _life = 9f + (rng.NextUnit() * 10f);
+                _jitter = new float[frames];
+                for (var f = 0; f < frames; f++)
+                {
+                    _jitter[f] = 0.6f + (0.8f * rng.NextUnit());
+                }
+            }
+
+            public IEnumerable<Smear> Lines => _lines;
+
+            /// <summary>sin² over its life, wrapping around the loop's end so the loop has no seam.</summary>
+            public float LevelAt(int frame, int frames)
+            {
+                var age = (frame - _start) % frames;
+                if (age < 0f)
+                {
+                    age += frames;
+                }
+                if (age >= _life)
+                {
+                    return 0f;
+                }
+                var s = (float)Math.Sin(Math.PI * age / _life);
+                return s * s * _jitter[frame % _jitter.Length];
             }
         }
 

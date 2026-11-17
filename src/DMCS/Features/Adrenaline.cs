@@ -396,19 +396,36 @@ namespace DMCS
 
         private static void OnDisarm(Creature target) => Add(AdrenalineSource.Disarm, target != null ? target.name : "?");
 
-        private static void Add(AdrenalineSource source, string who)
+        private static void Add(AdrenalineSource source, string who) => Gain(Gains.For(source), source.ToString(), who);
+
+        /// <summary>
+        /// Public API for other mods (called by name through reflection, e.g. the Achilles Tendon mod for a heel cut or the
+        /// kill of a crippled NPC): adds <paramref name="amount"/> to the meter as any DMCS source does, and opens the
+        /// window when it fills. Keep the name and signature stable.
+        /// </summary>
+        /// <returns>false when Adrenaline is off, the amount is not positive, or the meter is already full (window open).</returns>
+        public static bool AddExternal(float amount, string source)
+        {
+            if (!AdrenalineExternal.Accepts(Toggle.Enabled, amount))
+            {
+                return false;
+            }
+            return Gain(amount, AdrenalineExternal.Label(source), string.Empty);
+        }
+
+        /// <summary>The one place a gain goes into the meter (DMCS sources and other mods).</summary>
+        private static bool Gain(float amount, string label, string who)
         {
             if (!Toggle.Enabled)
             {
-                return;
+                return false;
             }
-            var gain = Gains.For(source);
-            var e = Meter.Gain(gain, Time.unscaledTime, MeterMax, WindowDuration);
+            var e = Meter.Gain(amount, Time.unscaledTime, MeterMax, WindowDuration);
             if (e == AdrenalineEvent.None)
             {
-                return;
+                return false;
             }
-            Dmcs.Log.Debug(Channel, "+" + gain + " " + source + " (" + who + "): "
+            Dmcs.Log.Debug(Channel, "+" + amount.ToString("0.##", CultureInfo.InvariantCulture) + " " + label + " (" + who + "): "
                 + Meter.Value.ToString("0", CultureInfo.InvariantCulture) + "/" + MeterMax.ToString("0", CultureInfo.InvariantCulture));
             if (e == AdrenalineEvent.Filled)
             {
@@ -416,6 +433,7 @@ namespace DMCS
                 Dmcs.Log.Debug(Channel, "meter full: window open for " + WindowDuration.ToString("0", CultureInfo.InvariantCulture) + " s");
                 AdrenalineSignals.WindowOpened();
             }
+            return true;
         }
 
         private static ModOptionFloat[] Floats(SliderSpec spec, string format, string unit) =>
