@@ -324,6 +324,10 @@ Design and probe results: `CLAUDE.md`, section 1.
   hand also met real swings: the game raised its block event by itself and one locked for real (contact 0.06 m, angle 70.9°,
   tolerance 80°). In the harness the diagnostic shows the heavy sword sagging (hand ahead 0.04–0.07 m, towards the enemy 0.00 m),
   since the mock controller does not move. A real push: headset.
+- Picture probe 2026-11-17 (temporary code): five real-fight locks through `player-parry` (angles 5–54°; one refused at 81.9°,
+  one `OffPoint` at 0.30 m). Moving the player's hand target slowly towards the enemy during a lock made the diagnostic react
+  (`hand ahead 0.11 m (towards the enemy 0.09 m)`), and after 0.46 s the player let go of the 20× heavy sword, which ended the
+  lock. Not yet clear whether the game releases a too heavy weapon when the controller runs ahead; to check before 5c.
 
 ### Open findings
 

@@ -569,10 +569,13 @@ namespace DMCS
                 return;
             }
             var npc = _lockFlash?.Npc;
-            if (npc == null || npc.isKilled || _lockFlash.Weapon == null || _lockFlash.Weapon.mainHandler == null
-                || _lockItem == null || _lockItem.mainHandler == null || _lockItem.mainHandler.creature == null || !_lockItem.mainHandler.creature.isPlayer)
+            var gone = npc == null || npc.isKilled ? "the enemy is dead or gone"
+                : _lockFlash.Weapon == null || _lockFlash.Weapon.mainHandler == null ? "the enemy let go of its weapon"
+                : _lockItem == null || _lockItem.mainHandler == null || _lockItem.mainHandler.creature == null || !_lockItem.mainHandler.creature.isPlayer ? "you let go of your weapon"
+                : null;
+            if (gone != null)
             {
-                EndLock(Lock.Break(), "a fighter or a weapon is gone");
+                EndLock(Lock.Break(), gone);
                 return;
             }
             var now = Time.unscaledTime;
