@@ -266,8 +266,11 @@ Design and probe results: `CLAUDE.md`, section 1.
   weapon with a damager whose `damageModifierData.damageType` is `Slash`.
 - **Flash point:** the slash damagers' colliders (`colliderOnly` or the collider group), their bounds' corners projected on handle →
   tip (`GetFurthestDamagerCollider`); the middle of that extent, stored local to the weapon so it follows the blade.
-- **Flash:** an own 64² four-point star (`Glint`, white, alpha = shape), additive URP `Particles/Unlit` (as the vignette), a quad
-  of 0.14 m facing the head camera; brightness `Glint.Pulse`: up in 0.08 s, settles to 0.6 within 0.25 s, until the attack ends.
+- **Flash:** an own 128² star (`Glint`, white, alpha = shape: bright core, soft halo, four long rays along the axes, four shorter
+  fainter diagonal rays), warm white, additive URP `Particles/Unlit` (as the vignette), a quad of 0.3 m facing the head camera.
+  Over time: burst from 0.5× to 1.5× size and full brightness in 0.08 s, settling within 0.25 s to 1× and 80 %, turning 40°/s so the
+  rays glitter, until the attack ends. The first version (64², thin rays, 0.14 m, 60 % glow) was hard to see from the player's
+  eye (picture probe 2026-11-17, user: too small and pale).
 - **Slow-motion:** from `AttackStage.Attack` on, for 0.1 s each physics step (`ScriptFixedUpdate`): NPC within *Enemy Reach*,
   the player's held blade (handle → tip of either hand) within *Block Reach* of the flash point, and the angle between the
   player's blade and the swing plane's normal (blade axis × velocity at the flash point, `GetItemPointVelocity`) within

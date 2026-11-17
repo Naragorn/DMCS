@@ -317,7 +317,7 @@ public class ClashSettingsTests
 
 public class GlintTests
 {
-    private const int Size = 64;
+    private const int Size = 128;
 
     private static float Alpha(byte[] px, int x, int y) => px[(((y * Size) + x) * 4) + 3] / 255f;
 
@@ -327,20 +327,44 @@ public class GlintTests
         var px = Glint.Pixels(Size);
 
         Assert.Equal(Size * Size * 4, px.Length);
-        Assert.True(Alpha(px, Size / 2, Size / 2) > 0.9f);
+        Assert.True(Alpha(px, Size / 2, Size / 2) > 0.95f);
         Assert.True(Alpha(px, 2, 2) < 0.02f);
     }
 
     [Fact]
-    public void Glint_HasFourRays_AlongTheAxes()
+    public void Glint_HasFourLongRays_AlongTheAxes()
     {
         var px = Glint.Pixels(Size);
-        var ray = Alpha(px, Size / 2, 8);
-        var diagonal = Alpha(px, 16, 16);
+        var c = Size / 2;
+        var ray = Alpha(px, c, c - 40);
+        var between = Alpha(px, c - 12, c - 40);
 
-        Assert.True(ray > 0.2f, "ray " + ray);
-        Assert.True(diagonal < ray / 3f, "diagonal " + diagonal);
-        Assert.Equal(Alpha(px, Size / 2, 8), Alpha(px, 8, Size / 2), 2);
+        Assert.True(ray > 0.35f, "ray " + ray);
+        Assert.True(between < ray / 4f, "between " + between);
+        Assert.Equal(Alpha(px, c, c - 40), Alpha(px, c - 40, c), 2);
+    }
+
+    [Fact]
+    public void Glint_HasShorterFainterDiagonalRays()
+    {
+        var px = Glint.Pixels(Size);
+        var c = Size / 2;
+        var diagonal = Alpha(px, c - 18, c - 18);
+        var main = Alpha(px, c, c - 25);
+        var offDiagonal = Alpha(px, c - 18, c - 8);
+
+        Assert.True(diagonal > 0.15f, "diagonal " + diagonal);
+        Assert.True(diagonal < main, "diagonal " + diagonal + " main " + main);
+        Assert.True(offDiagonal < diagonal, "off " + offDiagonal);
+    }
+
+    [Fact]
+    public void Glint_HasASoftHalo_AroundTheCore()
+    {
+        var px = Glint.Pixels(Size);
+        var c = Size / 2;
+
+        Assert.True(Alpha(px, c - 10, c - 4) > 0.1f);
     }
 
     [Fact]
@@ -357,10 +381,26 @@ public class GlintTests
     [Theory]
     [InlineData(0f, 0f)]
     [InlineData(0.08f, 1f)]
-    [InlineData(10f, 0.6f)]
+    [InlineData(10f, 0.8f)]
     public void Pulse_FlashesThenHolds(float seconds, float expected)
     {
         Assert.Equal(expected, Glint.Pulse(seconds), 2);
+    }
+
+    [Theory]
+    [InlineData(0f, 0.5f)]
+    [InlineData(0.08f, 1.5f)]
+    [InlineData(10f, 1f)]
+    public void Scale_BurstsBigThenSettles(float seconds, float expected)
+    {
+        Assert.Equal(expected, Glint.Scale(seconds), 2);
+    }
+
+    [Fact]
+    public void Spin_TurnsSlowly_ForATwinkle()
+    {
+        Assert.Equal(0f, Glint.SpinDegrees(0f));
+        Assert.Equal(Glint.SpinDegreesPerSecond, Glint.SpinDegrees(1f), 2);
     }
 }
 

@@ -18,8 +18,8 @@ namespace DMCS
     {
         private const string Channel = "Clash";
         private const string ShaderName = "Universal Render Pipeline/Particles/Unlit";
-        private const float GlintSize = 0.14f;
-        private const int GlintTextureSize = 64;
+        private const float GlintSize = 0.3f;
+        private const int GlintTextureSize = 128;
 
         public static readonly FeatureToggle Toggle = new FeatureToggle(DmcsCategories.ClashOfMight, true, Dmcs.Log);
 
@@ -140,13 +140,15 @@ namespace DMCS
                     RemoveFlash(pair.Key);
                     continue;
                 }
+                var age = Time.unscaledTime - flash.StartedAt;
                 flash.Glint.transform.position = flash.Point;
+                flash.Glint.transform.localScale = Vector3.one * (GlintSize * Glint.Scale(age));
                 if (cam != null)
                 {
-                    flash.Glint.transform.rotation = Quaternion.LookRotation(flash.Glint.transform.position - cam.transform.position);
+                    flash.Glint.transform.rotation = Quaternion.LookRotation(flash.Glint.transform.position - cam.transform.position)
+                        * Quaternion.Euler(0f, 0f, Glint.SpinDegrees(age));
                 }
-                var level = Glint.Pulse(Time.unscaledTime - flash.StartedAt);
-                flash.Renderer.material.SetColor("_BaseColor", new Color(1f, 0.95f, 0.8f, level));
+                flash.Renderer.material.SetColor("_BaseColor", new Color(1f, 0.92f, 0.7f, Glint.Pulse(age)));
             }
         }
 
@@ -462,7 +464,7 @@ namespace DMCS
             go.transform.localScale = Vector3.one * GlintSize;
             var renderer = go.GetComponent<MeshRenderer>();
             renderer.sharedMaterial = _material;
-            renderer.material.SetColor("_BaseColor", new Color(1f, 0.95f, 0.8f, 0f));
+            renderer.material.SetColor("_BaseColor", new Color(1f, 0.92f, 0.7f, 0f));
             return go;
         }
 
