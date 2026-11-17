@@ -6,6 +6,8 @@
 # Option changes survive into the next scenario even without save-options (the game saves dirty options on quit).
 
 wait-level
+# Start from the defaults even if an earlier scenario failed before its own reset (saved options carry over)
+press DMCS "Reset To Defaults"
 
 # Menu: the settings, with ranges and the Gamey defaults
 option-exists DMCS "Charge Stagger Preset" category="Charge Stagger" type=String interaction=ArrowList tooltip="Gamey"

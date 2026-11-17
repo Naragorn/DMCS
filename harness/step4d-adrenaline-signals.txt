@@ -1,0 +1,72 @@
+# Step 4d: signals while the adrenaline window is open: the ready sound (own synthesis after Dark Messiah's),
+# the game's heartbeat, haptics, the hand glow and the Dark Messiah-style vignette; the vignette flares on the
+# critical and everything stops when the window closes or the feature is switched off. Sound, haptics and the
+# vignette's look need the headset; this checks that each starts and stops, and takes pictures of the vignette.
+
+wait-level
+# Start from the defaults even if an earlier scenario failed before its own reset (saved options carry over)
+press DMCS "Reset To Defaults"
+option-exists DMCS "Adrenaline Ready Sound" category=Adrenaline type=Boolean save=true
+option-exists DMCS "Adrenaline Ready Sound Volume" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Adrenaline Heartbeat" category=Adrenaline type=Boolean save=true
+option-exists DMCS "Adrenaline Haptics" category=Adrenaline type=Boolean save=true
+option-exists DMCS "Adrenaline Weapon Glow" category=Adrenaline type=Boolean save=true
+option-exists DMCS "Adrenaline Vignette" category=Adrenaline type=Boolean save=true
+option-exists DMCS "Adrenaline Vignette Streaks" category=Adrenaline type=Int32 interaction=Slider save=true
+option-exists DMCS "Adrenaline Vignette Frame Rate" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Adrenaline Vignette Flare" category=Adrenaline type=Boolean save=true
+expect-option DMCS "Adrenaline Ready Sound Volume" 0.6
+expect-option DMCS "Adrenaline Heartbeat Volume" 0.5
+expect-option DMCS "Adrenaline Vignette Streaks" 70
+expect-option DMCS "Adrenaline Vignette Frame Rate" 25
+set-option DMCS "Debug Logging" true
+set-option DMCS "Kneel And Execution" false
+set-option DMCS "Adrenaline Window" 10
+set-option DMCS "Adrenaline Per Hit" 50
+
+spawn-npc HumanMale distance=3 angle=0 brain=HumanDummy
+
+# 1. The meter fills: sound once, then heartbeat, vignette (and glow on a hand that holds something)
+mark
+hit-npc Torso
+hit-npc Torso
+expect-log meter full: window open for 10 s
+expect-log signal: ready sound (2.30 s)
+expect-log signals on: heartbeat on, haptics on
+expect-log signal: vignette shader Universal Render Pipeline/Particles/Unlit
+expect-log signal: vignette cap on camera
+expect-log signal: heartbeat playing
+wait 1
+screenshot step4d-vignette
+# The desktop mirror shows less than the headset: a smaller size brings the streaks into the picture
+mark
+set-option DMCS "Adrenaline Vignette Size" 30
+expect-log 30° to the edge
+wait 0.5
+screenshot step4d-vignette-30
+
+# 2. The critical flares the vignette; the window is over, the signals stop
+mark
+hit-npc Torso velocity=6
+expect-log CRITICAL
+expect-log signal: vignette flare
+expect-log signals off
+wait 1.5
+screenshot step4d-after
+
+# 3. Switching the feature off mid-window stops everything at once
+spawn-npc HumanMale distance=3 angle=0 brain=HumanDummy
+mark
+hit-npc Torso
+hit-npc Torso
+expect-log signals on
+set-option DMCS "Adrenaline Enabled" false
+expect-log signals off
+wait 0.5
+screenshot step4d-off
+set-option DMCS "Adrenaline Enabled" true
+
+press DMCS "Reset To Defaults"
+expect-no-log Exception
+expect-no-log Adrenaline signals error
+quit

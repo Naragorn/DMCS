@@ -81,6 +81,7 @@ namespace DMCS
                 return;
             }
             Dmcs.Log.Info(DmcsStatus.Describe(Dmcs.Log.DebugEnabled, Features.All));
+            AdrenalineSignals.Prewarm();
         }
     }
 }

@@ -4,6 +4,8 @@
 # Expects the defaults at the start (runs after step2, which resets).
 
 wait-level
+# Start from the defaults even if an earlier scenario failed before its own reset (saved options carry over)
+press DMCS "Reset To Defaults"
 option-exists DMCS "Disarm Requires Stagger" category="Disarm Strike" type=Boolean save=true
 option-exists DMCS "Disarm Include Forearm" category="Disarm Strike" type=Boolean save=true
 option-exists DMCS "Disarm Drops Both Hands" category="Disarm Strike" type=Boolean save=true

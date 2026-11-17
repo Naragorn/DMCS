@@ -129,13 +129,13 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 
 **Config:** gain values per event, `meterMax`, `adrenalineWindowDuration`, `slowMoScale`, `slowMoDuration`, `knockbackForce`, toggles for each visual effect.
 
-### 4b. Adrenaline design (2026-11-16; 4a–4c built, see README)
+### 4b. Adrenaline design (2026-11-16; 4a–4d built, see README)
 
 Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSON.
 
 **Own meter, not the game's Focus.** The base game has Focus (`Mana.currentFocus`, 30 without skills, regen 3/s, half while moving). It is spent on a manual slow-time (`SpellPowerSlowTime`, held on the right B button in the SteamVR bindings, scale 0.5, 6 focus/s, needs 10). Full Focus only plays a sound (`Effect_FocusFull`). The skill `SkillCombatFocus` refills it on kill, slice, parry, deflect and disarm. Focus has no automatic critical, so DMCS keeps its own meter and leaves Focus alone.
 
-**State machine** (pure logic in `DMCS.Core`, unit-tested over every flow): `Filling → Ready (window timer) → Critical → Filling`; an unused window empties the meter. `meterMax` default 100, `adrenalineWindowDuration` default 6 s, `meterDecay` 2 per second after `meterDecayDelay` 0 s (see "Meter decay" below).
+**State machine** (pure logic in `DMCS.Core`, unit-tested over every flow): `Filling → Ready (window timer) → Critical → Filling`; an unused window empties the meter. `meterMax` default 100, `adrenalineWindowDuration` default 6 s, `meterDecay` 2 per second after `meterDecayDelay` 0 s, switched off by default (see "Meter decay" below).
 
 **Gains** (each its own slider; defaults confirmed by the user 2026-11-16, not tried in game yet):
 
@@ -158,7 +158,9 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 - Slow-mo (see "Critical time mode"): the game's `TimeManager.SetSlowMotion` (it also sets `fixedDeltaTime` and the slow-mo audio snapshot), then `SetSlowMotion(false, …)`. If a slow-mo is already running (`TimeManager.slowMotionState` not `Disabled`, e.g. the player's Focus), DMCS skips its own and never stops the other one. Always restore on feature off, level unload and player death.
 - Knockback: destabilize the ragdoll and push all parts along the hit (as the disarm fling).
 
-**Signals while the window is open:**
+**Ready sound (decided 2026-11-17, built):** Dark Messiah plays `Adrenaline_Reached` ("// Full Adrenaline", volume 0.6) when the bar fills. DMCS rebuilds it very close as its own synthesis (rumble + hiss + metallic ring at ~1021 Hz, measured in DM's file; see README 4d). Never ship or load DM's file.
+
+**Signals while the window is open** (built in 4d; also while an execution window is open):
 - Heartbeat: the game's clip `Bas.Audio.Misc.HeartBeatLoop` on DMCS's own AudioSource (the game's heartbeat source belongs to the health display and is reset by `CameraEffects.RefreshHealth`).
 - Haptics: `RagdollHand.PlayHapticClipOver` with a heartbeat curve.
 - Weapon glow: catalog particle `Bas.Particle.Spell.Hyperfocus.Hand` at the weapon hand (look needs the headset).
@@ -168,10 +170,10 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 - Dark Messiah's effect (read in its own files, `materials/hud/fullscreen_adrenaline.vmt` in the VPKs): a fullscreen `UnlitGeneric` overlay, `$additive`, texture `hud/fullscreen_adrenaline2_` = 25 frames of 256×256 DXT1 played at 25 fps (1 s loop): red and orange streaks reaching in from the edges, black (= see-through) centre, the streaks sit elsewhere in every frame, which makes them flicker.
 - DMCS rebuilds it very close in look and technique, but with its own frames: DMCS generates the flipbook at startup (no Unity SDK asset), draws it additively on a head-locked mesh in front of the eyes (both eyes see it right), plays it while the window is open and flares it once on the critical. Colours, streak length, density and frame rate are Mod Menu sliders.
 - Never ship, trace or load Dark Messiah's files: copyrighted, and Nexus forbids it without the rights holder's permission (File Submission Guidelines; wiki "Porting content"); a free mod changes nothing.
-- Risk: an additive shader the game ships (else borrow one from a catalog particle effect). First step before 4c: a harness probe that only logs which shader is found.
+- Shader (harness probe 2026-11-17): the game has `Universal Render Pipeline/Particles/Unlit` loaded; DMCS sets it additive (`_Surface` 1, `_Blend` 2, `_SrcBlend` SrcAlpha, `_DstBlend` One, `_ZWrite` 0, `_SURFACE_TYPE_TRANSPARENT`). The look was matched against DM's frames (patchy thin radial smears, mostly dim red); *Vignette Size* sets how far from the view centre the frame's edge sits (default 50°).
 - The game's own vignette is not used: it belongs to the health display and `CameraEffects.RefreshHealth` overwrites it on every hit and heal.
 
-**Meter decay (decided 2026-11-16):** the meter drains over time by default: delay 0 s, 2 per second (a full meter of 100 drains in 50 s). Both are sliders.
+**Meter decay (decided 2026-11-16):** switchable (`Adrenaline Decay`), off by default while testing (user, 2026-11-16); when on: delay 0 s, 2 per second (a full meter of 100 drains in 50 s). Both are sliders.
 
 **Screen distortion: dropped (user, 2026-11-16).** Bullet time takes its place.
 
@@ -197,7 +199,7 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 5. No execution in time: the NPC stands up again and fights on, or with `kneelDeathChance` (default 0 %) it dies and falls over. The meter is empty either way.
 - Kneeling alive: the catalog animation `HumanIdleExamineKneel` (KneelingStart / ExamineKneel loop / KneelingEnd), held the way the game's `BrainModuleFear.Panic` holds a cowering NPC (`brain.isIncapacitated`, behaviour tree reset and `updateTree = false`, stance Idle, `StopAnimation(true)`, `PlayAnimation`); released as `StopPanic` does. A first try with a brain swap to `HumanDummy` left the NPC standing (harness screenshot 2026-11-16).
 
-**Build order:** 4a meter, gains (hit, damage, parry, stagger, disarm), decay, window, Mod Menu, debug log; 4b critical (time mode, kill, dismember, knockback, battle cry, chest-stab fatality); 4c kneel and execution; 4d signals and the vignette (shader probe first); 4e dodge and catch bonus (marked "not verified in game" until a headset check). Each: unit tests first, then a harness scenario (the harness can deal hits and damage and read `Time.timeScale` and `isSliced`; parry and dodge are hard to force there).
+**Build order:** 4a meter, gains (hit, damage, parry, stagger, disarm), decay, window, Mod Menu, debug log; 4b critical (time mode, kill, dismember, knockback, battle cry, chest-stab fatality); 4c kneel and execution; 4d signals, ready sound and the vignette (built 2026-11-17); 4e dodge and catch bonus (marked "not verified in game" until a headset check). Each: unit tests first, then a harness scenario (the harness can deal hits and damage and read `Time.timeScale` and `isSliced`; parry and dodge are hard to force there).
 
 **Working on Windows:** the harness (`tools/harness.sh`) needs Linux (Bash, own Proton prefix). A Windows build needs `BAS_GAME_DIR` or `-p:BasGameDir=…`, as the default path in `Directory.Build.props` is the Linux Steam folder.
 

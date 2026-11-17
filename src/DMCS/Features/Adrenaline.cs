@@ -9,7 +9,7 @@ using UnityEngine;
 namespace DMCS
 {
     /// <summary>
-    /// Adrenaline (steps 4a, 4b): combat fills a meter; when it is full a window opens, and the next qualifying hit is
+    /// Adrenaline (steps 4a–4d): combat fills a meter; when it is full a window opens, and the next qualifying hit is
     /// the critical (<see cref="AdrenalineCritical"/>).
     /// Sources: player hits on NPCs and NPC damage on the player (EventManager.onCreatureHit), blocks and parries
     /// (EventManager.onCreatureAttackParry, raised by BrainModuleMelee/BrainModuleDefense), charge staggers and
@@ -217,12 +217,14 @@ namespace DMCS
             Kneel.WindowClosed();
             HitCreatures.Clear();
             AdrenalineCritical.StopAll();
+            AdrenalineSignals.StopAll();
         }
 
         public static void Update()
         {
             PendingCritical.Clear();
             AdrenalineCritical.Update();
+            AdrenalineSignals.Update(Toggle.Enabled, IsReady, AdrenalineCritical.HasExecutionWindow);
             if (!Toggle.Enabled)
             {
                 return;
@@ -286,6 +288,7 @@ namespace DMCS
                 }
                 if (AdrenalineCritical.TryExecute(target, hit, source))
                 {
+                    AdrenalineSignals.Flare();
                     Critical?.Invoke(target);
                     return;
                 }
@@ -293,6 +296,7 @@ namespace DMCS
                 {
                     Kneel.WindowClosed();
                     AdrenalineCritical.Execute(target, hit, source);
+                    AdrenalineSignals.Flare();
                     Critical?.Invoke(target);
                     return;
                 }
@@ -410,6 +414,7 @@ namespace DMCS
             {
                 Kneel.WindowOpened(Time.unscaledTime);
                 Dmcs.Log.Debug(Channel, "meter full: window open for " + WindowDuration.ToString("0", CultureInfo.InvariantCulture) + " s");
+                AdrenalineSignals.WindowOpened();
             }
         }
 

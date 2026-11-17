@@ -3,6 +3,8 @@
 # (the critical); unexecuted, it stands up again, or dies with the death chance. Expects the defaults at the start.
 
 wait-level
+# Start from the defaults even if an earlier scenario failed before its own reset (saved options carry over)
+press DMCS "Reset To Defaults"
 option-exists DMCS "Execution Window" category=Adrenaline type=Single interaction=Slider save=true
 option-exists DMCS "Kneel And Execution" category=Adrenaline type=Boolean save=true
 option-exists DMCS "Kneel After No Hit" category=Adrenaline type=Single interaction=Slider save=true

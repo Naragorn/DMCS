@@ -148,6 +148,9 @@ namespace DMCS
 
         public static bool IsFinishable(Creature target) => target != null && Finishers.ContainsKey(target.GetInstanceID());
 
+        /// <summary>An enemy kneels (alive, or dying after a chest stab) and waits for the execution or the finish.</summary>
+        public static bool HasExecutionWindow => Finishers.Count > 0 || Kneeling.Count > 0;
+
         public static bool IsChestStab(CollisionInstance hit)
         {
             var part = hit.damageStruct.hitRagdollPart;

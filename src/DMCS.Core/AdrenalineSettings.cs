@@ -80,7 +80,6 @@ namespace DMCS.Core
 
         public static readonly SliderSpec SlowTimeDuration = new SliderSpec(SlowTimeDurationName, 0.5f, 10f, 0.5f, 3f);
 
-        /// <summary>m/s of the hit; default = Charge Stagger's min swing speed (spec).</summary>
         /// <summary>m/s of the hit (user, 2026-11-16: 3, as Charge Stagger's Realistic preset; 1 let nearly every hit count).</summary>
         public static readonly SliderSpec MinSwingSpeed = new SliderSpec(MinSwingSpeedName, 0f, 10f, 0.25f, 3f);
 
@@ -105,5 +104,65 @@ namespace DMCS.Core
             { HyperfocusScale, SlowTimeScale, HyperfocusDuration, SlowTimeDuration, MinSwingSpeed, Knockback, ExecutionWindow, KneelAfterNoHit };
 
         public static int[] GainValues() => Enumerable.Range(0, 51).ToArray();
+
+        // Step 4d: signals while the window is open.
+        public const string ReadySoundName = "Adrenaline Ready Sound";
+        public const string ReadySoundVolumeName = "Adrenaline Ready Sound Volume";
+        public const string HeartbeatName = "Adrenaline Heartbeat";
+        public const string HeartbeatVolumeName = "Adrenaline Heartbeat Volume";
+        public const string HapticsName = "Adrenaline Haptics";
+        public const string HapticsStrengthName = "Adrenaline Haptics Strength";
+        public const string WeaponGlowName = "Adrenaline Weapon Glow";
+        public const string VignetteName = "Adrenaline Vignette";
+        public const string VignetteIntensityName = "Adrenaline Vignette Intensity";
+        public const string VignetteHueName = "Adrenaline Vignette Hue";
+        public const string VignetteStreaksName = "Adrenaline Vignette Streaks";
+        public const string VignetteLengthName = "Adrenaline Vignette Streak Length";
+        public const string VignetteSizeName = "Adrenaline Vignette Size";
+        public const string VignetteFrameRateName = "Adrenaline Vignette Frame Rate";
+        public const string VignetteFlareName = "Adrenaline Vignette Flare";
+
+        public const bool DefaultReadySound = true;
+        public const bool DefaultHeartbeat = true;
+        public const bool DefaultHaptics = true;
+        public const bool DefaultWeaponGlow = true;
+        public const bool DefaultVignette = true;
+        public const bool DefaultVignetteFlare = true;
+        public const int DefaultVignetteStreaks = 70;
+
+        /// <summary>Dark Messiah plays its Adrenaline_Reached at volume 0.6 (game_sounds_inventory.txt).</summary>
+        public static readonly SliderSpec ReadySoundVolume = new SliderSpec(ReadySoundVolumeName, 0f, 1f, 0.05f, 0.6f);
+
+        /// <summary>Dark Messiah plays its heartbeat at volume 0.5 (game_sounds_player.txt).</summary>
+        public static readonly SliderSpec HeartbeatVolume = new SliderSpec(HeartbeatVolumeName, 0f, 1f, 0.05f, 0.5f);
+
+        /// <summary>Controller pulse strength (a first guess; needs the headset).</summary>
+        public static readonly SliderSpec HapticsStrength = new SliderSpec(HapticsStrengthName, 0f, 1f, 0.05f, 0.5f);
+
+        /// <summary>How bright the vignette is at full; 1 = the frames as drawn (Dark Messiah's brightness).</summary>
+        public static readonly SliderSpec VignetteIntensity = new SliderSpec(VignetteIntensityName, 0f, 1f, 0.05f, 1f);
+
+        /// <summary>
+        /// Degrees from the view centre to the frame's edge. Headsets show roughly 45–55° to each side, so 50 puts the
+        /// streaks at the edge of sight (a first guess; the right value depends on the headset).
+        /// </summary>
+        public static readonly SliderSpec VignetteSize = new SliderSpec(VignetteSizeName, 30f, 70f, 5f, 50f);
+
+        /// <summary>Base colour in degrees: 0 = red, 40 = orange (Dark Messiah's frames: mostly red, lit pixels average G/R 0.18).</summary>
+        public static readonly SliderSpec VignetteHue = new SliderSpec(VignetteHueName, 0f, 40f, 2f, 6f);
+
+        /// <summary>How far the streaks reach in from the edge (share of the half-width; a first guess).</summary>
+        public static readonly SliderSpec VignetteLength = new SliderSpec(VignetteLengthName, 0.1f, 0.6f, 0.05f, 0.4f);
+
+        /// <summary>Frames per second of the flicker (Dark Messiah: 25).</summary>
+        public static readonly SliderSpec VignetteFrameRate = new SliderSpec(VignetteFrameRateName, 5f, 60f, 5f, 25f);
+
+        public static int[] VignetteStreakValues() => Enumerable.Range(2, 99).ToArray();
+
+        public static readonly SliderSpec[] SignalSliders =
+            { ReadySoundVolume, HeartbeatVolume, HapticsStrength, VignetteIntensity, VignetteHue, VignetteLength, VignetteSize, VignetteFrameRate };
+
+        /// <summary>Haptic heartbeat rate (not a menu value: a fixed beat for an excited heart, a first guess).</summary>
+        public const float HeartbeatBpm = 100f;
     }
 }

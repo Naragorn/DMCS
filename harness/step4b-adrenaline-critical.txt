@@ -3,6 +3,8 @@
 # kneel and die instead; a kick then sends it flying, a cut to the neck beheads it, both in slow-motion. Light hits and thrown weapons are no critical. Expects the defaults at the start.
 
 wait-level
+# Start from the defaults even if an earlier scenario failed before its own reset (saved options carry over)
+press DMCS "Reset To Defaults"
 option-exists DMCS "Critical Time Mode" category=Adrenaline type=String save=true
 option-exists DMCS "Critical Hyperfocus Time Scale" category=Adrenaline type=Single interaction=Slider save=true
 option-exists DMCS "Critical Hyperfocus Duration" category=Adrenaline type=Single interaction=Slider save=true

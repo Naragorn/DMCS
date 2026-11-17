@@ -4,6 +4,8 @@
 # Chances are set to 0 % / 100 % here so every result is certain. Expects the defaults at the start.
 
 wait-level
+# Start from the defaults even if an earlier scenario failed before its own reset (saved options carry over)
+press DMCS "Reset To Defaults"
 option-exists DMCS "Body Hit Drop" category="Disarm Strike" type=Boolean save=true
 option-exists DMCS "Body Hit Drop Chance" category="Disarm Strike" type=Int32 interaction=Slider save=true
 option-exists DMCS "Drop Chance Per Extra Hit" category="Disarm Strike" type=Int32 interaction=Slider save=true

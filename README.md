@@ -17,7 +17,7 @@ Every feature can be toggled and tuned in the in-game Mod Menu. Full spec: `CLAU
 | 2. Charge Stagger | **Done. Unit tests + in-game harness PASS (2026-11-16).** Feel in the headset (real sprint + real swing) not checked. |
 | 3. Disarm Strike | **Built, unit tests PASS, in-game harness PASS (2026-11-16).** Not checked in the headset yet. |
 | 3b. Body Hit Drop, chances per NPC type, shields, fling | **Built, unit tests + in-game harness PASS (2026-11-16, chance-per-type version).** Not checked in the headset; Twist Disarm not built (with step 5). |
-| 4. Adrenaline | **4a (meter), 4b (critical / fatality, chest-stab finish) and 4c (kneel and execution) built, unit tests + in-game harness PASS (2026-11-16).** Block/parry and damage taken are unit-tested only. Not checked in the headset. 4d–4e (signals/vignette, dodge/catch) not built; design in `CLAUDE.md` 4b. |
+| 4. Adrenaline | **4a (meter), 4b (critical / fatality, chest-stab finish), 4c (kneel and execution) and 4d (signals: ready sound, heartbeat, haptics, hand glow, Dark Messiah-style vignette) built, unit tests + in-game harness PASS (2026-11-16/17).** Block/parry and damage taken are unit-tested only. Nothing checked in the headset (sound, haptics and the vignette's look need it). 4e (dodge/catch) not built; design in `CLAUDE.md` 4b. |
 | 5. Clash of Might | not started |
 
 ## Versions (checked 2026-11-16)
@@ -107,8 +107,23 @@ Game path defaults to `~/.local/share/Steam/steamapps/common/Blade & Sorcery`; o
 | Adrenaline | Kneel After No Hit | slider | 0.5–5 s, step 0.5 | 2 s |
 | Adrenaline | Kneel After Light Hits | slider | 1–10 | 2 |
 | Adrenaline | Kneel Death Chance | slider | 0–100 %, step 5 | 0 % |
+| Adrenaline | Adrenaline Ready Sound | toggle | | on |
+| Adrenaline | Adrenaline Ready Sound Volume | slider | 0–1, step 0.05 | 0.6 (Dark Messiah's) |
+| Adrenaline | Adrenaline Heartbeat | toggle | | on |
+| Adrenaline | Adrenaline Heartbeat Volume | slider | 0–1, step 0.05 | 0.5 (Dark Messiah's) |
+| Adrenaline | Adrenaline Haptics | toggle | | on |
+| Adrenaline | Adrenaline Haptics Strength | slider | 0–1, step 0.05 | 0.5 |
+| Adrenaline | Adrenaline Weapon Glow | toggle | | on |
+| Adrenaline | Adrenaline Vignette | toggle | | on |
+| Adrenaline | Adrenaline Vignette Intensity | slider | 0–1, step 0.05 | 1 |
+| Adrenaline | Adrenaline Vignette Hue | slider | 0–40°, step 2 | 6° (red) |
+| Adrenaline | Adrenaline Vignette Streaks | slider | 2–100 | 70 |
+| Adrenaline | Adrenaline Vignette Streak Length | slider | 0.1–0.6, step 0.05 | 0.4 |
+| Adrenaline | Adrenaline Vignette Size | slider | 30–70°, step 5 | 50° |
+| Adrenaline | Adrenaline Vignette Frame Rate | slider | 5–60 fps, step 5 | 25 fps (Dark Messiah's) |
+| Adrenaline | Adrenaline Vignette Flare | toggle | | on |
 
-Feature settings are added to their group as each feature is built (spec build order). Clash of Might has no gameplay effect yet. Adrenaline fills its meter, opens the window and does the critical (4b); kneel/execution and the signals are not built yet.
+Feature settings are added to their group as each feature is built (spec build order). Clash of Might has no gameplay effect yet. Adrenaline fills its meter, opens the window, signals it (4d), does the critical (4b) and the kneel/execution (4c); dodge and catch gains are not built yet.
 
 ## Charge Stagger (step 2)
 
@@ -231,8 +246,34 @@ Not yet verified in game: that `HumanDummy` never picks anything up, and how the
 - Harness `step4c-adrenaline-kneel` (2026-11-16): no hit → kneels, animator FullBody `KneelingStart` → `Examine_Kneeling`,
   head height 1.76 → 1.27 m (probe), side screenshot shows it crouched; executed; light hits → kneels → stands up; death
   chance 100 % → dies; a stab execution → kneeling death → kick.
-- `step2`, `step3`, `step3b` switch Adrenaline off: its critical would kill their test NPC. `step3` (fighting
+- `step2`, `step3`, `step3b` switch Adrenaline off: its critical would kill their test NPC. Every combat scenario starts with *Reset To Defaults*, so one that failed before its own reset does not leave its settings to the next (seen 2026-11-17: a `step3` timeout left Adrenaline off and failed all of `step4`). `step3` (fighting
   `HumanMedium` brain) once failed to stagger on `push=1` and passed on the rerun (known flake of the fighting brain).
+
+### Signals and vignette (step 4d)
+
+While the adrenaline window or an execution window is open (`AdrenalineSignalRule`), each switchable on its own:
+- **Ready sound** once when the meter fills. DMCS synthesises it at runtime (`ReadySound`), modelled on what Dark
+  Messiah's own `Adrenaline_Reached.wav` does, measured in its file (2026-11-17): 2.29 s stereo, a low rumble
+  (20–160 Hz) carrying the first 1.2 s, a bright hiss swelling in the first 0.2 s, and a metallic ring at ~1021 Hz with
+  partials near ×2, ×3, ×3.85 and sidebands ~60 Hz off that swells to ~1 s and rings out. The synthesis was tuned until
+  the same band measurements matched (rumble/hiss/ring per 100 ms, L/R correlation 0.26 vs 0.28). Dark Messiah's file is
+  never loaded or shipped.
+- **Heartbeat**: the game's own loop (`Catalog.gameData.heartBeatLoopAddress` = `Bas.Audio.Misc.HeartBeatLoop`) on
+  DMCS's own 2D AudioSource, faded in and out.
+- **Haptics**: a lub-dub pulse (`HeartbeatPulse`, 100 bpm) in both hands via `RagdollHand.HapticTick`.
+- **Hand glow**: the game's `HyperfocusHand` effect on each hand that holds something, placed as `SkillHyperFocus` does.
+- **Vignette**: 25 frames of 256×256 drawn at startup (`VignetteFlipbook`): thin radial red/orange smears from the edges,
+  patchy, black centre, every frame different, looped at 25 fps. Technique as Dark Messiah's own overlay (25 frames of
+  256², additive, 25 fps); the look was compared with its frames (lit share 6 % vs 4 %, G/R of lit pixels 0.16 vs 0.18)
+  but the frames are DMCS's own drawing. Shown on a spherical cap 0.1 m around the eyes, child of the head camera (near
+  plane 0.02 m), with the game's `Universal Render Pipeline/Particles/Unlit` set to additive (harness probe 2026-11-17:
+  loaded and supported; `Universal Render Pipeline/Unlit` and the legacy particle shaders are not). *Vignette Size* is the
+  angle from the view centre to the frame's edge; it flares on the critical (*Vignette Flare*).
+- Frames and sound are built at level load (frames in a few ms: each streak only touches its own pixel box).
+- Harness `step4d-adrenaline-signals` (2026-11-17): meter full → ready sound (2.30 s), signals on, shader found, cap on the
+  `Head` camera, heartbeat clip loaded and playing; screenshots at 50° and 30° show the streaks (the desktop mirror shows
+  less than an eye, so at 50° only the edge shows); critical → flare, signals off; Adrenaline off mid-window → stopped.
+  Not checked: how loud, how strong and how it looks in the headset; the glow (the harness player holds nothing).
 
 ## API verification
 
@@ -319,6 +360,7 @@ a real physical weapon hit (held-weapon attribution) and how the stagger *feels*
 
 | Date | Step | Result |
 |---|---|---|
+| 2026-11-17 | 4d | Signals and vignette. Shader probe first (URP Particles/Unlit found). Harness: all ten scenarios **PASS** (step3 on a rerun: one timeout on "may re-arm" after the combo disarm, passed on the rerun). First runs found: frames took 2 s to build (fixed: per-streak pixel boxes, same output, built at level load); at 60° to the edge the streaks sat outside the mirror view → *Vignette Size* slider, 50°. |
 | 2026-11-16 | 1 | Harness: `step1-a-menu`, `-b-persist-set`, `-c-persist-check` **PASS** (70 s). First run found that saved values apply after script load; the load banner claimed default states — fixed (Settings line at level load). |
 | 2026-11-16 | 3b | Body Hit Drop, shields, fling. Harness: all six scenarios **PASS** (with the earlier female/smaller toggles; the chance-per-type version that replaced them is unit-tested, its scenario changes **not run**). Found on the way: a "grab the handle" steal is pointless, because the game itself gives a dagger or short sword to whoever grabs it; an NPC holding a buckler did not stagger from the push=1 test hit; a fighting NPC picks up shields and maces lying around during waits → step3b uses `HumanDummy`, step3 hands the left dagger over right before the hits. Not checked: the height check on a really smaller NPC (unit-tested only), sparks and pulse in the headset. |
 | 2026-11-16 | 3 | Harness: all five scenarios **PASS** (3 min). First run found: with Drops Both Hands off, the no-regrab check also emptied the hand that was not hit → only the disarmed hands are kept empty now. Also: a fighting brain may put its left-hand item away for a rock throw (`BrainModuleThrow`), so the scenario gives the left dagger right before the hit. |
