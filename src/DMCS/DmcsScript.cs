@@ -61,6 +61,7 @@ namespace DMCS
 
         public override void ScriptUpdate()
         {
+            HandSpeeds.Update();
             ChargeStagger.Update();
             DisarmStrike.Update();
             Adrenaline.Update();

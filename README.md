@@ -78,8 +78,9 @@ Dark Messiah's blade lock, made for VR. Built so far: **the warning**.
 - If the enemy is close, your blade is near the flash and you hold it roughly across the swing when the strike
   comes, time slows down (0.3×) until the swing is over.
 
-Still to come: blocking at the flash starts the lock (your weapon turns heavy, you push against the enemy's force);
-win and it loses its weapon, lose and you lose yours and take a hit.
+**The lock (testing):** block the flashing swing right at the flash, with your blade roughly across it, and the blades
+lock: the enemy freezes in its swing and your weapon turns heavy. For now the lock simply ends after its time. Still to
+come: pushing against the enemy's force decides it; win and it loses its weapon, lose and you lose yours and take a hit.
 
 ## Dark Messiah's own sounds and vignette (optional)
 
@@ -102,6 +103,7 @@ All options with their defaults. Every slider shows its unit in the menu.
 |---|---|---|
 | Debug Logging | off | Writes stagger, disarm and meter events to `Player.log` (for bug reports) |
 | Reset To Defaults | – | Sets every DMCS option back to its default |
+| Body Hit Min Hand Speed | 1.5 m/s | How fast your real hand must move for a touch of your hand or arm to count as a punch (0 = every touch). Keeps enemies from disarming themselves by running into your hand |
 
 **Clash of Might**
 
@@ -115,6 +117,9 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Clash Enemy Reach | 2.5 m | 1–4 m | How close the enemy must be |
 | Clash Block Reach | 0.6 m | 0.2–1.5 m | How close your blade must be to the flash |
 | Clash Block Angle Tolerance | 45° | 10–80° | How far your blade may be off a right angle to the swing |
+| Clash Point Tolerance | 0.25 m | How close to the flash your block must hit to lock the blades |
+| Clash Weapon Weight | 20× | How much heavier your weapon gets while the blades are locked |
+| Clash Max Duration | 4 s | How long the blades stay locked at most |
 | Clash Flash Sound | DMCS 1 | Off, DMCS 1 | The warning sound: a deep boom with a metallic ring, after Sekiro's perilous-attack cue |
 | Clash Flash Game Sound | Off | Off, Metal Hit, Focus Ready, Gravity Pulse | One of the game's own sounds on top (Metal Hit also sparks) |
 | Clash Flash Sound Volume | 0.8 | 0–1 | Volume of the DMCS sound |

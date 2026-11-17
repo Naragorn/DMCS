@@ -44,6 +44,30 @@ hit-npc Torso
 expect-npc holding true within=0
 expect-no-log body hit
 
+# 1b. Staggered, 100 %, but the player's hand only was run into (no controller swing): no strike, nothing drops.
+# Found 2026-11-17: a fighting NPC swinging into the standing player's hand disarmed itself this way.
+option-exists DMCS "Body Hit Min Hand Speed" category=General type=Single interaction=Slider save=true
+expect-option DMCS "Body Hit Min Hand Speed" 1.5
+hit-npc Torso push=1
+expect-npc staggered true
+# The stagger hit above swung the hand and the harness moved it back at once: wait until that is out of the 0.2 s window
+wait 0.5
+mark
+hit-npc Torso swing=0
+expect-log [DMCS][Hits] contact by your RightHand not counted as a strike (hand 0.00 m/s)
+expect-no-log body hit
+expect-npc holding true within=0
+# The same with the threshold at 0: every touch counts again, and it drops
+set-option DMCS "Body Hit Min Hand Speed" 0
+mark
+hit-npc Torso swing=0
+expect-log body hit Torso, 100 %
+expect-npc holding false within=0.5
+set-option DMCS "Body Hit Min Hand Speed" 1.5
+expect-log may re-arm
+npc-grab DaggerCommon hand=right
+expect-npc holding true
+
 # 2. 0 % + 100 % per extra hit: the first body hit in the stagger fails (sparks, pulse), the second drops (flung)
 set-option DMCS "Body Hit Drop Chance" 0
 set-option DMCS "Drop Chance Per Extra Hit" 100

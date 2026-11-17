@@ -304,6 +304,27 @@ Design and probe results: `CLAUDE.md`, section 1.
 - Not covered in game: a block with the default values (the harness cannot move the player's arm), whether 0.1 s at the strike
   start leaves enough time.
 
+## Clash of Might, step 5b: the lock
+
+- **Block:** the game's own block event (`EventManager.onCreatureAttackParry`, raised by `BrainModuleMelee` when an NPC's attack
+  hits a held weapon at more than ~1.4 m/s) with the NPC as the parried side and the player as the parrying side. The NPC must be
+  flashing and the parried item must be the flashing weapon (else: `you blocked <npc>'s other weapon`). `ClashRules.JudgeBlock`:
+  contact (`CollisionInstance.contactPoint`) within *Clash Point Tolerance* (0.25 m) of the flash point, and the player's blade
+  within *Block Angle Tolerance* of the swing plane's normal (read now, else the one stored at the strike start; unknown = the
+  contact decides). Else `you blocked <npc>'s swing: OffPoint|WrongAngle (contact 0.48 m from the flash, angle 87°), an ordinary parry`.
+- **Lock:** our slow-motion ends; `creature.animator.speed = 0` (harness probe: the NPC holds its swing pose); the player's weapon
+  `physicBody.mass ×` *Clash Weapon Weight* (20); the flash stays at the crossing. Every 0.1 s a diagnostic for the push measure of
+  5c: `lock t=0.51 s: hand ahead 0.04 m (towards the enemy 0.00 m), blades 0.24 m apart` (`PlayerHand.grip`, the controller's target,
+  minus `RagdollHand.grip`; towards the enemy = projected on the horizontal direction to it). After *Clash Max Duration* (4 s) or
+  when a fighter or weapon is gone, feature off or level unload: animator speed and mass back, flash off. Outcomes: step 5c.
+- Pure logic in Core (`ClashRules.JudgeBlock`, `ClashLock`), unit-tested.
+- Harness `step5b-clash-lock` (new BasHarness verbs `player-grab`, `player-parry [offset=]` and `await-log`): the game's block event
+  raised at the flashing weapon's middle locks (contact 0.02 m, angle 56°), diagnostics, released after 2 s; with a 10° angle
+  tolerance it is `WrongAngle`; 0.5 m along the blade `OffPoint`; no flash or feature off → nothing. The player's sword in the mock
+  hand also met real swings: the game raised its block event by itself and one locked for real (contact 0.06 m, angle 70.9°,
+  tolerance 80°). In the harness the diagnostic shows the heavy sword sagging (hand ahead 0.04–0.07 m, towards the enemy 0.00 m),
+  since the mock controller does not move. A real push: headset.
+
 ### Open findings
 
 - 2026-11-17, harness `step5a`: a fighting NPC swinging into the standing (invincible) player was disarmed by DMCS Body Hit
@@ -312,7 +333,12 @@ Design and probe results: `CLAUDE.md`, section 1.
   (5 contacts in 60 s, impact 2–4.8 m/s, the player's hand part moving 1.8–5.5 m/s only because it was knocked). The NPC was
   staggered by the game's own recoil (`LightAndMedium`), so the next contact rolled the 25 % body-hit chance. Cause: `HitInfo.SourceOf`
   takes any contact of a player body part as a player strike; the part's physics speed cannot tell a punch from being hit.
-  Not fixed yet.
+  **Fixed 2026-11-17:** `PlayerStrikeRule` + `HandSpeeds`: a hand or arm contact counts only when that hand's controller
+  (the `PlayerHand` pose, local to the rig, measured over 0.05 s) reached *Body Hit Min Hand Speed* (General, 1.5 m/s, a guess)
+  within 0.2 s before; feet and legs count as kicks; torso and head never. Log: `[Hits] contact by your RightHand not counted as a
+  strike (hand 0.00 m/s)`. BasHarness `hit-npc by=hand` now swings the right controller pose at `swing=` m/s (default 3) for 0.12 s
+  before the hit. Harness: all scenarios with hand hits PASS; `step3b` checks `swing=0` (no strike) and threshold 0 (counts);
+  `step5a` now runs with Disarm Strike on and expects no disarm from the NPC's own swings.
 
 ## API verification
 

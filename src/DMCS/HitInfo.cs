@@ -9,6 +9,7 @@ namespace DMCS
     internal static class HitInfo
     {
         private static readonly Dictionary<CollisionInstance, bool> StaggeredAtStart = new Dictionary<CollisionInstance, bool>();
+        private static readonly HashSet<CollisionInstance> Logged = new HashSet<CollisionInstance>();
 
         /// <summary>
         /// Call on the hit's EventTime.OnStart: remembers whether the target was staggered before this hit.
@@ -33,6 +34,7 @@ namespace DMCS
         public static void EndFrame()
         {
             StaggeredAtStart.Clear();
+            Logged.Clear();
         }
 
         /// <summary>
@@ -98,13 +100,52 @@ namespace DMCS
             var part = handler != null ? handler.ragdollPart : null;
             if (part != null && part.ragdoll != null && part.ragdoll.creature == player)
             {
-                return HitSource.PlayerBody;
+                return IsPlayerStrike(hit, part) ? HitSource.PlayerBody : HitSource.NotPlayer;
             }
             if (hit.casterHand != null && hit.casterHand.mana != null && hit.casterHand.mana.creature == player)
             {
                 return HitSource.PlayerSpell;
             }
             return HitSource.NotPlayer;
+        }
+
+        /// <summary>
+        /// A contact of the player's body part is the player's strike only when the player moved it (PlayerStrikeRule): a
+        /// hand or arm needs its controller's speed, a foot or leg counts, torso and head do not. Logged once per hit.
+        /// </summary>
+        private static bool IsPlayerStrike(CollisionInstance hit, RagdollPart part)
+        {
+            var kind = KindOf(part.type, out var side);
+            var speed = kind == BodyPartKind.HandOrArm ? HandSpeeds.Peak(side, PlayerStrikeRule.SpeedWindow) : 0f;
+            var strike = PlayerStrikeRule.IsStrike(kind, speed, GeneralOptions.MinHandSpeed);
+            if (!strike && Logged.Add(hit))
+            {
+                Dmcs.Log.Debug("Hits", "contact by your " + part.type + " not counted as a strike ("
+                    + (kind == BodyPartKind.HandOrArm ? "hand " + speed.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " m/s" : "not a hand, arm, foot or leg") + ")");
+            }
+            return strike;
+        }
+
+        private static BodyPartKind KindOf(RagdollPart.Type type, out Side side)
+        {
+            side = Side.Right;
+            switch (type)
+            {
+                case RagdollPart.Type.LeftHand:
+                case RagdollPart.Type.LeftArm:
+                    side = Side.Left;
+                    return BodyPartKind.HandOrArm;
+                case RagdollPart.Type.RightHand:
+                case RagdollPart.Type.RightArm:
+                    return BodyPartKind.HandOrArm;
+                case RagdollPart.Type.LeftFoot:
+                case RagdollPart.Type.RightFoot:
+                case RagdollPart.Type.LeftLeg:
+                case RagdollPart.Type.RightLeg:
+                    return BodyPartKind.FootOrLeg;
+                default:
+                    return BodyPartKind.Other;
+            }
         }
 
         /// <summary>Inside a Charge Stagger window, staggered by the game itself (Brain.currentStagger), or lying down.</summary>

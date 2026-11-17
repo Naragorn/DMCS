@@ -25,6 +25,18 @@ namespace DMCS
 
         private static readonly ClashTelegraph<int> Telegraph = new ClashTelegraph<int>(ClashSettings.JudgeWindow);
         private static readonly Dictionary<int, Flash> Flashes = new Dictionary<int, Flash>();
+        private static readonly ClashLock Lock = new ClashLock();
+
+        /// <summary>Whether the blades are locked now, and where (for diagnostics and probes).</summary>
+        internal static bool IsLocked => Lock.IsLocked;
+
+        internal static Vector3? LockPoint => Lock.IsLocked && _lockFlash != null && _lockFlash.Weapon != null ? _lockFlash.Point : (Vector3?)null;
+        private static int _lockNpc;
+        private static Flash _lockFlash;
+        private static Item _lockItem;
+        private static RagdollHand _lockHand;
+        private static float _lockAnimatorSpeed = 1f;
+        private static float _lockMass;
         private static bool _hooked;
         private static Material _material;
         private static Texture2D _texture;
@@ -77,13 +89,31 @@ namespace DMCS
         [ModOptionSlider]
         public static float BlockAngleTolerance { get; set; } = ClashSettings.BlockAngleTolerance.Default;
 
-        [ModOption(name = ClashSettings.FlashSoundName, tooltip = "Sound when an enemy's blade flashes. DMCS 1 is modelled on Sekiro's perilous-attack cue. Combines with the game sound below.", valueSourceName = nameof(FlashSoundValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 8)]
+        [ModOption(name = ClashSettings.PointToleranceName, tooltip = "How close (m) to the flash your block must hit the enemy's blade to lock the blades. Elsewhere it is an ordinary parry.", valueSourceName = nameof(PointToleranceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 8)]
+        [ModOptionSlider]
+        public static float PointTolerance { get; set; } = ClashSettings.PointTolerance.Default;
+
+        [ModOption(name = ClashSettings.WeaponWeightName, tooltip = "How much heavier your weapon gets while the blades are locked, so you cannot just push through.", valueSourceName = nameof(WeaponWeightValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 9)]
+        [ModOptionSlider]
+        public static float WeaponWeight { get; set; } = ClashSettings.WeaponWeight.Default;
+
+        [ModOption(name = ClashSettings.MaxDurationName, tooltip = "Seconds the blades stay locked at most.", valueSourceName = nameof(MaxDurationValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 10)]
+        [ModOptionSlider]
+        public static float MaxDuration { get; set; } = ClashSettings.MaxDuration.Default;
+
+        public static ModOptionFloat[] PointToleranceValues() => Floats(ClashSettings.PointTolerance, "0.00", " m");
+
+        public static ModOptionFloat[] WeaponWeightValues() => Floats(ClashSettings.WeaponWeight, "0", "x");
+
+        public static ModOptionFloat[] MaxDurationValues() => Floats(ClashSettings.MaxDuration, "0.0", " s");
+
+        [ModOption(name = ClashSettings.FlashSoundName, tooltip = "Sound when an enemy's blade flashes. DMCS 1 is modelled on Sekiro's perilous-attack cue. Combines with the game sound below.", valueSourceName = nameof(FlashSoundValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 11)]
         public static string FlashSoundStyle { get; set; } = ClashSettings.DefaultFlashSound;
 
-        [ModOption(name = ClashSettings.FlashGameSoundName, tooltip = "One of Blade & Sorcery's own sounds with the flash (Metal Hit also sparks). Plays together with the sound above.", valueSourceName = nameof(FlashGameSoundValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 9)]
+        [ModOption(name = ClashSettings.FlashGameSoundName, tooltip = "One of Blade & Sorcery's own sounds with the flash (Metal Hit also sparks). Plays together with the sound above.", valueSourceName = nameof(FlashGameSoundValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 12)]
         public static string FlashGameSound { get; set; } = ClashSettings.DefaultFlashGameSound;
 
-        [ModOption(name = ClashSettings.FlashSoundVolumeName, tooltip = "Volume of the DMCS flash sound.", valueSourceName = nameof(FlashSoundVolumeValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 10)]
+        [ModOption(name = ClashSettings.FlashSoundVolumeName, tooltip = "Volume of the DMCS flash sound.", valueSourceName = nameof(FlashSoundVolumeValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 13)]
         [ModOptionSlider]
         public static float FlashSoundVolume { get; set; } = ClashSettings.FlashSoundVolume.Default;
 
@@ -112,6 +142,7 @@ namespace DMCS
                 return;
             }
             EventManager.onCreatureAttacking += OnCreatureAttacking;
+            EventManager.onCreatureAttackParry += OnParry;
             _hooked = true;
         }
 
@@ -121,6 +152,7 @@ namespace DMCS
             if (_hooked)
             {
                 EventManager.onCreatureAttacking -= OnCreatureAttacking;
+                EventManager.onCreatureAttackParry -= OnParry;
                 _hooked = false;
             }
             ResetAll();
@@ -129,6 +161,7 @@ namespace DMCS
         /// <summary>Level unloading or feature off: flashes gone, our slow-motion ended.</summary>
         public static void ResetAll()
         {
+            EndLock(Lock.Break(), "reset");
             foreach (var id in Telegraph.Clear())
             {
                 RemoveFlash(id);
@@ -142,6 +175,7 @@ namespace DMCS
 
         public static void Update()
         {
+            UpdateLock();
             if (_timeOwned && Time.unscaledTime >= _timeEndsAt)
             {
                 Dmcs.Log.Debug(Channel, "slow-motion cap reached");
@@ -228,6 +262,10 @@ namespace DMCS
                         break;
                     case BrainModuleAttack.AttackStage.End:
                     case BrainModuleAttack.AttackStage.Cancel:
+                        if (Lock.IsLocked && _lockNpc == id)
+                        {
+                            break;
+                        }
                         if (Telegraph.Ended(id))
                         {
                             EndTime(force: false);
@@ -379,6 +417,10 @@ namespace DMCS
             var npcHandle = flash.Hand != null && flash.Hand.grabbedHandle != null ? flash.Hand.grabbedHandle.transform.position : flash.Weapon.transform.position;
             var velocity = flash.Weapon.GetItemPointVelocity(point, true);
             var normal = ClashGeometry.SwingPlaneNormal(V(point - npcHandle), V(velocity), ClashSettings.MinBladeSpeed);
+            if (normal.HasValue)
+            {
+                flash.Normal = new Vector3(normal.Value.X, normal.Value.Y, normal.Value.Z);
+            }
             if (normal.HasValue && bladeAxis != Vector3.zero)
             {
                 angle = ClashGeometry.AngleToNormal(V(bladeAxis), normal.Value);
@@ -444,6 +486,144 @@ namespace DMCS
             }
             TimeManager.SetSlowMotion(false, _timeScale, AnimationCurve.EaseInOut(0f, 0f, 0.1f, 1f));
             Dmcs.Log.Debug(Channel, "slow-motion over: time back to normal");
+        }
+
+        /// <summary>
+        /// The NPC's swing hit the player's weapon (the game's own block event, raised by BrainModuleMelee when an attack
+        /// hits a held weapon at more than ~1.4 m/s). At the flash point and across the swing the blades lock; anything else
+        /// stays an ordinary parry.
+        /// </summary>
+        private static void OnParry(Creature parried, Item parriedItem, Creature parrying, Item parryingItem, CollisionInstance hit)
+        {
+            try
+            {
+                if (!Toggle.Enabled || Lock.IsLocked || parried == null || parried.isPlayer || parrying == null || !parrying.isPlayer || parryingItem == null || hit == null)
+                {
+                    return;
+                }
+                var id = parried.GetInstanceID();
+                if (!Flashes.TryGetValue(id, out var flash))
+                {
+                    return;
+                }
+                if (parriedItem != null && parriedItem != flash.Weapon)
+                {
+                    Dmcs.Log.Debug(Channel, "you blocked " + flash.NpcName + "'s other weapon (" + parriedItem.data?.id + "), not the flashing one: an ordinary parry");
+                    return;
+                }
+                var point = flash.Point;
+                var contactToFlash = Vector3.Distance(hit.contactPoint, point);
+                var hand = parryingItem.mainHandler;
+                float? angle = null;
+                if (hand != null && TryPlayerBlade(hand, out var a, out var b))
+                {
+                    var npcHandle = flash.Hand != null && flash.Hand.grabbedHandle != null ? flash.Hand.grabbedHandle.transform.position : flash.Weapon.transform.position;
+                    var now = ClashGeometry.SwingPlaneNormal(V(point - npcHandle), V(flash.Weapon.GetItemPointVelocity(point, true)), ClashSettings.MinBladeSpeed);
+                    var normal = now ?? (flash.Normal.HasValue ? V(flash.Normal.Value) : (Vec3?)null);
+                    if (normal.HasValue)
+                    {
+                        angle = ClashGeometry.AngleToNormal(V(b - a), normal.Value);
+                    }
+                }
+                var verdict = ClashRules.JudgeBlock(contactToFlash, PointTolerance, angle, BlockAngleTolerance);
+                var detail = "contact " + F(contactToFlash) + " m from the flash, angle " + (angle.HasValue ? F(angle.Value) + "°" : "n/a");
+                if (verdict != BlockVerdict.Clash)
+                {
+                    Dmcs.Log.Debug(Channel, "you blocked " + flash.NpcName + "'s swing: " + verdict + " (" + detail + "), an ordinary parry");
+                    return;
+                }
+                StartLock(id, flash, parryingItem, hand, detail);
+            }
+            catch (Exception ex)
+            {
+                Dmcs.Log.Info("Clash error: " + ex);
+            }
+        }
+
+        private static void StartLock(int id, Flash flash, Item item, RagdollHand hand, string detail)
+        {
+            EndTime(force: false);
+            _lockNpc = id;
+            _lockFlash = flash;
+            _lockItem = item;
+            _lockHand = hand;
+            _lockAnimatorSpeed = flash.Npc.animator != null ? flash.Npc.animator.speed : 1f;
+            if (flash.Npc.animator != null)
+            {
+                flash.Npc.animator.speed = 0f;
+            }
+            _lockMass = item.physicBody != null ? item.physicBody.mass : 0f;
+            if (item.physicBody != null)
+            {
+                item.physicBody.mass = _lockMass * WeaponWeight;
+            }
+            Lock.Start(Time.unscaledTime);
+            Dmcs.Log.Debug(Channel, "blades locked with " + flash.NpcName + " (" + detail + "): enemy frozen, your " + item.data?.id + " "
+                + WeaponWeight.ToString("0", CultureInfo.InvariantCulture) + "x heavier for up to " + F(MaxDuration) + " s");
+        }
+
+        private static void UpdateLock()
+        {
+            if (!Lock.IsLocked)
+            {
+                return;
+            }
+            var npc = _lockFlash?.Npc;
+            if (npc == null || npc.isKilled || _lockFlash.Weapon == null || _lockFlash.Weapon.mainHandler == null
+                || _lockItem == null || _lockItem.mainHandler == null || _lockItem.mainHandler.creature == null || !_lockItem.mainHandler.creature.isPlayer)
+            {
+                EndLock(Lock.Break(), "a fighter or a weapon is gone");
+                return;
+            }
+            var now = Time.unscaledTime;
+            if (Lock.DiagnosticDue(now))
+            {
+                LogDiagnostic(now);
+            }
+            var end = Lock.Tick(now, MaxDuration);
+            if (end != LockEnd.None)
+            {
+                EndLock(end, "time up (who wins comes in step 5c)");
+            }
+        }
+
+        /// <summary>
+        /// Headset diagnostic for the push measure (step 5c): how far the player's controller (its grip target) is ahead of the
+        /// weapon hand that lags behind, overall and towards the enemy; and how far the blades are apart at the flash.
+        /// </summary>
+        private static void LogDiagnostic(float now)
+        {
+            var playerHand = _lockHand != null && _lockHand.playerHand != null ? _lockHand.playerHand : null;
+            var ahead = playerHand != null && playerHand.grip != null && _lockHand.grip != null ? playerHand.grip.position - _lockHand.grip.position : Vector3.zero;
+            var toEnemy = _lockFlash.Npc.transform.position - Player.currentCreature.transform.position;
+            toEnemy.y = 0f;
+            var towards = toEnemy.sqrMagnitude > 0.0001f ? Vector3.Dot(ahead, toEnemy.normalized) : 0f;
+            var apart = TryPlayerBlade(_lockHand, out var a, out var b) ? ClashGeometry.DistanceToSegment(V(_lockFlash.Point), V(a), V(b)) : float.NaN;
+            Dmcs.Log.Debug(Channel, "lock t=" + F(Lock.Elapsed(now)) + " s: hand ahead " + F(ahead.magnitude) + " m (towards the enemy " + F(towards)
+                + " m), blades " + (float.IsNaN(apart) ? "n/a" : F(apart) + " m") + " apart");
+        }
+
+        private static void EndLock(LockEnd end, string why)
+        {
+            if (end == LockEnd.None)
+            {
+                return;
+            }
+            var npc = _lockFlash?.Npc;
+            if (npc != null && npc.animator != null)
+            {
+                npc.animator.speed = _lockAnimatorSpeed;
+            }
+            if (_lockItem != null && _lockItem.physicBody != null && _lockMass > 0f)
+            {
+                _lockItem.physicBody.mass = _lockMass;
+            }
+            Telegraph.Ended(_lockNpc);
+            RemoveFlash(_lockNpc);
+            Dmcs.Log.Debug(Channel, "blades unlocked (" + end + ": " + why + ")" + (npc != null ? ": " + npc.name + " moves again" : string.Empty));
+            _lockFlash = null;
+            _lockItem = null;
+            _lockHand = null;
         }
 
         /// <summary>Builds every DMCS flash sound in the background (each takes a moment in the game's Mono), at level load.</summary>
@@ -615,6 +795,9 @@ namespace DMCS
             public MeshRenderer Renderer { get; }
             public float StartedAt { get; }
             public string LastDetail { get; set; } = "";
+
+            /// <summary>The swing plane's normal from the strike start (null until read).</summary>
+            public Vector3? Normal { get; set; }
 
             public Vector3 Point => Weapon.transform.TransformPoint(Local);
         }

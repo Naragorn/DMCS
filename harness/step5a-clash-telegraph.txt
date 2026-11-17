@@ -29,8 +29,8 @@ set-option DMCS "Debug Logging" true
 # The NPC's hits on the player would fill the meter and its critical/kneel would end the fight
 set-option DMCS "Adrenaline Enabled" false
 set-option DMCS "Charge Stagger Enabled" false
-# The NPC's own swings into the standing player count as player body hits on it and once disarmed it (seen 2026-11-17)
-set-option DMCS "Disarm Strike Enabled" false
+# Disarm Strike stays on: the NPC's own swings into the standing player's motionless hand once counted as punches
+# and disarmed it (2026-11-17); now they must not (Body Hit Min Hand Speed).
 # A real NPC fights the player for two minutes: without this the player dies after about a minute (seen 2026-11-17)
 player-invincible true
 
@@ -44,6 +44,7 @@ expect-log [DMCS][Clash] HumanMale
 expect-log : flash, sound DMCS 1 (3.60 s)
 expect-log no slow-motion for
 expect-log BladeTooFar
+expect-no-log [DMCS][Disarm Strike] disarmed
 expect-no-log slow-motion 0.30x
 screenshot clash-npc of=npc
 

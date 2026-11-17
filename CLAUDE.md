@@ -37,7 +37,7 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 
 ## 1. Clash of Might (blade lock)
 
-**Redesigned with the user 2026-11-17** (replaces the first draft "any blade contact longer than 0.3 s + controller micro-movements"). **5a built 2026-11-17** (flow steps 1–3: big swing, flash, slow-motion; see docs/IMPLEMENTATION.md); 5b (block at the flash, freeze, weight, push measure + headset diagnostic log) and 5c (outcomes, Mod Menu rest) not built.
+**Redesigned with the user 2026-11-17** (replaces the first draft "any blade contact longer than 0.3 s + controller micro-movements"). **5a built 2026-11-17** (flow steps 1–3: big swing, flash, slow-motion; see docs/IMPLEMENTATION.md); 5b (block at the flash, freeze, weight, diagnostic log for the push measure) built 2026-11-17; 5c (push measure, outcomes, Mod Menu rest) not built.
 
 **Dark Messiah's own clash (read 2026-11-17):** both sides do a power attack at once → the blades lock (`sword_versus_sword`, a click counter `m_iVersusClick`, win/lose animations `ACT_VERSUS_*_OUT_WIN/_OUT_LOOSE` in DM's `server.dll`); the player mashes to push back, the loser is knocked back and briefly stunned ([mthec 2009](https://mthec.wordpress.com/2009/03/23/dark-messiah-might-and-magic-part-one/)). With the Disarming skill (melee level 2) the winner disarms the loser ([GameSpot walkthrough](https://www.gamespot.com/articles/dark-messiah-of-might-and-magic-walkthrough/1100-6160412/)). DMCS's lose outcome is harsher than DM's (user's choice).
 

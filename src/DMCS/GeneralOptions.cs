@@ -27,6 +27,19 @@ namespace DMCS
             }
         }
 
+        [ModOption(
+            name = PlayerStrikeRule.MinHandSpeedName,
+            tooltip = "How fast (m/s) your real hand must move for a touch of your hand or arm to count as a punch. Stops enemies from disarming themselves by running into your hand. 0: every touch counts.",
+            valueSourceName = nameof(MinHandSpeedValues),
+            category = DmcsCategories.General,
+            categoryOrder = DmcsCategories.GeneralOrder,
+            order = 2)]
+        [ModOptionSlider]
+        public static float MinHandSpeed { get; set; } = PlayerStrikeRule.MinHandSpeed.Default;
+
+        public static ModOptionFloat[] MinHandSpeedValues() =>
+            PlayerStrikeRule.MinHandSpeed.Values().Select(v => new ModOptionFloat(v.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " m/s", v)).ToArray();
+
         /// <summary>Single-entry value list: a ButtonList with one value re-applies it on every press.</summary>
         public static ModOptionString[] ResetValues = { new ModOptionString("Reset", null, "reset") };
 

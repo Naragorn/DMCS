@@ -102,7 +102,7 @@ namespace DMCS.Core
         public const float MaxStep = 1f;
 
         private readonly float _window;
-        private readonly List<(float T, float X, float Z)> _samples = new List<(float T, float X, float Z)>();
+        private readonly List<(float T, float X, float Y, float Z)> _samples = new List<(float T, float X, float Y, float Z)>();
 
         /// <param name="window">Seconds the speed is measured over.</param>
         public HeadSpeedMeter(float window)
@@ -110,18 +110,21 @@ namespace DMCS.Core
             _window = window;
         }
 
-        /// <summary>Adds the head position (x, z); returns the speed over the last window, or null while it is not covered yet.</summary>
-        public float? Add(float time, float x, float z)
+        /// <summary>Adds the head position (x, z); returns the horizontal speed over the last window, or null while it is not covered yet.</summary>
+        public float? Add(float time, float x, float z) => Add(time, x, 0f, z);
+
+        /// <summary>Adds a position (x, y, z); returns the speed over the last window, or null while it is not covered yet.</summary>
+        public float? Add(float time, float x, float y, float z)
         {
             if (_samples.Count > 0)
             {
                 var last = _samples[_samples.Count - 1];
-                if (time < last.T || Distance(last.X, last.Z, x, z) > MaxStep)
+                if (time < last.T || Distance(last.X, last.Y, last.Z, x, y, z) > MaxStep)
                 {
                     _samples.Clear();
                 }
             }
-            _samples.Add((time, x, z));
+            _samples.Add((time, x, y, z));
             var anchor = -1;
             for (var i = _samples.Count - 1; i >= 0; i--)
             {
@@ -137,16 +140,17 @@ namespace DMCS.Core
             }
             _samples.RemoveRange(0, anchor);
             var a = _samples[0];
-            return Distance(a.X, a.Z, x, z) / (time - a.T);
+            return Distance(a.X, a.Y, a.Z, x, y, z) / (time - a.T);
         }
 
         public void Clear() => _samples.Clear();
 
-        private static float Distance(float x0, float z0, float x1, float z1)
+        private static float Distance(float x0, float y0, float z0, float x1, float y1, float z1)
         {
             var dx = x1 - x0;
+            var dy = y1 - y0;
             var dz = z1 - z0;
-            return (float)Math.Sqrt(dx * dx + dz * dz);
+            return (float)Math.Sqrt((dx * dx) + (dy * dy) + (dz * dz));
         }
     }
 

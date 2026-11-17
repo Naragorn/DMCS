@@ -68,7 +68,92 @@ namespace DMCS.Core
             }
         }
 
-        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, BlockReach, BlockAngleTolerance, FlashSoundVolume };
+        public const string PointToleranceName = "Clash Point Tolerance";
+        public const string WeaponWeightName = "Clash Weapon Weight";
+        public const string MaxDurationName = "Clash Max Duration";
+
+        /// <summary>Metres between the block's contact and the flash point within which the blades lock (a guess, headset).</summary>
+        public static readonly SliderSpec PointTolerance = new SliderSpec(PointToleranceName, 0.05f, 0.6f, 0.05f, 0.25f);
+
+        /// <summary>The player's weapon's mass factor during the lock (harness probe: ×20 sags the tip 5 cm held still; a guess).</summary>
+        public static readonly SliderSpec WeaponWeight = new SliderSpec(WeaponWeightName, 1f, 50f, 1f, 20f);
+
+        /// <summary>Real seconds a lock lasts at most (the NPC wins then, step 5c; a guess).</summary>
+        public static readonly SliderSpec MaxDuration = new SliderSpec(MaxDurationName, 1f, 10f, 0.5f, 4f);
+
+        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, BlockReach, BlockAngleTolerance, FlashSoundVolume, PointTolerance, WeaponWeight, MaxDuration };
+    }
+
+    public enum BlockVerdict
+    {
+        /// <summary>The blades lock: the clash starts.</summary>
+        Clash,
+
+        /// <summary>The block hit the blade away from the flash: an ordinary parry.</summary>
+        OffPoint,
+
+        /// <summary>At the flash, but the player's blade was not across the swing: an ordinary parry.</summary>
+        WrongAngle,
+    }
+
+    public enum LockEnd
+    {
+        None,
+
+        /// <summary>The lock ran its maximum time.</summary>
+        TimeUp,
+
+        /// <summary>Ended from outside: NPC dead or gone, weapon dropped, feature off, level unload.</summary>
+        Broken,
+    }
+
+    /// <summary>One clash lock: started, ticked until its maximum time, or broken; diagnostics every 0.1 s.</summary>
+    public sealed class ClashLock
+    {
+        private const float DiagnosticEvery = 0.1f;
+        private float _startedAt;
+        private float _nextDiagnostic;
+
+        public bool IsLocked { get; private set; }
+
+        public void Start(float now)
+        {
+            IsLocked = true;
+            _startedAt = now;
+            _nextDiagnostic = now;
+        }
+
+        public float Elapsed(float now) => now - _startedAt;
+
+        public LockEnd Tick(float now, float maxDuration)
+        {
+            if (!IsLocked || now - _startedAt < maxDuration)
+            {
+                return LockEnd.None;
+            }
+            IsLocked = false;
+            return LockEnd.TimeUp;
+        }
+
+        public LockEnd Break()
+        {
+            if (!IsLocked)
+            {
+                return LockEnd.None;
+            }
+            IsLocked = false;
+            return LockEnd.Broken;
+        }
+
+        public bool DiagnosticDue(float now)
+        {
+            if (!IsLocked || now < _nextDiagnostic - 0.0001f)
+            {
+                return false;
+            }
+            _nextDiagnostic = now + DiagnosticEvery;
+            return true;
+        }
     }
 
     public enum SlowMoVerdict
@@ -99,6 +184,16 @@ namespace DMCS.Core
         /// </summary>
         public static bool StillOurSlowMotion(bool starting, float timeScale, float ourScale) =>
             starting || Math.Abs(timeScale - ourScale) <= 0.01f;
+
+        /// <summary>A block (the NPC's swing hit the player's weapon) at the flash point and across the swing locks the blades; a block whose swing plane is unknown is decided by the contact point alone.</summary>
+        public static BlockVerdict JudgeBlock(float contactToFlash, float pointTolerance, float? angleToNormal, float angleTolerance)
+        {
+            if (contactToFlash > pointTolerance)
+            {
+                return BlockVerdict.OffPoint;
+            }
+            return !angleToNormal.HasValue || angleToNormal.Value <= angleTolerance ? BlockVerdict.Clash : BlockVerdict.WrongAngle;
+        }
 
         public static bool CanFlash(bool onlySwords, bool isSword, bool hasSlashBlade) => hasSlashBlade && (!onlySwords || isSword);
 
