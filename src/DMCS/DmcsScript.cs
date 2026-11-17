@@ -32,6 +32,7 @@ namespace DMCS
             ChargeStagger.Start();
             DisarmStrike.Start();
             Adrenaline.Start();
+            ClashOfMight.Start();
             Dmcs.Log.Debug("Script", "ScriptEnable");
         }
 
@@ -42,6 +43,7 @@ namespace DMCS
             ChargeStagger.Stop();
             DisarmStrike.Stop();
             Adrenaline.Stop();
+            ClashOfMight.Stop();
             Dmcs.Log.Debug("Script", "ScriptDisable");
         }
 
@@ -52,6 +54,7 @@ namespace DMCS
             ChargeStagger.Stop();
             DisarmStrike.Stop();
             Adrenaline.Stop();
+            ClashOfMight.Stop();
             Dmcs.Log.Debug("Script", "ScriptUnload");
             LoadedMod = null;
         }
@@ -61,7 +64,13 @@ namespace DMCS
             ChargeStagger.Update();
             DisarmStrike.Update();
             Adrenaline.Update();
+            ClashOfMight.Update();
             HitInfo.EndFrame();
+        }
+
+        public override void ScriptFixedUpdate()
+        {
+            ClashOfMight.FixedUpdate();
         }
 
         private static void OnLevelUnload(LevelData levelData, LevelData.Mode mode, EventTime eventTime)
@@ -71,6 +80,7 @@ namespace DMCS
                 ChargeStagger.ReleaseAll();
                 DisarmStrike.RestoreAll();
                 Adrenaline.ResetAll();
+                ClashOfMight.ResetAll();
             }
         }
 

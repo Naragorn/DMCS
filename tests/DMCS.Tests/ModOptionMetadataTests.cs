@@ -153,6 +153,28 @@ public class ModOptionMetadataTests
     }
 
     [Fact]
+    public void ClashOfMight_ExposesItsSettings_InOrder()
+    {
+        var group = Options.Value.Where(o => o.Category == DmcsCategories.ClashOfMight).OrderBy(o => o.Order).ToList();
+
+        Assert.Equal(
+            new[]
+            {
+                (DmcsCategories.ClashOfMight + " Enabled", "System.Boolean", "ArrowList"),
+                (ClashSettings.OnlySwordsName, "System.Boolean", "ArrowList"),
+                (ClashSettings.MinWindUpName, "System.Single", "Slider"),
+                (ClashSettings.SlowMoName, "System.Boolean", "ArrowList"),
+                (ClashSettings.SlowMoScaleName, "System.Single", "Slider"),
+                (ClashSettings.NpcReachName, "System.Single", "Slider"),
+                (ClashSettings.BlockReachName, "System.Single", "Slider"),
+                (ClashSettings.BlockAngleToleranceName, "System.Single", "Slider"),
+            },
+            group.Select(o => (o.Name, o.DataType, o.InteractionType)));
+        Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));
+        Assert.All(group.Where(o => o.DataType != "System.Boolean"), o => Assert.False(string.IsNullOrEmpty(o.ValueSource), o.Name + " needs a value list"));
+    }
+
+    [Fact]
     public void DisarmStrike_ExposesItsSettings_InOrder()
     {
         var group = Options.Value.Where(o => o.Category == DmcsCategories.DisarmStrike).OrderBy(o => o.Order).ToList();

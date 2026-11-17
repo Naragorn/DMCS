@@ -68,10 +68,16 @@ Hits you take drain the meter. You can switch that so they fill it instead.
 
 The window closes unused after its time, and the meter starts over.
 
-### Clash of Might (not built yet)
+### Clash of Might (in progress)
 
-A blade lock: when your weapon and an enemy's stay pressed together, push back with small controller movements to win
-and disarm it. The menu toggle exists already, but it **has no effect yet**.
+Dark Messiah's blade lock, made for VR. Built so far: **the warning**.
+- When an enemy with a sword winds up a big swing (a long wind-up: overhead, lunging, stepping or counter swings),
+  its blade flashes at the middle. Plain quick swings and thrusts do not flash.
+- If the enemy is close, your blade is near the flash and you hold it roughly across the swing when the strike
+  comes, time slows down (0.3×) until the swing is over.
+
+Still to come: blocking at the flash starts the lock (your weapon turns heavy, you push against the enemy's force);
+win and it loses its weapon, lose and you lose yours and take a hit.
 
 ## Dark Messiah's own sounds and vignette (optional)
 
@@ -97,9 +103,16 @@ All options with their defaults. Every slider shows its unit in the menu.
 
 **Clash of Might**
 
-| Option | Default | What it does |
-|---|---|---|
-| Enabled | on | No effect yet (see above) |
+| Option | Default | Range | What it does |
+|---|---|---|---|
+| Enabled | on | | The flash and slow-motion on big swings |
+| Clash Only Swords | on | | Only enemies with a sword flash; off: any blade that cuts |
+| Clash Min Wind Up | 0.4 s | 0.2–0.8 s | How long an enemy must wind up for its swing to flash |
+| Clash Slow Motion | on | | Time slows when your blade is ready to block a flashing swing |
+| Clash Slow Motion Scale | 0.3 | 0.1–0.8 | World speed during it |
+| Clash Enemy Reach | 2.5 m | 1–4 m | How close the enemy must be |
+| Clash Block Reach | 0.6 m | 0.2–1.5 m | How close your blade must be to the flash |
+| Clash Block Angle Tolerance | 45° | 10–80° | How far your blade may be off a right angle to the swing |
 
 **Disarm Strike**
 

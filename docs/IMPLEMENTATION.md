@@ -13,7 +13,7 @@ the player-facing description and the full Mod Menu list are in `README.md`.
 | 3. Disarm Strike | **Built, unit tests PASS, in-game harness PASS (2026-11-16).** Not checked in the headset yet. |
 | 3b. Body Hit Drop, chances per NPC type, shields, fling | **Built, unit tests + in-game harness PASS (2026-11-16, chance-per-type version).** Not checked in the headset; Twist Disarm not built (with step 5). |
 | 4. Adrenaline | **4a (meter), 4b (critical / fatality, chest-stab finish), 4c (kneel and execution) and 4d (signals: ready sound, heartbeat, haptics, hand glow, Dark Messiah-style vignette) built, unit tests + in-game harness PASS (2026-11-16/17).** Block/parry and damage taken are unit-tested only. Nothing checked in the headset (sound, haptics and the vignette's look need it). 4e (dodge and catch bonus) built 2026-11-17, unit tests + harness PASS; the harness raises the game's attack event but no NPC really swings, so a real dodge is a headset check. |
-| 5. Clash of Might | not started |
+| 5. Clash of Might | **5a (telegraph: big swing, flash, slow-motion) built 2026-11-17, unit tests + harness PASS.** The slow-motion's "go" path, the flash's look and the timing are unit-tested / headset only. Block, lock, push and outcomes not built. |
 
 ## Versions (checked 2026-11-16)
 
@@ -255,6 +255,43 @@ amount is not positive, or the window is already open. The debug log shows `+<am
 the Achilles Tendon mod (`AchillesHeelCut`, `AchillesCrippledKill`). Unit-tested rule and meter flows; the call itself
 is not exercised by the harness.
 
+## Clash of Might, step 5a: telegraph
+
+Design and probe results: `CLAUDE.md`, section 1.
+- **Big swing:** at `AttackStage.WindUp` (raised by `BrainModuleMelee.AttackWindow`) the running attack is
+  `BrainModuleMelee.attack`; its wind-up = `AttackMotion.GetRealStartTime(GetBrainSpeedMultiplier(side))`. Big when it is no
+  thrust and the wind-up is at least *Clash Min Wind Up* (0.4 s). Logs: `<npc> winds up <attack> (0.49 s) with <item>: flash`,
+  `<npc> swings <attack> (wind-up 0.26 s): not a big swing`, `… no weapon in the Right hand`, `… with <item>: no slashing blade (<damager>/<type>, …)`, `… not a sword`.
+- **Sword:** catalog category `Swords`/`Greatswords` or an id starting with `Sword` (the faction swords); with *Only Swords* off any
+  weapon with a damager whose `damageModifierData.damageType` is `Slash`.
+- **Flash point:** the slash damagers' colliders (`colliderOnly` or the collider group), their bounds' corners projected on handle →
+  tip (`GetFurthestDamagerCollider`); the middle of that extent, stored local to the weapon so it follows the blade.
+- **Flash:** an own 64² four-point star (`Glint`, white, alpha = shape), additive URP `Particles/Unlit` (as the vignette), a quad
+  of 0.14 m facing the head camera; brightness `Glint.Pulse`: up in 0.08 s, settles to 0.6 within 0.25 s, until the attack ends.
+- **Slow-motion:** from `AttackStage.Attack` on, for 0.1 s each physics step (`ScriptFixedUpdate`): NPC within *Enemy Reach*,
+  the player's held blade (handle → tip of either hand) within *Block Reach* of the flash point, and the angle between the
+  player's blade and the swing plane's normal (blade axis × velocity at the flash point, `GetItemPointVelocity`) within
+  *Block Angle Tolerance*. Go → `TimeManager.SetSlowMotion(scale)` with the `SpellSlowTime` effect, until the attack's End/Cancel
+  (cap 2.5 s real); skipped when another slow-motion runs, ended only if it is still ours. Log: `block ready against <npc>'s swing
+  (enemy 1.40 m, blade 0.30 m, angle 12°): slow-motion 0.30x` or `no slow-motion for <npc>'s swing: BladeTooFar`.
+- Pure logic in Core (`ClashRules`, `ClashGeometry`, `ClashTelegraph`, `Glint`), unit-tested over every flow.
+- Harness `step5a-clash-telegraph` (new BasHarness options `spawn-npc … container=<id>` and `player-invincible`): a real
+  `HumanMedium` NPC with only a sword (container `CivilianMeleeSword`; it drew its second sword too) fights the standing,
+  invincible player for 60 s: big swings flash (e.g. `MidLeftSwing` 0.51 s, `ChainHighRightSwing` 0.60 s), every one refused with
+  `BladeTooFar` (the harness player holds nothing); *Min Wind Up* 0.8 → nothing flashes; feature off → no clash lines.
+  Found on the way: the default loadout is random (a mace in the left hand); the player dies after about a minute without
+  invincibility; the NPC's swings into the standing player counted as player body hits and Body Hit Drop disarmed it (see
+  "Open findings").
+- Not covered in game: the slow-motion's go path (the harness cannot hold a blade against a real swing), how the flash looks,
+  whether 0.1 s at the strike start leaves enough time.
+
+### Open findings
+
+- 2026-11-17, harness `step5a`: a fighting NPC swinging into the standing (invincible) player was disarmed by DMCS Body Hit
+  Drop (`body hit RightArm, 25 %`). So a contact of the NPC with the player's body counted as a player hit on a staggered NPC.
+  Not investigated yet: which damager the game reported and why the NPC counted as staggered. Possibly real in play (an
+  enemy hitting your arm disarms itself); to check before the headset test.
+
 ## API verification
 
 Legend: **V** = verified in the decompiled `ThunderRoad.dll` of game 1.3.2. **V+T** = verified and covered by a test. **A** = assumed / behaviour only provable in game. Line refs point into the decompiled source.
@@ -329,6 +366,7 @@ Results land in `artifacts/harness/<time>/<scenario>/summary.md` (with Player.lo
 | `step2-charge-stagger` | all nine settings with type/slider/Gamey defaults; Realistic sets its six values, one change → Custom, back → Realistic, Gamey restores; NPC (`HumanDummy` brain) beside the player; standing / walking (2.8 m/s) → TooSlow; sprint (6 m/s) → `Brain.currentStagger = Full`; second charge hit → knocked down and held, then up; hit 0.2 s after stopping (2.3 m/s) counts through the 0.5 s window; threshold 8 → TooSlow; min swing 6 → 5 m/s SwingTooWeak, 7 m/s staggers; chance 0 % → ChanceFailed; thrown, spell, held weapon → staggered (source logged); thrown/spells off → RangedNotCounted; second-hit switch off → AlreadyStaggered; Knock Down 4 s → down 4.2 s, control 0.5 s → up after 1.4 s; feature off → none (all live) |
 | `step3-disarm-strike` | Settings and defaults (Body Hit Drop switched off: this scenario checks the hand rule); fighting NPC with a dagger in each hand; not staggered → NotStaggered; forearm off → no disarm; staggered + hand hit → both drop, brain `HumanDummy`, a re-grabbed dagger is released, after 4 s the own brain is back and it can hold again; drop-both off → only the hit hand drops, the other keeps its dagger; charge hit then hand hit → the charge hit staggers without disarming, the next one disarms; feature off → none |
 | `step4e-adrenaline-dodge-catch` | 4e settings and defaults; a disarmed dagger grabbed at once → `+10 Catch`; grabbed after it landed → none; the game's attack event (Attack → End) while running → `+10 Dodge`; standing → TooSlow; Attack → Cancel → none; Adrenaline off → nothing |
+| `step5a-clash-telegraph` | Clash settings and defaults; a real sword NPC: big swings flash, plain ones and thrusts do not, no slow-motion without a blade in hand (`BladeTooFar`); Min Wind Up 0.8 → no flash; feature off → nothing |
 | `step3b-body-hit-drop` | Settings and defaults; body hit without stagger → nothing even at 100 %; 0 % + 100 % per extra hit → first body hit fails (sparks, haptic pulse logged), the second drops the dagger (flung 3 m/s); the count starts over with the next stagger; a buckler in the other hand stays while the dagger drops; base 0 % + female 100 % on a male NPC → 0 %, on a female NPC → drops; smaller 100 % with Smaller By 50 cm on an adult NPC → 0 %; Body Hit Drop off / Disarm Strike off → nothing drops (live) |
 
 The harness hits the NPC through `Creature.Damage` with the player's hand as damager and `pushLevel = -1`, so the
@@ -341,6 +379,7 @@ a real physical weapon hit (held-weapon attribution) and how the stagger *feels*
 
 | Date | Step | Result |
 |---|---|---|
+| 2026-11-17 | 5a | Clash telegraph (big swing, flash, slow-motion). Harness: all thirteen scenarios **PASS** (`step3` on a rerun: the known "may re-arm" timeout, passed twice after). Unit tests 499 **PASS**. Before: a probe measured all 68 attacks' wind-ups and found that the wind-up moves in another plane than the strike (so the angle is read at the strike start) and that an NPC can be frozen mid-swing (`animator.speed = 0`). First 5a runs found: the NPC's random loadout (a mace) and the player dying after a minute made the scenario flaky → BasHarness `container=` and `player-invincible`; Disarm Strike disarmed the NPC on its own swings (open finding). |
 | 2026-11-17 | 4e | Dodge and catch bonus. Harness: all twelve scenarios **PASS**; unit tests 445 **PASS**. The first 4e run found two bugs: dodges were still judged with Adrenaline off (all handlers now check the toggle), and the per-frame head speed read 19.85 m/s from a 2.5 m/s run (now measured over 0.1 s, then 5.05 m/s while sprinting up). Also: running into the test NPCs charge-staggered them and filled the meter, so the scenario turns away and switches Charge Stagger off. |
 | 2026-11-17 | 4d | DMCS 4 vignette (tuned to Dark Messiah's frame statistics), style switches in game (frames, sounds and Dark Messiah's files built/read in the background: the first in-game build took 0.4 s on the main thread), `Adrenaline.AddExternal` for other mods. Harness: all eleven scenarios **PASS**, `step4d-b` switches DMCS 1–4 and Dark Messiah (found on this machine under Proton at `Z:\run\media\…\Programs\Steam`, read in 115 ms). Unit tests 406 **PASS**. |
 | 2026-11-17 | 4d | Style switches: every built sound and vignette version plus Dark Messiah's own files (from the player's install). Unit tests (incl. the readers on the real Dark Messiah files of this machine): 390 **PASS**. Harness `step4d-b-adrenaline-styles`: see the next row. |
