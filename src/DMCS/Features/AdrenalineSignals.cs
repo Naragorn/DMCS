@@ -52,51 +52,88 @@ namespace DMCS
         private static float _activeSince;
         private static int _shownFrame = -1;
         private static float _vignetteSize = AdrenalineSettings.VignetteSize.Default;
+        private static string _vignetteStyle = AdrenalineStyles.DefaultVignette;
+        private static string _readyClipStyle;
+        private static string _heartbeatClipStyle;
+        private static AudioClip _gameHeartbeat;
+        private static AudioClip _dmHeartbeat;
+        private static string _framesStyle;
+
+        /// <summary>Saved option values are applied before the first level loads; from then on a picked version may set its look.</summary>
+        private static bool _optionsApplied;
 
         [ModOption(name = AdrenalineSettings.ReadySoundName, tooltip = "A sound when the meter is full (after Dark Messiah's).", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 30)]
         public static bool ReadySoundOn { get; set; } = AdrenalineSettings.DefaultReadySound;
 
-        [ModOption(name = AdrenalineSettings.ReadySoundVolumeName, tooltip = "Volume of the meter-full sound.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 31)]
+        [ModOption(name = AdrenalineSettings.ReadySoundStyleName, tooltip = "Which meter-full sound: DMCS 1–3 are the versions DMCS built (3 = newest), Dark Messiah = the original, read from your own Dark Messiah install (falls back to DMCS 3 when it is not found).", valueSourceName = nameof(SoundStyleValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 31)]
+        public static string ReadySoundStyle { get; set; } = AdrenalineStyles.DefaultSound;
+
+        [ModOption(name = AdrenalineSettings.ReadySoundVolumeName, tooltip = "Volume of the meter-full sound.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 32)]
         [ModOptionSlider]
         public static float ReadySoundVolume { get; set; } = AdrenalineSettings.ReadySoundVolume.Default;
 
-        [ModOption(name = AdrenalineSettings.HeartbeatName, tooltip = "A heartbeat while the meter is full.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 32)]
+        [ModOption(name = AdrenalineSettings.HeartbeatName, tooltip = "A heartbeat while the meter is full.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 33)]
         public static bool HeartbeatOn { get; set; } = AdrenalineSettings.DefaultHeartbeat;
 
-        [ModOption(name = AdrenalineSettings.HeartbeatVolumeName, tooltip = "Volume of the heartbeat.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 33)]
+        [ModOption(name = AdrenalineSettings.HeartbeatSoundName, tooltip = "Which heartbeat: Blade & Sorcery's own, or Dark Messiah's fast one from your own Dark Messiah install.", valueSourceName = nameof(HeartbeatSoundValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 34)]
+        public static string HeartbeatSound { get; set; } = AdrenalineStyles.DefaultHeartbeat;
+
+        [ModOption(name = AdrenalineSettings.HeartbeatVolumeName, tooltip = "Volume of the heartbeat.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 35)]
         [ModOptionSlider]
         public static float HeartbeatVolume { get; set; } = AdrenalineSettings.HeartbeatVolume.Default;
 
-        [ModOption(name = AdrenalineSettings.HapticsName, tooltip = "A heartbeat pulse in both controllers while the meter is full.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 34)]
+        [ModOption(name = AdrenalineSettings.HapticsName, tooltip = "A heartbeat pulse in both controllers while the meter is full.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 36)]
         public static bool HapticsOn { get; set; } = AdrenalineSettings.DefaultHaptics;
 
-        [ModOption(name = AdrenalineSettings.HapticsStrengthName, tooltip = "Strength of the controller pulse.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 35)]
+        [ModOption(name = AdrenalineSettings.HapticsStrengthName, tooltip = "Strength of the controller pulse.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 37)]
         [ModOptionSlider]
         public static float HapticsStrength { get; set; } = AdrenalineSettings.HapticsStrength.Default;
 
-        [ModOption(name = AdrenalineSettings.WeaponGlowName, tooltip = "The hand holding your weapon glows while the meter is full.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 36)]
+        [ModOption(name = AdrenalineSettings.WeaponGlowName, tooltip = "The hand holding your weapon glows while the meter is full.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 38)]
         public static bool WeaponGlowOn { get; set; } = AdrenalineSettings.DefaultWeaponGlow;
 
-        [ModOption(name = AdrenalineSettings.VignetteName, tooltip = "Flickering red streaks at the edge of your view while the meter is full (Dark Messiah style).", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 37)]
+        [ModOption(name = AdrenalineSettings.VignetteName, tooltip = "Flickering red streaks at the edge of your view while the meter is full (Dark Messiah style).", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 39)]
         public static bool VignetteOn { get; set; } = AdrenalineSettings.DefaultVignette;
 
-        [ModOption(name = AdrenalineSettings.VignetteIntensityName, tooltip = "How bright the streaks are.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 38)]
+        /// <summary>
+        /// Which drawing: DMCS 1–3 (choosing one sets streaks, length and hue as that version was built) or Dark Messiah's
+        /// own frames from the player's install. Saved values win on load: the look is only set when the player picks a version.
+        /// </summary>
+        [ModOption(name = AdrenalineSettings.VignetteStyleName, tooltip = "Which vignette: DMCS 1 flames, DMCS 2 streaks, DMCS 3 patchy streaks (newest), Dark Messiah = the original frames from your own Dark Messiah install. Picking a DMCS version sets streaks, length and hue as it was built.", valueSourceName = nameof(VignetteStyleValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 40)]
+        public static string VignetteStyle
+        {
+            get => _vignetteStyle;
+            set
+            {
+                var changed = value != _vignetteStyle;
+                _vignetteStyle = value;
+                if (changed && _optionsApplied && !AdrenalineStyles.IsDarkMessiah(value))
+                {
+                    var (streaks, length, hue) = AdrenalineStyles.VignetteLook(value);
+                    OptionSync.Apply(AdrenalineSettings.VignetteStreaksName, streaks);
+                    OptionSync.Apply(AdrenalineSettings.VignetteLengthName, length);
+                    OptionSync.Apply(AdrenalineSettings.VignetteHueName, hue);
+                }
+            }
+        }
+
+        [ModOption(name = AdrenalineSettings.VignetteIntensityName, tooltip = "How bright the streaks are.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 41)]
         [ModOptionSlider]
         public static float VignetteIntensity { get; set; } = AdrenalineSettings.VignetteIntensity.Default;
 
-        [ModOption(name = AdrenalineSettings.VignetteHueName, tooltip = "Colour of the streaks: 0 = red, 40 = orange.", valueSourceName = nameof(HueValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 39)]
+        [ModOption(name = AdrenalineSettings.VignetteHueName, tooltip = "Colour of the streaks: 0 = red, 40 = orange.", valueSourceName = nameof(HueValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 42)]
         [ModOptionSlider]
         public static float VignetteHue { get; set; } = AdrenalineSettings.VignetteHue.Default;
 
-        [ModOption(name = AdrenalineSettings.VignetteStreaksName, tooltip = "How many streaks each frame has.", valueSourceName = nameof(StreakValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 40)]
+        [ModOption(name = AdrenalineSettings.VignetteStreaksName, tooltip = "How many streaks each frame has.", valueSourceName = nameof(StreakValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 43)]
         [ModOptionSlider]
         public static int VignetteStreaks { get; set; } = AdrenalineSettings.DefaultVignetteStreaks;
 
-        [ModOption(name = AdrenalineSettings.VignetteLengthName, tooltip = "How far the streaks reach in from the edge.", valueSourceName = nameof(LengthValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 41)]
+        [ModOption(name = AdrenalineSettings.VignetteLengthName, tooltip = "How far the streaks reach in from the edge.", valueSourceName = nameof(LengthValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 44)]
         [ModOptionSlider]
         public static float VignetteLength { get; set; } = AdrenalineSettings.VignetteLength.Default;
 
-        [ModOption(name = AdrenalineSettings.VignetteSizeName, tooltip = "Degrees from the centre of view to where the streaks start. Smaller = they reach further into view.", valueSourceName = nameof(SizeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 42)]
+        [ModOption(name = AdrenalineSettings.VignetteSizeName, tooltip = "Degrees from the centre of view to where the streaks start. Smaller = they reach further into view.", valueSourceName = nameof(SizeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 45)]
         [ModOptionSlider]
         public static float VignetteSize
         {
@@ -112,12 +149,20 @@ namespace DMCS
             }
         }
 
-        [ModOption(name = AdrenalineSettings.VignetteFrameRateName, tooltip = "How fast the streaks flicker (frames per second).", valueSourceName = nameof(FrameRateValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 43)]
+        [ModOption(name = AdrenalineSettings.VignetteFrameRateName, tooltip = "How fast the streaks flicker (frames per second).", valueSourceName = nameof(FrameRateValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 46)]
         [ModOptionSlider]
         public static float VignetteFrameRate { get; set; } = AdrenalineSettings.VignetteFrameRate.Default;
 
-        [ModOption(name = AdrenalineSettings.VignetteFlareName, tooltip = "The streaks flare up on the critical.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 44)]
+        [ModOption(name = AdrenalineSettings.VignetteFlareName, tooltip = "The streaks flare up on the critical.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 47)]
         public static bool VignetteFlareOn { get; set; } = AdrenalineSettings.DefaultVignetteFlare;
+
+        public static ModOptionString[] SoundStyleValues() => Strings(AdrenalineStyles.SoundNames);
+
+        public static ModOptionString[] HeartbeatSoundValues() => Strings(AdrenalineStyles.HeartbeatNames);
+
+        public static ModOptionString[] VignetteStyleValues() => Strings(AdrenalineStyles.VignetteNames);
+
+        private static ModOptionString[] Strings(string[] names) => names.Select(n => new ModOptionString(n, null, n)).ToArray();
 
         public static ModOptionFloat[] VolumeValues() => Floats(AdrenalineSettings.ReadySoundVolume, "0.00", "");
 
@@ -135,16 +180,13 @@ namespace DMCS
         /// <summary>Level loaded: build the sound and the frames now, so the first full meter does not stutter.</summary>
         public static void Prewarm()
         {
+            _optionsApplied = true;
             try
             {
                 EnsureReadyClip();
                 if (VignetteOn)
                 {
-                    var spec = CurrentSpec();
-                    if (_frames == null || !Same(spec, _framesSpec))
-                    {
-                        BuildFrames(spec);
-                    }
+                    EnsureFrames();
                 }
             }
             catch (Exception ex)
@@ -153,17 +195,40 @@ namespace DMCS
             }
         }
 
-        private static VignetteSpec CurrentSpec() => new VignetteSpec(FrameSize, FrameCount, VignetteStreaks, VignetteLength, VignetteHue);
+        private static VignetteSpec CurrentSpec() =>
+            new VignetteSpec(FrameSize, FrameCount, VignetteStreaks, VignetteLength, VignetteHue, AdrenalineStyles.Vignette(VignetteStyle));
 
+        /// <summary>The ready clip of the chosen version (Dark Messiah's own when picked and found, else DMCS's synthesis).</summary>
         private static void EnsureReadyClip()
         {
-            if (_readyClip != null)
+            var style = ReadySoundStyle;
+            if (_readyClip != null && _readyClipStyle == style)
             {
                 return;
             }
-            var samples = ReadySound.Generate(SoundRate, 1, new ReadySoundSpec());
-            _readyClip = AudioClip.Create("DMCS Adrenaline Ready", samples.Length / 2, 2, SoundRate, false);
-            _readyClip.SetData(samples, 0);
+            var dm = AdrenalineStyles.IsDarkMessiah(style) ? DarkMessiahAssets.ReadySound : null;
+            var used = dm != null ? AdrenalineStyles.DarkMessiah : AdrenalineStyles.IsDarkMessiah(style) ? AdrenalineStyles.Dmcs3 : style;
+            if (_readyClip != null)
+            {
+                UnityEngine.Object.Destroy(_readyClip);
+            }
+            if (dm != null)
+            {
+                _readyClip = Clip("DMCS Adrenaline Ready (Dark Messiah)", dm.Samples, dm.Channels, dm.Rate);
+            }
+            else
+            {
+                _readyClip = Clip("DMCS Adrenaline Ready (" + used + ")", ReadySound.Generate(SoundRate, 1, AdrenalineStyles.Sound(used)), 2, SoundRate);
+            }
+            _readyClip.name = used;
+            _readyClipStyle = style;
+        }
+
+        private static AudioClip Clip(string name, float[] samples, int channels, int rate)
+        {
+            var clip = AudioClip.Create(name, samples.Length / channels, channels, rate, false);
+            clip.SetData(samples, 0);
+            return clip;
         }
 
         /// <summary>The meter just filled.</summary>
@@ -178,7 +243,7 @@ namespace DMCS
                 EnsureAudio();
                 EnsureReadyClip();
                 _readySource.PlayOneShot(_readyClip, ReadySoundVolume);
-                Dmcs.Log.Debug(Channel, "signal: ready sound (" + _readyClip.length.ToString("0.00", CultureInfo.InvariantCulture) + " s)");
+                Dmcs.Log.Debug(Channel, "signal: ready sound " + _readyClip.name + " (" + _readyClip.length.ToString("0.00", CultureInfo.InvariantCulture) + " s)");
             }
             catch (Exception ex)
             {
@@ -299,21 +364,8 @@ namespace DMCS
                 return;
             }
             EnsureAudio();
-            if (_heartbeatSource.clip == null)
+            if (!EnsureHeartbeatClip())
             {
-                if (!_heartbeatLoading && want)
-                {
-                    _heartbeatLoading = true;
-                    Catalog.LoadAssetAsync<AudioClip>(Catalog.gameData.heartBeatLoopAddress, clip =>
-                    {
-                        _heartbeatLoading = false;
-                        if (_heartbeatSource != null)
-                        {
-                            _heartbeatSource.clip = clip;
-                        }
-                        Dmcs.Log.Debug(Channel, "signal: heartbeat clip " + (clip == null ? "missing" : "loaded"));
-                    }, "DMCS");
-                }
                 return;
             }
             _heartbeatSource.volume = HeartbeatVolume * (HeartbeatOn ? level : 0f);
@@ -326,6 +378,56 @@ namespace DMCS
             {
                 _heartbeatSource.Stop();
             }
+        }
+
+        /// <summary>
+        /// Puts the chosen heartbeat on the source: Dark Messiah's fast one (looped) when picked and found, else the game's
+        /// own loop (loaded once from the catalog). False while the game's clip is still loading.
+        /// </summary>
+        private static bool EnsureHeartbeatClip()
+        {
+            var style = HeartbeatSound;
+            if (_heartbeatSource.clip != null && _heartbeatClipStyle == style)
+            {
+                return true;
+            }
+            AudioClip clip = null;
+            if (AdrenalineStyles.IsDarkMessiah(style))
+            {
+                if (_dmHeartbeat == null && DarkMessiahAssets.Heartbeat is WavData w)
+                {
+                    _dmHeartbeat = Clip("DMCS Heartbeat (Dark Messiah)", w.Samples, w.Channels, w.Rate);
+                }
+                clip = _dmHeartbeat;
+            }
+            if (clip == null)
+            {
+                if (_gameHeartbeat == null)
+                {
+                    if (!_heartbeatLoading)
+                    {
+                        _heartbeatLoading = true;
+                        Catalog.LoadAssetAsync<AudioClip>(Catalog.gameData.heartBeatLoopAddress, loaded =>
+                        {
+                            _heartbeatLoading = false;
+                            _gameHeartbeat = loaded;
+                            Dmcs.Log.Debug(Channel, "signal: heartbeat clip " + (loaded == null ? "missing" : "loaded"));
+                        }, "DMCS");
+                    }
+                    return false;
+                }
+                clip = _gameHeartbeat;
+            }
+            var playing = _heartbeatSource.isPlaying;
+            _heartbeatSource.Stop();
+            _heartbeatSource.clip = clip;
+            _heartbeatClipStyle = style;
+            Dmcs.Log.Debug(Channel, "signal: heartbeat " + (clip == _dmHeartbeat ? AdrenalineStyles.DarkMessiah : AdrenalineStyles.BladeAndSorcery));
+            if (playing)
+            {
+                _heartbeatSource.Play();
+            }
+            return true;
         }
 
         private static void UpdateHaptics(bool on, float now, float level)
@@ -436,11 +538,7 @@ namespace DMCS
                 _material = NewAdditive(shader);
                 Dmcs.Log.Debug(Channel, "signal: vignette shader " + shader.name);
             }
-            var spec = CurrentSpec();
-            if (_frames == null || !Same(spec, _framesSpec))
-            {
-                BuildFrames(spec);
-            }
+            EnsureFrames();
             if (_vignette == null || _vignette.transform.parent != cam.transform)
             {
                 if (_vignette != null)
@@ -467,39 +565,85 @@ namespace DMCS
             return m;
         }
 
+        /// <summary>Builds the frames again when the version or a look slider changed.</summary>
+        private static void EnsureFrames()
+        {
+            var style = VignetteStyle;
+            if (AdrenalineStyles.IsDarkMessiah(style))
+            {
+                if (_frames != null && _framesStyle == style)
+                {
+                    return;
+                }
+                var dm = DarkMessiahAssets.Vignette;
+                if (dm != null)
+                {
+                    LoadFrames(dm);
+                    _framesStyle = style;
+                    return;
+                }
+            }
+            var spec = CurrentSpec();
+            if (_frames == null || _framesStyle != style || !Same(spec, _framesSpec))
+            {
+                BuildFrames(spec);
+                _framesStyle = style;
+            }
+        }
+
+        /// <summary>Dark Messiah's own frames (decoded top row first; Unity textures start at the bottom row).</summary>
+        private static void LoadFrames(VtfData dm)
+        {
+            DestroyFrames();
+            _frames = dm.Frames.Select((f, i) => Texture(VtfData.FlipRows(f, dm.Width, dm.Height), dm.Width, "DMCS Vignette DM " + i)).ToArray();
+            _shownFrame = -1;
+            Dmcs.Log.Debug(Channel, "signal: vignette Dark Messiah: " + _frames.Length + " frames loaded");
+        }
+
+        private static void DestroyFrames()
+        {
+            if (_frames == null)
+            {
+                return;
+            }
+            foreach (var t in _frames)
+            {
+                UnityEngine.Object.Destroy(t);
+            }
+            _frames = null;
+        }
+
+        private static Texture2D Texture(byte[] rgba, int size, string name)
+        {
+            var t = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+                name = name,
+            };
+            t.LoadRawTextureData(rgba);
+            t.Apply(false, true);
+            return t;
+        }
+
         private static void BuildFrames(VignetteSpec spec)
         {
             var started = Time.realtimeSinceStartup;
-            if (_frames != null)
-            {
-                foreach (var t in _frames)
-                {
-                    UnityEngine.Object.Destroy(t);
-                }
-            }
+            DestroyFrames();
             var pixels = VignetteFlipbook.Generate(spec, 1);
-            _frames = new Texture2D[pixels.Length];
-            for (var i = 0; i < pixels.Length; i++)
-            {
-                var t = new Texture2D(spec.Size, spec.Size, TextureFormat.RGBA32, false)
-                {
-                    wrapMode = TextureWrapMode.Clamp,
-                    filterMode = FilterMode.Bilinear,
-                    name = "DMCS Vignette " + i,
-                };
-                t.LoadRawTextureData(pixels[i]);
-                t.Apply(false, true);
-                _frames[i] = t;
-            }
+            _frames = pixels.Select((p, i) => Texture(p, spec.Size, "DMCS Vignette " + i)).ToArray();
             _framesSpec = spec;
             _shownFrame = -1;
-            Dmcs.Log.Debug(Channel, "signal: vignette " + pixels.Length + " frames built in "
+            Dmcs.Log.Debug(Channel, "signal: vignette " + VignetteName(spec.Style) + ": " + pixels.Length + " frames built in "
                 + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0", CultureInfo.InvariantCulture) + " ms");
         }
 
+        private static string VignetteName(VignetteStyle style) =>
+            style == Core.VignetteStyle.Flames ? AdrenalineStyles.Dmcs1 : style == Core.VignetteStyle.Streaks ? AdrenalineStyles.Dmcs2 : AdrenalineStyles.Dmcs3;
+
         private static bool Same(VignetteSpec a, VignetteSpec b) =>
             a.Size == b.Size && a.Frames == b.Frames && a.Streaks == b.Streaks
-            && Mathf.Approximately(a.Length, b.Length) && Mathf.Approximately(a.HueDegrees, b.HueDegrees);
+            && Mathf.Approximately(a.Length, b.Length) && Mathf.Approximately(a.HueDegrees, b.HueDegrees) && a.Style == b.Style;
 
         /// <summary>
         /// A piece of a sphere around the eyes, <see cref="VignetteSize"/> degrees to every side, with the texture spread

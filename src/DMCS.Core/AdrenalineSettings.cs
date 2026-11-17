@@ -108,6 +108,9 @@ namespace DMCS.Core
         // Step 4d: signals while the window is open.
         public const string ReadySoundName = "Adrenaline Ready Sound";
         public const string ReadySoundVolumeName = "Adrenaline Ready Sound Volume";
+        public const string ReadySoundStyleName = "Adrenaline Ready Sound Style";
+        public const string HeartbeatSoundName = "Adrenaline Heartbeat Sound";
+        public const string VignetteStyleName = "Adrenaline Vignette Style";
         public const string HeartbeatName = "Adrenaline Heartbeat";
         public const string HeartbeatVolumeName = "Adrenaline Heartbeat Volume";
         public const string HapticsName = "Adrenaline Haptics";

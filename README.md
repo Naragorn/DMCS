@@ -108,13 +108,16 @@ Game path defaults to `~/.local/share/Steam/steamapps/common/Blade & Sorcery`; o
 | Adrenaline | Kneel After Light Hits | slider | 1–10 | 2 |
 | Adrenaline | Kneel Death Chance | slider | 0–100 %, step 5 | 0 % |
 | Adrenaline | Adrenaline Ready Sound | toggle | | on |
+| Adrenaline | Adrenaline Ready Sound Style | dropdown | DMCS 1, DMCS 2, DMCS 3, Dark Messiah | DMCS 3 |
 | Adrenaline | Adrenaline Ready Sound Volume | slider | 0–1, step 0.05 | 0.6 (Dark Messiah's) |
 | Adrenaline | Adrenaline Heartbeat | toggle | | on |
+| Adrenaline | Adrenaline Heartbeat Sound | dropdown | Blade & Sorcery, Dark Messiah | Blade & Sorcery |
 | Adrenaline | Adrenaline Heartbeat Volume | slider | 0–1, step 0.05 | 0.5 (Dark Messiah's) |
 | Adrenaline | Adrenaline Haptics | toggle | | on |
 | Adrenaline | Adrenaline Haptics Strength | slider | 0–1, step 0.05 | 0.5 |
 | Adrenaline | Adrenaline Weapon Glow | toggle | | on |
 | Adrenaline | Adrenaline Vignette | toggle | | on |
+| Adrenaline | Adrenaline Vignette Style | dropdown | DMCS 1, DMCS 2, DMCS 3, Dark Messiah (picking a DMCS version sets Streaks, Length, Hue) | DMCS 3 |
 | Adrenaline | Adrenaline Vignette Intensity | slider | 0–1, step 0.05 | 1 |
 | Adrenaline | Adrenaline Vignette Hue | slider | 0–40°, step 2 | 6° (red) |
 | Adrenaline | Adrenaline Vignette Streaks | slider | 2–100 | 70 |
@@ -272,6 +275,18 @@ While the adrenaline window or an execution window is open (`AdrenalineSignalRul
   plane 0.02 m), with the game's `Universal Render Pipeline/Particles/Unlit` set to additive (harness probe 2026-11-17:
   loaded and supported; `Universal Render Pipeline/Unlit` and the legacy particle shaders are not). *Vignette Size* is the
   angle from the view centre to the frame's edge; it flares on the critical (*Vignette Flare*).
+- **Versions to compare** (*Ready Sound Style*, *Vignette Style*, *Heartbeat Sound*): every version DMCS built stays
+  selectable, byte for byte as built (checked against the old commits): sound DMCS 1 (rumble, hiss, ring), DMCS 2 (+ a
+  crackling thunder crack), DMCS 3 (+ a dark thunder roar, default); vignette DMCS 1 (flames), DMCS 2 (even radial
+  streaks), DMCS 3 (patchy radial streaks, default). Picking a DMCS vignette sets *Streaks*, *Length* and *Hue* to how
+  that version was built (only when picked; saved values win on load).
+- **Dark Messiah** in any of the three reads the original files from the player's own Dark Messiah install at runtime
+  (`DarkMessiahAssets`; nothing is shipped): `Adrenaline_Reached.wav`, `Player_Heartbeat01.wav` (the fast one, looped)
+  and the 25 frames of `fullscreen_adrenaline2_.vtf`, out of its VPK archives (`VpkDirectory`, `WavData`, `VtfData` with
+  a DXT1 decoder). The install is searched in: Blade & Sorcery's own steamapps\common, every library in Steam's
+  libraryfolders.vdf (the Linux Steam under Proton through Wine's Z: drive, the Windows Steam from the registry), and
+  the usual library folder names (SteamLibrary, Steam, Program Files (x86)\Steam, …) on every drive and, under
+  Proton, every mount below /run/media, /media, /mnt and /home. Not found → DMCS 3 / Blade & Sorcery, logged once.
 - Frames and sound are built at level load (frames in a few ms: each streak only touches its own pixel box).
 - Harness `step4d-adrenaline-signals` (2026-11-17): meter full → ready sound (2.30 s), signals on, shader found, cap on the
   `Head` camera, heartbeat clip loaded and playing; screenshots at 50° and 30° show the streaks (the desktop mirror shows
@@ -363,6 +378,7 @@ a real physical weapon hit (held-weapon attribution) and how the stagger *feels*
 
 | Date | Step | Result |
 |---|---|---|
+| 2026-11-17 | 4d | Style switches: every built sound and vignette version plus Dark Messiah's own files (from the player's install). Unit tests (incl. the readers on the real Dark Messiah files of this machine): 390 **PASS**. Harness `step4d-b-adrenaline-styles`: see the next row. |
 | 2026-11-17 | 4d | Ready sound, second pass (user: the thunder was too harsh and not like DM): the crackle bursts are gone; the roar is now dense and dark (falls off above ~700 Hz), swells in over 60 ms, holds to 0.4 s; the rumble is quieter. Unit tests only. |
 | 2026-11-17 | 4d | Ready sound: thunder crack at the start added (the first version had rumble, hiss and ring only; Dark Messiah's file has a roar across the mids in the first 0.3 s). Unit tests only; the game-side code did not change. The sound tests now window their Goertzel measurement (without it the rumble leaked into every frequency, so the hiss test passed by luck). |
 | 2026-11-17 | 4d | Signals and vignette. Shader probe first (URP Particles/Unlit found). Harness: all ten scenarios **PASS** (step3 on a rerun: one timeout on "may re-arm" after the combo disarm, passed on the rerun). First runs found: frames took 2 s to build (fixed: per-streak pixel boxes, same output, built at level load); at 60° to the edge the streaks sat outside the mirror view → *Vignette Size* slider, 50°. |

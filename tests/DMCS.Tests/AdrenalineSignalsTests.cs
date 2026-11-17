@@ -470,8 +470,16 @@ public class SignalDumps
         }
         System.IO.Directory.CreateDirectory(dir);
         const int rate = 22050;
-        var s = ReadySound.Generate(rate, 1, new ReadySoundSpec());
-        using (var w = new System.IO.BinaryWriter(System.IO.File.Create(System.IO.Path.Combine(dir, "ready.wav"))))
+        WriteWav(System.IO.Path.Combine(dir, "ready.wav"), ReadySound.Generate(rate, 1, new ReadySoundSpec()), rate);
+        WriteWav(System.IO.Path.Combine(dir, "ready_v1.wav"), ReadySound.Generate(rate, 1, ReadySoundSpec.Version1()), rate);
+        WriteWav(System.IO.Path.Combine(dir, "ready_v2.wav"), ReadySound.Generate(rate, 1, ReadySoundSpec.Version2()), rate);
+        WriteWav(System.IO.Path.Combine(dir, "ready_v3.wav"), ReadySound.Generate(rate, 1, ReadySoundSpec.Version3()), rate);
+        DumpFrames(dir);
+    }
+
+    private static void WriteWav(string path, float[] s, int rate)
+    {
+        using (var w = new System.IO.BinaryWriter(System.IO.File.Create(path)))
         {
             w.Write("RIFF".ToCharArray());
             w.Write(36 + (s.Length * 2));
@@ -490,19 +498,196 @@ public class SignalDumps
                 w.Write((short)Math.Round(Math.Clamp(v, -1f, 1f) * 32767));
             }
         }
-        var spec = new VignetteSpec(256, 25, AdrenalineSettings.DefaultVignetteStreaks, AdrenalineSettings.VignetteLength.Default, AdrenalineSettings.VignetteHue.Default);
-        var frames = VignetteFlipbook.Generate(spec, 1);
-        for (var f = 0; f < frames.Length; f++)
+    }
+
+    private static void DumpFrames(string dir)
+    {
+        foreach (var (name, prefix) in new[] { (AdrenalineStyles.Dmcs1, "vig1_"), (AdrenalineStyles.Dmcs2, "vig2_"), (AdrenalineStyles.Dmcs3, "vig") })
         {
-            using var o = System.IO.File.Create(System.IO.Path.Combine(dir, $"vig{f:00}.ppm"));
-            var head = System.Text.Encoding.ASCII.GetBytes($"P6 256 256 255\n");
-            o.Write(head, 0, head.Length);
-            for (var i = 0; i < frames[f].Length; i += 4)
+            var (streaks, length, hue) = AdrenalineStyles.VignetteLook(name);
+            var frames = VignetteFlipbook.Generate(new VignetteSpec(256, 25, streaks, length, hue, AdrenalineStyles.Vignette(name)), 1);
+            for (var f = 0; f < frames.Length; f++)
             {
-                o.WriteByte(frames[f][i]);
-                o.WriteByte(frames[f][i + 1]);
-                o.WriteByte(frames[f][i + 2]);
+                WritePpm(System.IO.Path.Combine(dir, $"{prefix}{f:00}.ppm"), frames[f], 256);
             }
         }
+    }
+
+    internal static void WritePpm(string path, byte[] rgba, int size)
+    {
+        using var o = System.IO.File.Create(path);
+        var head = System.Text.Encoding.ASCII.GetBytes($"P6 {size} {size} 255\n");
+        o.Write(head, 0, head.Length);
+        for (var i = 0; i < rgba.Length; i += 4)
+        {
+            o.WriteByte(rgba[i]);
+            o.WriteByte(rgba[i + 1]);
+            o.WriteByte(rgba[i + 2]);
+        }
+    }
+}
+
+/// <summary>Every built version can be chosen: the sound and vignette versions and their looks.</summary>
+public class AdrenalineStyleTests
+{
+    private const int Rate = 22050;
+
+    [Fact]
+    public void Names_AndDefaults()
+    {
+        Assert.Equal(new[] { "DMCS 1", "DMCS 2", "DMCS 3", "Dark Messiah" }, AdrenalineStyles.SoundNames);
+        Assert.Equal(new[] { "DMCS 1", "DMCS 2", "DMCS 3", "Dark Messiah" }, AdrenalineStyles.VignetteNames);
+        Assert.Equal(new[] { "Blade & Sorcery", "Dark Messiah" }, AdrenalineStyles.HeartbeatNames);
+        Assert.Equal("DMCS 3", AdrenalineStyles.DefaultSound);
+        Assert.Equal("DMCS 3", AdrenalineStyles.DefaultVignette);
+        Assert.Equal("Blade & Sorcery", AdrenalineStyles.DefaultHeartbeat);
+        Assert.True(AdrenalineStyles.IsDarkMessiah("Dark Messiah"));
+        Assert.False(AdrenalineStyles.IsDarkMessiah("DMCS 3"));
+    }
+
+    [Theory]
+    [InlineData("DMCS 1", ThunderStyle.None)]
+    [InlineData("DMCS 2", ThunderStyle.Crackle)]
+    [InlineData("DMCS 3", ThunderStyle.Roar)]
+    [InlineData("Dark Messiah", ThunderStyle.Roar)]
+    [InlineData("nonsense", ThunderStyle.Roar)]
+    public void SoundVersion_PicksItsSynthesis(string name, ThunderStyle thunder)
+    {
+        Assert.Equal(thunder, AdrenalineStyles.Sound(name).Thunder);
+    }
+
+    [Theory]
+    [InlineData("DMCS 1", VignetteStyle.Flames)]
+    [InlineData("DMCS 2", VignetteStyle.Streaks)]
+    [InlineData("DMCS 3", VignetteStyle.Patchy)]
+    [InlineData("Dark Messiah", VignetteStyle.Patchy)]
+    public void VignetteVersion_PicksItsDrawing(string name, VignetteStyle style)
+    {
+        Assert.Equal(style, AdrenalineStyles.Vignette(name));
+    }
+
+    [Theory]
+    [InlineData("DMCS 1", 14, 0.35f, 12f)]
+    [InlineData("DMCS 2", 40, 0.45f, 6f)]
+    [InlineData("DMCS 3", 70, 0.4f, 6f)]
+    public void VignetteVersion_LooksAsBuilt_AndFitsTheSliders(string name, int streaks, float length, float hue)
+    {
+        var look = AdrenalineStyles.VignetteLook(name);
+
+        Assert.Equal((streaks, length, hue), look);
+        Assert.Contains(look.streaks, AdrenalineSettings.VignetteStreakValues());
+        Assert.True(SliderValues.IndexOf(AdrenalineSettings.VignetteLength.Values(), look.length) >= 0);
+        Assert.True(SliderValues.IndexOf(AdrenalineSettings.VignetteHue.Values(), look.hue) >= 0);
+    }
+
+    [Theory]
+    [InlineData(VignetteStyle.Flames)]
+    [InlineData(VignetteStyle.Streaks)]
+    [InlineData(VignetteStyle.Patchy)]
+    public void EveryDrawing_KeepsTheCentreFree_LightsTheEdge_IsRedOrange(VignetteStyle style)
+    {
+        var frames = VignetteFlipbook.Generate(new VignetteSpec(64, 4, 30, 0.4f, 6f, style), 2);
+
+        foreach (var f in frames)
+        {
+            int centreLit = 0, edgeLit = 0, edge = 0;
+            for (var y = 0; y < 64; y++)
+            {
+                for (var x = 0; x < 64; x++)
+                {
+                    var nx = ((x + 0.5) / 64 * 2) - 1;
+                    var ny = ((y + 0.5) / 64 * 2) - 1;
+                    var r = Math.Sqrt((nx * nx) + (ny * ny));
+                    var i = ((y * 64) + x) * 4;
+                    var lit = f[i] > 38;
+                    Assert.True(f[i] >= f[i + 1] && f[i + 2] == 0);
+                    if (r < 0.4 && lit)
+                    {
+                        centreLit++;
+                    }
+                    if (r >= 0.85 && r < 1)
+                    {
+                        edge++;
+                        edgeLit += lit ? 1 : 0;
+                    }
+                }
+            }
+            Assert.Equal(0, centreLit);
+            Assert.True(edgeLit > edge / 50, style + ": edge " + edgeLit + "/" + edge);
+        }
+    }
+
+    [Fact]
+    public void TheDrawings_DifferFromEachOther()
+    {
+        byte[] First(VignetteStyle s) => VignetteFlipbook.Generate(new VignetteSpec(64, 1, 30, 0.4f, 6f, s), 3)[0];
+
+        Assert.NotEqual(First(VignetteStyle.Flames), First(VignetteStyle.Streaks));
+        Assert.NotEqual(First(VignetteStyle.Streaks), First(VignetteStyle.Patchy));
+    }
+
+    private static float[] Mono(float[] stereo) => Enumerable.Range(0, stereo.Length / 2).Select(i => (stereo[2 * i] + stereo[(2 * i) + 1]) * 0.5f).ToArray();
+
+    /// <summary>Band level (Hann-windowed Goertzel every 10 Hz), as the sound tests measure.</summary>
+    private static double Band(float[] m, double from, double to, double lo, double hi)
+    {
+        var x = m.Skip((int)(from * Rate)).Take((int)((to - from) * Rate)).ToArray();
+        double sum = 0;
+        for (var hz = lo; hz < hi; hz += 10)
+        {
+            var w = 2 * Math.PI * hz / Rate;
+            var c = 2 * Math.Cos(w);
+            double s1 = 0, s2 = 0;
+            for (var i = 0; i < x.Length; i++)
+            {
+                var v = x[i] * (0.5 - (0.5 * Math.Cos(2 * Math.PI * i / (x.Length - 1))));
+                var s0 = v + (c * s1) - s2;
+                s2 = s1;
+                s1 = s0;
+            }
+            sum += ((s1 * s1) + (s2 * s2) - (c * s1 * s2)) / x.Length / x.Length;
+        }
+        return Math.Sqrt(sum);
+    }
+
+    [Fact]
+    public void Version1_HasNoThunder_Versions2And3_Have()
+    {
+        double MidToLow(ReadySoundSpec spec)
+        {
+            var m = Mono(ReadySound.Generate(Rate, 1, spec));
+            return Band(m, 0.05, 0.35, 300, 2000) / Band(m, 0.05, 0.35, 20, 80);
+        }
+
+        Assert.True(MidToLow(ReadySoundSpec.Version1()) < 0.35, "v1");
+        Assert.True(MidToLow(ReadySoundSpec.Version2()) > 0.4, "v2");
+        Assert.True(MidToLow(ReadySoundSpec.Version3()) > 0.4, "v3");
+    }
+
+    [Fact]
+    public void Version2Crackles_BrighterThanVersion3sRoar()
+    {
+        double Bright(ReadySoundSpec spec)
+        {
+            var m = Mono(ReadySound.Generate(Rate, 1, spec));
+            return Band(m, 0.05, 0.35, 1200, 2000) / Band(m, 0.05, 0.35, 300, 700);
+        }
+
+        Assert.True(Bright(ReadySoundSpec.Version2()) > 1.3 * Bright(ReadySoundSpec.Version3()));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void EveryVersion_IsNormalisedStereo_WithoutClicks(int version)
+    {
+        var spec = version == 1 ? ReadySoundSpec.Version1() : version == 2 ? ReadySoundSpec.Version2() : ReadySoundSpec.Version3();
+
+        var s = ReadySound.Generate(Rate, 1, spec);
+
+        Assert.Equal(2 * (int)Math.Round(2.3 * Rate), s.Length);
+        Assert.InRange(s.Max(Math.Abs), 0.85f, 0.9001f);
+        Assert.True(Math.Abs(s[0]) < 0.05 && Math.Abs(s[^1]) < 1e-4);
     }
 }
