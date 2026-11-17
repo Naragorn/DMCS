@@ -5,8 +5,8 @@ namespace DMCS.Core
     /// <summary>
     /// What the "adrenaline ready" sound is made of. Modelled on what Dark Messiah's own "Adrenaline_Reached"
     /// (game_sounds_inventory.txt, "// Full Adrenaline", volume 0.6) does, measured in its file (2026-11-17):
-    /// 2.29 s stereo; a thunder crack at the start (a roar across 80–2000 Hz, loudest 0.05–0.35 s, rolling off to a
-    /// quarter by 0.6 s); a low rumble (20–160 Hz) that carries the first 1.2 s and is gone at 1.7 s; a bright hiss
+    /// 2.29 s stereo; a thunder roar at the start (dense, weighted to the low mids, swelling in over ~50 ms, loudest
+    /// 0.05–0.3 s, rolling off to a quarter by 0.6 s); a low rumble (20–160 Hz) that carries the first 1.2 s and is gone at 1.7 s; a bright hiss
     /// (above 3.5 kHz) that swells in the first 0.2 s and fades by 1.2 s; and a metallic ring at about 1021 Hz with
     /// partials near ×2, ×3 and ×3.85 and sidebands about 60 Hz off, which swells to its loudest near 1 s and rings
     /// out to the end. DMCS builds its own sound from these traits; it never loads or ships Dark Messiah's file.
@@ -15,7 +15,7 @@ namespace DMCS.Core
     {
         public float Duration { get; set; } = 2.3f;
         public float RingHz { get; set; } = 1021f;
-        public float RumbleLevel { get; set; } = 1f;
+        public float RumbleLevel { get; set; } = 0.6f;
         public float HissLevel { get; set; } = 0.07f;
         public float ThunderLevel { get; set; } = 0.25f;
         public float RingLevel { get; set; } = 0.005f;
@@ -35,7 +35,8 @@ namespace DMCS.Core
         private const float HissPeakAt = 0.12f;
         private const float HissDecay = 0.28f;
         private const float HissFloor = 0.3f;
-        private const float ThunderHoldUntil = 0.3f;
+        private const float ThunderAttack = 0.06f;
+        private const float ThunderHoldUntil = 0.4f;
         private const float ThunderDecay = 0.13f;
         private const float ThunderFloor = 0.22f;
         private const float FadeIn = 0.005f;
@@ -85,27 +86,28 @@ namespace DMCS.Core
             {
                 var body = low3.Next(low2.Next(low.Next(rng.NextSigned()))) * 1.6f;
                 var am = flutter2.Next(flutter.Next(rng.NextSigned()));
-                x[i] = body * (0.55f + (Math.Abs(am) * 12f));
+                x[i] = body * (0.75f + Math.Min(0.8f, Math.Abs(am) * 8f));
             }
             return x;
         }
 
         /// <summary>
-        /// The thunder: noise between ~50 and ~2000 Hz, crackling (its loudness jumps with a fast random flutter).
+        /// The thunder: a dense, dark roar (noise from ~50 Hz, falling off above ~700 Hz) that swells and sags slowly, no
+        /// crackle bursts (Dark Messiah's start is a steady roar weighted to the low mids, not a crack).
         /// </summary>
         private static float[] Thunder(int n, int rate, XorShift rng)
         {
             var high = new OnePole(50f, rate);
-            var low = new OnePole(2000f, rate);
-            var low2 = new OnePole(2000f, rate);
-            var crackle = new OnePole(35f, rate);
+            var low = new OnePole(700f, rate);
+            var low2 = new OnePole(900f, rate);
+            var roll = new OnePole(12f, rate);
             var x = new float[n];
             for (var i = 0; i < n; i++)
             {
                 var w = rng.NextSigned();
                 var band = low2.Next(low.Next(w - high.Next(w)));
-                var burst = Math.Abs(crackle.Next(rng.NextSigned())) * 9f;
-                x[i] = band * (0.4f + burst);
+                var swell = Math.Abs(roll.Next(rng.NextSigned())) * 4f;
+                x[i] = band * (0.75f + Math.Min(0.6f, swell));
             }
             return x;
         }
@@ -175,9 +177,10 @@ namespace DMCS.Core
 
         private static float ThunderEnvelope(float t)
         {
-            if (t < 0.04f)
+            if (t < ThunderAttack)
             {
-                return t / 0.04f;
+                var u = t / ThunderAttack;
+                return u * u;
             }
             if (t < ThunderHoldUntil)
             {
@@ -222,7 +225,7 @@ namespace DMCS.Core
         /// </summary>
         private static void SoftLimit(float[] x)
         {
-            const float drive = 1.5f;
+            const float drive = 1.0f;
             var norm = (float)Math.Tanh(drive);
             for (var i = 0; i < x.Length; i++)
             {

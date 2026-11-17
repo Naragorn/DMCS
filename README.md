@@ -253,12 +253,13 @@ Not yet verified in game: that `HumanDummy` never picks anything up, and how the
 
 While the adrenaline window or an execution window is open (`AdrenalineSignalRule`), each switchable on its own:
 - **Ready sound** once when the meter fills. DMCS synthesises it at runtime (`ReadySound`), modelled on what Dark
-  Messiah's own `Adrenaline_Reached.wav` does, measured in its file (2026-11-17): 2.29 s stereo; a thunder crack at the
-  start (a crackling roar across 50–2000 Hz, loudest 0.05–0.3 s, then rolling off); a low rumble (20–160 Hz) carrying
+  Messiah's own `Adrenaline_Reached.wav` does, measured in its file (2026-11-17): 2.29 s stereo; a thunder roar at the
+  start (dense and dark, weighted to the low mids, swelling in over ~50 ms, loudest 0.05–0.4 s, then rolling off; no
+  crackle); a low rumble (20–160 Hz) carrying
   the first 1.1 s; a bright hiss swelling in the first 0.2 s with a floor to 1.1 s; and a metallic ring at ~1021 Hz with
   partials near ×2, ×3, ×3.85 and sidebands ~60 Hz off that swells to ~1 s and rings out. The mix is soft-limited (tanh)
-  to Dark Messiah's loudness at the same peak. Tuned until the same band measurements matched per 100 ms (e.g. 300–2000 Hz
-  against 20–80 Hz in 0.05–0.35 s: 0.88 vs 0.86; loudness early 0.23 vs 0.25–0.27 RMS, body 0.17 vs 0.15–0.18).
+  to Dark Messiah's loudness at the same peak. Tuned until the same band measurements matched per 100 ms (e.g. 300–2000 Hz in
+  0.1–0.2 s: 99–110 vs 98–111; loudness early 0.20–0.23 vs 0.17–0.27 RMS, body 0.14–0.17 vs 0.15–0.18).
   Dark Messiah's file is never loaded or shipped.
 - **Heartbeat**: the game's own loop (`Catalog.gameData.heartBeatLoopAddress` = `Bas.Audio.Misc.HeartBeatLoop`) on
   DMCS's own 2D AudioSource, faded in and out.
@@ -362,6 +363,7 @@ a real physical weapon hit (held-weapon attribution) and how the stagger *feels*
 
 | Date | Step | Result |
 |---|---|---|
+| 2026-11-17 | 4d | Ready sound, second pass (user: the thunder was too harsh and not like DM): the crackle bursts are gone; the roar is now dense and dark (falls off above ~700 Hz), swells in over 60 ms, holds to 0.4 s; the rumble is quieter. Unit tests only. |
 | 2026-11-17 | 4d | Ready sound: thunder crack at the start added (the first version had rumble, hiss and ring only; Dark Messiah's file has a roar across the mids in the first 0.3 s). Unit tests only; the game-side code did not change. The sound tests now window their Goertzel measurement (without it the rumble leaked into every frequency, so the hiss test passed by luck). |
 | 2026-11-17 | 4d | Signals and vignette. Shader probe first (URP Particles/Unlit found). Harness: all ten scenarios **PASS** (step3 on a rerun: one timeout on "may re-arm" after the combo disarm, passed on the rerun). First runs found: frames took 2 s to build (fixed: per-streak pixel boxes, same output, built at level load); at 60° to the edge the streaks sat outside the mirror view → *Vignette Size* slider, 50°. |
 | 2026-11-16 | 1 | Harness: `step1-a-menu`, `-b-persist-set`, `-c-persist-check` **PASS** (70 s). First run found that saved values apply after script load; the load banner claimed default states — fixed (Settings line at level load). |
