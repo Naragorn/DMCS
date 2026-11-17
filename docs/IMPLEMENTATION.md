@@ -327,7 +327,11 @@ Design and probe results: `CLAUDE.md`, section 1.
 - Picture probe 2026-11-17 (temporary code): five real-fight locks through `player-parry` (angles 5–54°; one refused at 81.9°,
   one `OffPoint` at 0.30 m). Moving the player's hand target slowly towards the enemy during a lock made the diagnostic react
   (`hand ahead 0.11 m (towards the enemy 0.09 m)`), and after 0.46 s the player let go of the 20× heavy sword, which ended the
-  lock. Not yet clear whether the game releases a too heavy weapon when the controller runs ahead; to check before 5c.
+  lock. Cause, read in the game code: `PlayerHand` drops a held item that is colliding when its grip is further from the
+  shoulder centre than `morphology.GetArmCenterToFingerTipLenght()` (`StuckBehaviour.Drop`, the default); it happened with
+  1× weight too, whenever the probe led the hand out of reach. For 5c: overstretching while pushing loses the weapon through
+  the game itself. Crossed-blade pictures were taken by stepping the player 0.65–1.96 m closer first (blade middle then
+  1–3 cm from the flash point).
 
 ### Open findings
 
