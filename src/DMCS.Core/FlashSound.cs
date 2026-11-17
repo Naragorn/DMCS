@@ -87,61 +87,6 @@ namespace DMCS.Core
             },
             RingLevel = 0.02f,
         };
-
-        /// <summary>DMCS 2: a short bright blade "shing" (a ring at 2.4 kHz with bell-like partials over a hiss), no boom.</summary>
-        public static FlashSoundSpec Version2() => new FlashSoundSpec
-        {
-            Duration = 1.2f,
-            SubsLevel = 0f,
-            UpperHz = 3000f,
-            UpperLevel = 0.3f,
-            UpperDecay = 0.15f,
-            UpperFloor = 0f,
-            StrikeHz = 4000f,
-            StrikeLevel = 2f,
-            StrikeDecay = 0.02f,
-            Ring = new[] { new Partial(2400f, 1f, 0.25f), new Partial(2460f, 0.4f, 0.3f), new Partial(6624f, 0.5f, 0.12f), new Partial(12960f, 0.25f, 0.05f) },
-            RingLevel = 0.3f,
-        };
-
-        /// <summary>DMCS 3: a low gong at 110 Hz with inharmonic overtones that rings on.</summary>
-        public static FlashSoundSpec Version3() => new FlashSoundSpec
-        {
-            Duration = 2.8f,
-            Attack = 0.01f,
-            Hold = 0.1f,
-            Decay1 = 0.9f,
-            Knee = 3f,
-            Decay2 = 1f,
-            PitchDrop = 0f,
-            Subs = new[] { new Partial(55f, 0.3f, 0f), new Partial(110f, 1f, 0f), new Partial(165f, 0.2f, 0f) },
-            SubsLevel = 0.5f,
-            BodyHz = 250f,
-            BodyLevel = 0.4f,
-            StrikeHz = 1500f,
-            StrikeLevel = 0.6f,
-            StrikeDecay = 0.02f,
-            Ring = new[] { new Partial(220f, 0.5f, 1f), new Partial(297f, 0.4f, 0.8f), new Partial(513f, 0.3f, 0.6f), new Partial(1200f, 0.15f, 0.3f) },
-            RingLevel = 0.3f,
-        };
-
-        /// <summary>DMCS 4: a short high bell ping at 3.2 kHz over a light low thump.</summary>
-        public static FlashSoundSpec Version4() => new FlashSoundSpec
-        {
-            Duration = 0.9f,
-            Attack = 0.003f,
-            Hold = 0f,
-            Decay1 = 0.06f,
-            Knee = 5f,
-            PitchDrop = 0f,
-            Subs = new[] { new Partial(70f, 1f, 0f) },
-            SubsLevel = 0.4f,
-            StrikeHz = 5000f,
-            StrikeLevel = 0.8f,
-            StrikeDecay = 0.01f,
-            Ring = new[] { new Partial(3200f, 1f, 0.18f), new Partial(3230f, 0.4f, 0.2f), new Partial(8400f, 0.4f, 0.06f) },
-            RingLevel = 0.4f,
-        };
     }
 
     /// <summary>Synthesises the clash flash sound (interleaved stereo floats). Pure and deterministic per seed.</summary>
@@ -149,7 +94,7 @@ namespace DMCS.Core
     {
         public const string Off = "Off";
 
-        public static readonly string[] Styles = { Off, "DMCS 1", "DMCS 2", "DMCS 3", "DMCS 4" };
+        public static readonly string[] Styles = { Off, "DMCS 1" };
 
         public const string DefaultStyle = "DMCS 1";
 
@@ -159,9 +104,6 @@ namespace DMCS.Core
             switch (style)
             {
                 case "DMCS 1": return FlashSoundSpec.Version1();
-                case "DMCS 2": return FlashSoundSpec.Version2();
-                case "DMCS 3": return FlashSoundSpec.Version3();
-                case "DMCS 4": return FlashSoundSpec.Version4();
                 default: return null;
             }
         }

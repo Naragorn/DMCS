@@ -56,7 +56,7 @@ public class FlashSoundTests
     [Fact]
     public void SameSeed_SameSound()
     {
-        Assert.Equal(Gen(FlashSoundSpec.Version2(), 7), Gen(FlashSoundSpec.Version2(), 7));
+        Assert.Equal(Gen(FlashSoundSpec.Version1(), 7), Gen(FlashSoundSpec.Version1(), 7));
     }
 
     [Fact]
@@ -98,37 +98,6 @@ public class FlashSoundTests
         var m = Mono(Gen(FlashSoundSpec.Version1()));
 
         Assert.True(Tone(m, 0.0, 0.05, 2500) > 5 * Tone(m, 0.5, 0.55, 2500));
-    }
-
-    [Fact]
-    public void Version2_IsAShortBrightShing()
-    {
-        var spec = FlashSoundSpec.Version2();
-        var m = Mono(Gen(spec));
-
-        Assert.True(spec.Duration < 1.5f);
-        Assert.True(Tone(m, 0.02, 0.3, 2400) > 10 * Tone(m, 0.02, 0.3, 84), "no boom");
-        Assert.True(Rms(m, 0.9, 1.1) < 0.1 * Rms(m, 0.02, 0.2));
-    }
-
-    [Fact]
-    public void Version3_IsALowGong()
-    {
-        var m = Mono(Gen(FlashSoundSpec.Version3()));
-
-        Assert.True(Tone(m, 0.1, 0.8, 110) > 3 * Tone(m, 0.1, 0.8, 1863));
-        Assert.True(Rms(m, 1.5, 1.8) > 0.1 * Rms(m, 0.1, 0.4), "it rings on");
-    }
-
-    [Fact]
-    public void Version4_IsAHighPing_WithALightThump()
-    {
-        var spec = FlashSoundSpec.Version4();
-        var m = Mono(Gen(spec));
-
-        Assert.True(spec.Duration <= 1f);
-        Assert.True(Tone(m, 0.02, 0.2, 3200) > 3 * Tone(m, 0.02, 0.2, 2400));
-        Assert.True(Tone(m, 0.0, 0.08, 70) > 0.1 * Tone(m, 0.0, 0.08, 3200), "a thump under it");
     }
 
     [Fact]
@@ -177,11 +146,12 @@ public class FlashSoundTests
     }
 
     [Fact]
-    public void Styles_ListOffThenTheFourVersions()
+    public void Styles_ListOffThenDmcs1()
     {
-        Assert.Equal(new[] { "Off", "DMCS 1", "DMCS 2", "DMCS 3", "DMCS 4" }, FlashSound.Styles);
+        Assert.Equal(new[] { "Off", "DMCS 1" }, FlashSound.Styles);
         Assert.Null(FlashSound.Spec("Off"));
-        Assert.NotNull(FlashSound.Spec("DMCS 4"));
+        Assert.NotNull(FlashSound.Spec("DMCS 1"));
+        Assert.Null(FlashSound.Spec("DMCS 2"));
         Assert.Null(FlashSound.Spec("whatever"));
     }
 }

@@ -73,7 +73,7 @@ The window closes unused after its time, and the meter starts over.
 Dark Messiah's blade lock, made for VR. Built so far: **the warning**.
 - When an enemy with a sword winds up a big swing (a long wind-up: overhead, lunging, stepping or counter swings),
   its blade flashes at the middle: a warm star with rays bursts up and keeps glittering until the swing comes, with a
-  warning sound (four DMCS sounds, one modelled on Sekiro's perilous-attack cue, and/or one of Blade & Sorcery's own).
+  warning sound (DMCS's own, modelled on Sekiro's perilous-attack cue, and/or one of Blade & Sorcery's own).
   Plain quick swings and thrusts do not flash.
 - If the enemy is close, your blade is near the flash and you hold it roughly across the swing when the strike
   comes, time slows down (0.3×) until the swing is over.
@@ -115,7 +115,7 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Clash Enemy Reach | 2.5 m | 1–4 m | How close the enemy must be |
 | Clash Block Reach | 0.6 m | 0.2–1.5 m | How close your blade must be to the flash |
 | Clash Block Angle Tolerance | 45° | 10–80° | How far your blade may be off a right angle to the swing |
-| Clash Flash Sound | DMCS 1 | Off, DMCS 1–4 | The warning sound: 1 deep boom with a metallic ring (after Sekiro's perilous-attack cue), 2 short blade ring, 3 low gong, 4 high ping |
+| Clash Flash Sound | DMCS 1 | Off, DMCS 1 | The warning sound: a deep boom with a metallic ring, after Sekiro's perilous-attack cue |
 | Clash Flash Game Sound | Off | Off, Metal Hit, Focus Ready, Gravity Pulse | One of the game's own sounds on top (Metal Hit also sparks) |
 | Clash Flash Sound Volume | 0.8 | 0–1 | Volume of the DMCS sound |
 

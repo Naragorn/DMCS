@@ -48,11 +48,10 @@ expect-no-log slow-motion 0.30x
 screenshot clash-npc of=npc
 
 # 1b. A DMCS sound together with a game sound (any combination)
-set-option DMCS "Clash Flash Sound" "DMCS 4"
 set-option DMCS "Clash Flash Game Sound" "Metal Hit"
 mark
 wait 20
-expect-log : flash, sound DMCS 4 (0.90 s), game sound Metal Hit
+expect-log : flash, sound DMCS 1 (3.60 s), game sound Metal Hit
 set-option DMCS "Clash Flash Sound" Off
 set-option DMCS "Clash Flash Game Sound" "Focus Ready"
 mark

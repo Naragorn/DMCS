@@ -271,7 +271,7 @@ Design and probe results: `CLAUDE.md`, section 1.
   Over time: burst from 0.5× to 1.5× size and full brightness in 0.08 s, settling within 0.25 s to 1× and 80 %, turning 40°/s so the
   rays glitter, until the attack ends. The first version (64², thin rays, 0.14 m, 60 % glow) was hard to see from the player's
   eye (picture probe 2026-11-17, user: too small and pale).
-- **Flash sound (2026-11-17, user: "one should sound 99 % like Sekiro's"):** *Clash Flash Sound* (Off, DMCS 1–4, synthesised by
+- **Flash sound (2026-11-17, user: "one should sound 99 % like Sekiro's"):** *Clash Flash Sound* (Off, DMCS 1, synthesised by
   `FlashSound`, built in the background at level load, 2D on DMCS's own AudioSource) and *Clash Flash Game Sound* (Off, Metal Hit =
   `HitMaterialMetal` with sparks, Focus Ready = `FocusReady`, Gravity Pulse = `ImpactPulse`, spawned at the flash point); both play
   together, so every combination works. DMCS 1 is modelled on Sekiro's perilous-attack cue, measured in a recording (YouTube
@@ -280,7 +280,8 @@ Design and probe results: `CLAUDE.md`, section 1.
   (~31 Hz plus 60–115 Hz) that carries the sound, loud to ~0.9 s, a fifth at 2 s, gone at 3.4 s; a broadband strike in the first
   50 ms; a ring at ~1863 Hz (beating with 1670/1790 Hz) with 3670 Hz and short 5460/7345 Hz partials. DMCS 1 against it (scratchpad
   scripts, per 0.25 s, seven bands): band levels 2.35 dB off on average (max 6.9), loudness curve 1.48 dB, the 1863 Hz ring within
-  ~2 dB to 2 s. "99 %" cannot be measured; whether it sounds the same is the user's ear. Nothing of Sekiro's is shipped.
+  ~2 dB to 2 s. "99 %" cannot be measured; the user listened and called DMCS 1 usable (2026-11-17). Three first other
+  versions (blade ring, gong, ping) were dropped on the user's word; three new ones come at the end of step 5. Nothing of Sekiro's is shipped.
 - **Slow-motion:** from `AttackStage.Attack` on, for 0.1 s each physics step (`ScriptFixedUpdate`): NPC within *Enemy Reach*,
   the player's held blade (handle → tip of either hand) within *Block Reach* of the flash point, and the angle between the
   player's blade and the swing plane's normal (blade axis × velocity at the flash point, `GetItemPointVelocity`) within
