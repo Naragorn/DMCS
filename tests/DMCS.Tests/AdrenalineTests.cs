@@ -274,6 +274,7 @@ public class AdrenalineSettingsTests
                  {
                      AdrenalineSettings.DefaultGainHit, AdrenalineSettings.DefaultGainBlockParry, AdrenalineSettings.DefaultGainDamageTaken,
                      AdrenalineSettings.DefaultGainChargeStagger, AdrenalineSettings.DefaultGainDisarm,
+                     AdrenalineSettings.DefaultGainDodge, AdrenalineSettings.DefaultGainCatch,
                  })
         {
             Assert.Contains(d, AdrenalineSettings.GainValues());
@@ -286,9 +287,11 @@ public class AdrenalineSettingsTests
     [InlineData(AdrenalineSource.DamageTaken, 3)]
     [InlineData(AdrenalineSource.ChargeStagger, 4)]
     [InlineData(AdrenalineSource.Disarm, 5)]
+    [InlineData(AdrenalineSource.Dodge, 6)]
+    [InlineData(AdrenalineSource.Catch, 7)]
     public void EachSource_UsesItsOwnGain(AdrenalineSource source, int expected)
     {
-        var gains = new AdrenalineGains(1, 2, 3, 4, 5);
+        var gains = new AdrenalineGains(1, 2, 3, 4, 5, 6, 7);
 
         Assert.Equal(expected, gains.For(source));
     }

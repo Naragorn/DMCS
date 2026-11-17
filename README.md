@@ -17,7 +17,7 @@ Every feature can be toggled and tuned in the in-game Mod Menu. Full spec: `CLAU
 | 2. Charge Stagger | **Done. Unit tests + in-game harness PASS (2026-11-16).** Feel in the headset (real sprint + real swing) not checked. |
 | 3. Disarm Strike | **Built, unit tests PASS, in-game harness PASS (2026-11-16).** Not checked in the headset yet. |
 | 3b. Body Hit Drop, chances per NPC type, shields, fling | **Built, unit tests + in-game harness PASS (2026-11-16, chance-per-type version).** Not checked in the headset; Twist Disarm not built (with step 5). |
-| 4. Adrenaline | **4a (meter), 4b (critical / fatality, chest-stab finish), 4c (kneel and execution) and 4d (signals: ready sound, heartbeat, haptics, hand glow, Dark Messiah-style vignette) built, unit tests + in-game harness PASS (2026-11-16/17).** Block/parry and damage taken are unit-tested only. Nothing checked in the headset (sound, haptics and the vignette's look need it). 4e (dodge/catch) not built; design in `CLAUDE.md` 4b. |
+| 4. Adrenaline | **4a (meter), 4b (critical / fatality, chest-stab finish), 4c (kneel and execution) and 4d (signals: ready sound, heartbeat, haptics, hand glow, Dark Messiah-style vignette) built, unit tests + in-game harness PASS (2026-11-16/17).** Block/parry and damage taken are unit-tested only. Nothing checked in the headset (sound, haptics and the vignette's look need it). 4e (dodge and catch bonus) built 2026-11-17, unit tests + harness PASS; the harness raises the game's attack event but no NPC really swings, so a real dodge is a headset check. |
 | 5. Clash of Might | not started |
 
 ## Versions (checked 2026-11-16)
@@ -299,6 +299,28 @@ While the adrenaline window or an execution window is open (`AdrenalineSignalRul
   less than an eye, so at 50° only the edge shows); critical → flare, signals off; Adrenaline off mid-window → stopped.
   Not checked: how loud, how strong and how it looks in the headset; the glow (the harness player holds nothing).
 
+### Dodge and catch bonus (step 4e)
+
+- **Dodge** (*Adrenaline Per Dodge* 10, *Dodge Min Speed* 2 m/s): an NPC melee attack on the player
+  (`EventManager.onCreatureAttacking`, raised by `BrainModuleMelee`) that reached `AttackStage.Attack` and ends with
+  `End` (not `Cancel` = interrupted), with no hit on the player from that NPC (a hit whose attacker cannot be read voids
+  every open attack) and no block/parry, while the player's **head** reached the min speed between Attack and End.
+  Head speed instead of the stick speed, because a VR dodge is mostly a real step or lean. It is measured over 0.1 s
+  (`HeadSpeedMeter`): the rig moves in physics steps, so per-frame speeds jump; the first harness run read 19.85 m/s
+  from a 2.5 m/s run that way. A jump above 1 m between two frames is a teleport and starts over.
+  Log: `dodged <npc>'s attack (head 5.05 m/s)` / `no dodge of <npc>'s attack: TooSlow (head 0.00 m/s)`.
+- **Catch** (*Adrenaline Per Catch* 10, *Catch Max Air Time* 3 s): a weapon a DMCS disarm released from an NPC's hand
+  (`DisarmStrike.KnockedAway`), grabbed by the player's hand (`EventManager.OnItemGrab`) before it touched the ground and
+  within the air time. Ground = a contact with a collider that belongs to no `ColliderGroup` (level geometry, static
+  props), read by an own `OnCollisionEnter` component on the weapon (the game's `CollisionHandler` drops slow contacts).
+  An NPC grabbing it first ends the chance; telekinesis does not count. Log: `caught <item> in the air`,
+  `<item> touched the ground: no catch bonus`.
+- Pure logic in Core (`DodgeTracker`, `HeadSpeedMeter`, `CatchTracker`), unit-tested over every flow.
+- Harness `step4e-adrenaline-dodge-catch` (new BasHarness verbs `npc-attack <stage>` and `player-grab-dropped`): catch at
+  once → bonus; after landing → none; attack missed while running → dodge; standing → TooSlow; cancelled → none;
+  Adrenaline off → nothing. Not covered in game: a hit or a parry during the attack (unit tests only), a real NPC swing,
+  and the speed a real dodge reaches in the headset (the 2 m/s default is a guess).
+
 ### API for other mods
 
 `DMCS.Adrenaline.AddExternal(float amount, string source)` (public static, in `DMCS.dll`; found by name through
@@ -381,6 +403,7 @@ Results land in `artifacts/harness/<time>/<scenario>/summary.md` (with Player.lo
 | `step1-c-persist-check` | new game start: all values back (menu value and live member), preset row shows Custom and the rest of Realistic (chance 75 %, window 0.15 s) survived — the preset row did not reset them on load; Reset To Defaults → Gamey |
 | `step2-charge-stagger` | all nine settings with type/slider/Gamey defaults; Realistic sets its six values, one change → Custom, back → Realistic, Gamey restores; NPC (`HumanDummy` brain) beside the player; standing / walking (2.8 m/s) → TooSlow; sprint (6 m/s) → `Brain.currentStagger = Full`; second charge hit → knocked down and held, then up; hit 0.2 s after stopping (2.3 m/s) counts through the 0.5 s window; threshold 8 → TooSlow; min swing 6 → 5 m/s SwingTooWeak, 7 m/s staggers; chance 0 % → ChanceFailed; thrown, spell, held weapon → staggered (source logged); thrown/spells off → RangedNotCounted; second-hit switch off → AlreadyStaggered; Knock Down 4 s → down 4.2 s, control 0.5 s → up after 1.4 s; feature off → none (all live) |
 | `step3-disarm-strike` | Settings and defaults (Body Hit Drop switched off: this scenario checks the hand rule); fighting NPC with a dagger in each hand; not staggered → NotStaggered; forearm off → no disarm; staggered + hand hit → both drop, brain `HumanDummy`, a re-grabbed dagger is released, after 4 s the own brain is back and it can hold again; drop-both off → only the hit hand drops, the other keeps its dagger; charge hit then hand hit → the charge hit staggers without disarming, the next one disarms; feature off → none |
+| `step4e-adrenaline-dodge-catch` | 4e settings and defaults; a disarmed dagger grabbed at once → `+10 Catch`; grabbed after it landed → none; the game's attack event (Attack → End) while running → `+10 Dodge`; standing → TooSlow; Attack → Cancel → none; Adrenaline off → nothing |
 | `step3b-body-hit-drop` | Settings and defaults; body hit without stagger → nothing even at 100 %; 0 % + 100 % per extra hit → first body hit fails (sparks, haptic pulse logged), the second drops the dagger (flung 3 m/s); the count starts over with the next stagger; a buckler in the other hand stays while the dagger drops; base 0 % + female 100 % on a male NPC → 0 %, on a female NPC → drops; smaller 100 % with Smaller By 50 cm on an adult NPC → 0 %; Body Hit Drop off / Disarm Strike off → nothing drops (live) |
 
 The harness hits the NPC through `Creature.Damage` with the player's hand as damager and `pushLevel = -1`, so the
@@ -393,6 +416,7 @@ a real physical weapon hit (held-weapon attribution) and how the stagger *feels*
 
 | Date | Step | Result |
 |---|---|---|
+| 2026-11-17 | 4e | Dodge and catch bonus. Harness: all twelve scenarios **PASS**; unit tests 445 **PASS**. The first 4e run found two bugs: dodges were still judged with Adrenaline off (all handlers now check the toggle), and the per-frame head speed read 19.85 m/s from a 2.5 m/s run (now measured over 0.1 s, then 5.05 m/s while sprinting up). Also: running into the test NPCs charge-staggered them and filled the meter, so the scenario turns away and switches Charge Stagger off. |
 | 2026-11-17 | 4d | DMCS 4 vignette (tuned to Dark Messiah's frame statistics), style switches in game (frames, sounds and Dark Messiah's files built/read in the background: the first in-game build took 0.4 s on the main thread), `Adrenaline.AddExternal` for other mods. Harness: all eleven scenarios **PASS**, `step4d-b` switches DMCS 1–4 and Dark Messiah (found on this machine under Proton at `Z:\run\media\…\Programs\Steam`, read in 115 ms). Unit tests 406 **PASS**. |
 | 2026-11-17 | 4d | Style switches: every built sound and vignette version plus Dark Messiah's own files (from the player's install). Unit tests (incl. the readers on the real Dark Messiah files of this machine): 390 **PASS**. Harness `step4d-b-adrenaline-styles`: see the next row. |
 | 2026-11-17 | 4d | Ready sound, second pass (user: the thunder was too harsh and not like DM): the crackle bursts are gone; the roar is now dense and dark (falls off above ~700 Hz), swells in over 60 ms, holds to 0.4 s; the rumble is quieter. Unit tests only. |

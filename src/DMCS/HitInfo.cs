@@ -41,6 +41,35 @@ namespace DMCS
         /// lastHandler is the casting hand (SpellCastProjectile); other spells set CollisionInstance.casterHand.
         /// A body part: the damager's collision handler is a ragdoll part of the player.
         /// </summary>
+        /// <summary>
+        /// The creature that dealt a hit, read the same way as <see cref="SourceOf"/>: the holder (or last holder) of the
+        /// damaging item, the owner of the damaging body part, or the caster. Null when none of them can be read.
+        /// </summary>
+        public static Creature AttackerOf(CollisionInstance hit)
+        {
+            var handler = hit.damageStruct.damager != null ? hit.damageStruct.damager.collisionHandler : null;
+            if (handler == null && hit.sourceColliderGroup != null)
+            {
+                handler = hit.sourceColliderGroup.collisionHandler;
+            }
+            var item = handler != null ? handler.item : null;
+            if (item != null)
+            {
+                var holder = item.handlers.FirstOrDefault(h => h != null && h.creature != null);
+                if (holder != null)
+                {
+                    return holder.creature;
+                }
+                return item.lastHandler != null ? item.lastHandler.creature : null;
+            }
+            var part = handler != null ? handler.ragdollPart : null;
+            if (part != null && part.ragdoll != null)
+            {
+                return part.ragdoll.creature;
+            }
+            return hit.casterHand != null && hit.casterHand.mana != null ? hit.casterHand.mana.creature : null;
+        }
+
         public static HitSource SourceOf(CollisionInstance hit)
         {
             var player = Player.currentCreature;

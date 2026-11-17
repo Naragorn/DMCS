@@ -45,67 +45,67 @@ namespace DMCS
         private static float _timeScale;
         private static float _timeEndsAt;
 
-        [ModOption(name = AdrenalineSettings.CriticalTimeModeName, tooltip = "Slow-motion of the critical. Hyperfocus: the world slows, you keep moving fast (the game's Hyperfocus). Slow Time: everything slows, you too (the game's slow time).", valueSourceName = nameof(TimeModeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 12)]
+        [ModOption(name = AdrenalineSettings.CriticalTimeModeName, tooltip = "Slow-motion of the critical. Hyperfocus: the world slows, you keep moving fast (the game's Hyperfocus). Slow Time: everything slows, you too (the game's slow time).", valueSourceName = nameof(TimeModeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 16)]
         public static string TimeMode { get; set; } = AdrenalineSettings.DefaultTimeMode;
 
-        [ModOption(name = AdrenalineSettings.HyperfocusScaleName, tooltip = "World speed during a Hyperfocus critical (the game's Hyperfocus: 0.1).", valueSourceName = nameof(HyperfocusScaleValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 13)]
+        [ModOption(name = AdrenalineSettings.HyperfocusScaleName, tooltip = "World speed during a Hyperfocus critical (the game's Hyperfocus: 0.1).", valueSourceName = nameof(HyperfocusScaleValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 17)]
         [ModOptionSlider]
         public static float HyperfocusScale { get; set; } = AdrenalineSettings.HyperfocusScale.Default;
 
-        [ModOption(name = AdrenalineSettings.HyperfocusDurationName, tooltip = "Real seconds a Hyperfocus critical lasts.", valueSourceName = nameof(HyperfocusDurationValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 14)]
+        [ModOption(name = AdrenalineSettings.HyperfocusDurationName, tooltip = "Real seconds a Hyperfocus critical lasts.", valueSourceName = nameof(HyperfocusDurationValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 18)]
         [ModOptionSlider]
         public static float HyperfocusDuration { get; set; } = AdrenalineSettings.HyperfocusDuration.Default;
 
-        [ModOption(name = AdrenalineSettings.SlowTimeScaleName, tooltip = "World and player speed during a Slow Time critical (the game's slow time: 0.5).", valueSourceName = nameof(SlowTimeScaleValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 15)]
+        [ModOption(name = AdrenalineSettings.SlowTimeScaleName, tooltip = "World and player speed during a Slow Time critical (the game's slow time: 0.5).", valueSourceName = nameof(SlowTimeScaleValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 19)]
         [ModOptionSlider]
         public static float SlowTimeScale { get; set; } = AdrenalineSettings.SlowTimeScale.Default;
 
-        [ModOption(name = AdrenalineSettings.SlowTimeDurationName, tooltip = "Real seconds a Slow Time critical lasts.", valueSourceName = nameof(SlowTimeDurationValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 16)]
+        [ModOption(name = AdrenalineSettings.SlowTimeDurationName, tooltip = "Real seconds a Slow Time critical lasts.", valueSourceName = nameof(SlowTimeDurationValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 20)]
         [ModOptionSlider]
         public static float SlowTimeDuration { get; set; } = AdrenalineSettings.SlowTimeDuration.Default;
 
-        [ModOption(name = AdrenalineSettings.NeedsHardSwingName, tooltip = "Only a hard hit is the critical; lighter hits are normal hits.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 17)]
+        [ModOption(name = AdrenalineSettings.NeedsHardSwingName, tooltip = "Only a hard hit is the critical; lighter hits are normal hits.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 21)]
         public static bool NeedsHardSwing { get; set; } = AdrenalineSettings.DefaultNeedsHardSwing;
 
-        [ModOption(name = AdrenalineSettings.MinSwingSpeedName, tooltip = "How fast (m/s) the weapon, fist or kick must hit to be the critical.", valueSourceName = nameof(MinSwingSpeedValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 18)]
+        [ModOption(name = AdrenalineSettings.MinSwingSpeedName, tooltip = "How fast (m/s) the weapon, fist or kick must hit to be the critical.", valueSourceName = nameof(MinSwingSpeedValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 22)]
         [ModOptionSlider]
         public static float MinSwingSpeed { get; set; } = AdrenalineSettings.MinSwingSpeed.Default;
 
-        [ModOption(name = AdrenalineSettings.RangedCountsName, tooltip = "Thrown weapons and spells can be the critical too.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 19)]
+        [ModOption(name = AdrenalineSettings.RangedCountsName, tooltip = "Thrown weapons and spells can be the critical too.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 23)]
         public static bool RangedCounts { get; set; } = AdrenalineSettings.DefaultRangedCounts;
 
-        [ModOption(name = AdrenalineSettings.KillsName, tooltip = "The critical always kills, like Dark Messiah's fatality.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 20)]
+        [ModOption(name = AdrenalineSettings.KillsName, tooltip = "The critical always kills, like Dark Messiah's fatality.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 24)]
         public static bool Kills { get; set; } = AdrenalineSettings.DefaultKills;
 
-        [ModOption(name = AdrenalineSettings.DismemberName, tooltip = "The critical cuts off the hit head, arm or leg (where the game allows it).", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 21)]
+        [ModOption(name = AdrenalineSettings.DismemberName, tooltip = "The critical cuts off the hit head, arm or leg (where the game allows it).", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 25)]
         public static bool Dismember { get; set; } = AdrenalineSettings.DefaultDismember;
 
-        [ModOption(name = AdrenalineSettings.KnockbackName, tooltip = "How hard (m/s) the critical throws the enemy along the hit. 0 = no throw.", valueSourceName = nameof(KnockbackValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 22)]
+        [ModOption(name = AdrenalineSettings.KnockbackName, tooltip = "How hard (m/s) the critical throws the enemy along the hit. 0 = no throw.", valueSourceName = nameof(KnockbackValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 26)]
         [ModOptionSlider]
         public static float Knockback { get; set; } = AdrenalineSettings.Knockback.Default;
 
-        [ModOption(name = AdrenalineSettings.BattleCryName, tooltip = "You shout on the critical (your character's own attack shout).", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 23)]
+        [ModOption(name = AdrenalineSettings.BattleCryName, tooltip = "You shout on the critical (your character's own attack shout).", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 27)]
         public static bool BattleCry { get; set; } = AdrenalineSettings.DefaultBattleCry;
 
-        [ModOption(name = AdrenalineSettings.ChestStabKneelsName, tooltip = "A critical stab into the chest makes the enemy sink to its knees and die. Kick it away or let it fall.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 24)]
+        [ModOption(name = AdrenalineSettings.ChestStabKneelsName, tooltip = "A critical stab into the chest makes the enemy sink to its knees and die. Kick it away or let it fall.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 28)]
         public static bool ChestStabKneels { get; set; } = AdrenalineSettings.DefaultChestStabKneels;
 
-        [ModOption(name = AdrenalineSettings.ExecutionWindowName, tooltip = "Seconds a kneeling enemy waits for you: after a chest stab, kick it away or behead it; after it went down on its own, any hit executes it.", valueSourceName = nameof(ExecutionWindowValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 25)]
+        [ModOption(name = AdrenalineSettings.ExecutionWindowName, tooltip = "Seconds a kneeling enemy waits for you: after a chest stab, kick it away or behead it; after it went down on its own, any hit executes it.", valueSourceName = nameof(ExecutionWindowValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 29)]
         [ModOptionSlider]
         public static float ExecutionWindow { get; set; } = AdrenalineSettings.ExecutionWindow.Default;
 
-        [ModOption(name = AdrenalineSettings.KneelEnabledName, tooltip = "With a full meter, the enemy goes down on its knees when you land no hit for a while or only light hits.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 26)]
+        [ModOption(name = AdrenalineSettings.KneelEnabledName, tooltip = "With a full meter, the enemy goes down on its knees when you land no hit for a while or only light hits.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 30)]
         public static bool KneelEnabled { get; set; } = AdrenalineSettings.DefaultKneelEnabled;
 
-        [ModOption(name = AdrenalineSettings.KneelAfterNoHitName, tooltip = "Seconds without a hit (meter full) before the enemy kneels.", valueSourceName = nameof(KneelAfterNoHitValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 27)]
+        [ModOption(name = AdrenalineSettings.KneelAfterNoHitName, tooltip = "Seconds without a hit (meter full) before the enemy kneels.", valueSourceName = nameof(KneelAfterNoHitValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 31)]
         [ModOptionSlider]
         public static float KneelAfterNoHit { get; set; } = AdrenalineSettings.KneelAfterNoHit.Default;
 
-        [ModOption(name = AdrenalineSettings.KneelAfterLightHitsName, tooltip = "Light hits (meter full) after which the enemy kneels.", valueSourceName = nameof(LightHitValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 28)]
+        [ModOption(name = AdrenalineSettings.KneelAfterLightHitsName, tooltip = "Light hits (meter full) after which the enemy kneels.", valueSourceName = nameof(LightHitValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 32)]
         [ModOptionSlider]
         public static int KneelAfterLightHits { get; set; } = AdrenalineSettings.DefaultKneelAfterLightHits;
 
-        [ModOption(name = AdrenalineSettings.KneelDeathChanceName, tooltip = "Chance (%) that a kneeling enemy you did not execute dies instead of standing up.", valueSourceName = nameof(KneelDeathChanceValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 29)]
+        [ModOption(name = AdrenalineSettings.KneelDeathChanceName, tooltip = "Chance (%) that a kneeling enemy you did not execute dies instead of standing up.", valueSourceName = nameof(KneelDeathChanceValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 33)]
         [ModOptionSlider]
         public static int KneelDeathChance { get; set; } = AdrenalineSettings.DefaultKneelDeathChance;
 

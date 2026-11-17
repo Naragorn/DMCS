@@ -160,6 +160,50 @@ namespace DMCS
         [ModOptionSlider]
         public static int GainDisarm { get; set; } = AdrenalineSettings.DefaultGainDisarm;
 
+        [ModOption(
+            name = AdrenalineSettings.GainDodgeName,
+            tooltip = "Points for each enemy attack that misses you while you move away fast (needs the headset to judge).",
+            valueSourceName = nameof(GainValues),
+            category = DmcsCategories.Adrenaline,
+            categoryOrder = DmcsCategories.AdrenalineOrder,
+            order = 12)]
+        [ModOptionSlider]
+        public static int GainDodge { get; set; } = AdrenalineSettings.DefaultGainDodge;
+
+        [ModOption(
+            name = AdrenalineSettings.DodgeMinSpeedName,
+            tooltip = "How fast your head must move sideways or back (m/s) while an attack misses, to count as a dodge.",
+            valueSourceName = nameof(DodgeMinSpeedValues),
+            category = DmcsCategories.Adrenaline,
+            categoryOrder = DmcsCategories.AdrenalineOrder,
+            order = 13)]
+        [ModOptionSlider]
+        public static float DodgeMinSpeed { get; set; } = AdrenalineSettings.DodgeMinSpeed.Default;
+
+        [ModOption(
+            name = AdrenalineSettings.GainCatchName,
+            tooltip = "Points for catching a weapon you knocked out of an enemy's hand before it hits the ground.",
+            valueSourceName = nameof(GainValues),
+            category = DmcsCategories.Adrenaline,
+            categoryOrder = DmcsCategories.AdrenalineOrder,
+            order = 14)]
+        [ModOptionSlider]
+        public static int GainCatch { get; set; } = AdrenalineSettings.DefaultGainCatch;
+
+        [ModOption(
+            name = AdrenalineSettings.CatchMaxAirTimeName,
+            tooltip = "Seconds after the disarm a catch still counts (besides: it must not have touched the ground).",
+            valueSourceName = nameof(CatchMaxAirTimeValues),
+            category = DmcsCategories.Adrenaline,
+            categoryOrder = DmcsCategories.AdrenalineOrder,
+            order = 15)]
+        [ModOptionSlider]
+        public static float CatchMaxAirTime { get; set; } = AdrenalineSettings.CatchMaxAirTime.Default;
+
+        public static ModOptionFloat[] DodgeMinSpeedValues() => Floats(AdrenalineSettings.DodgeMinSpeed, "0.00", " m/s");
+
+        public static ModOptionFloat[] CatchMaxAirTimeValues() => Floats(AdrenalineSettings.CatchMaxAirTime, "0.0", " s");
+
         public static ModOptionFloat[] MeterMaxValues() => Floats(AdrenalineSettings.MeterMax, "0", "");
 
         public static ModOptionFloat[] WindowDurationValues() => Floats(AdrenalineSettings.WindowDuration, "0", " s");
@@ -172,7 +216,7 @@ namespace DMCS
             AdrenalineSettings.GainValues().Select(v => new ModOptionInt(v.ToString(CultureInfo.InvariantCulture), v)).ToArray();
 
         private static AdrenalineGains Gains =>
-            new AdrenalineGains(GainHit, GainBlockParry, GainDamageTaken, GainChargeStagger, GainDisarm);
+            new AdrenalineGains(GainHit, GainBlockParry, GainDamageTaken, GainChargeStagger, GainDisarm, GainDodge, GainCatch);
 
         /// <summary>Raised for each critical (later steps hook in here).</summary>
         public static event Action<Creature> Critical;
@@ -192,6 +236,7 @@ namespace DMCS
             EventManager.onCreatureAttackParry += OnParry;
             ChargeStagger.Staggered += OnChargeStagger;
             DisarmStrike.Disarmed += OnDisarm;
+            AdrenalineDodgeCatch.Hook();
             _hooked = true;
         }
 
@@ -204,6 +249,7 @@ namespace DMCS
                 EventManager.onCreatureAttackParry -= OnParry;
                 ChargeStagger.Staggered -= OnChargeStagger;
                 DisarmStrike.Disarmed -= OnDisarm;
+                AdrenalineDodgeCatch.Unhook();
                 _hooked = false;
             }
             ResetAll();
@@ -218,6 +264,7 @@ namespace DMCS
             HitCreatures.Clear();
             AdrenalineCritical.StopAll();
             AdrenalineSignals.StopAll();
+            AdrenalineDodgeCatch.ResetAll();
         }
 
         public static void Update()
@@ -229,6 +276,7 @@ namespace DMCS
             {
                 return;
             }
+            AdrenalineDodgeCatch.Update();
             var e = Meter.Tick(Time.unscaledTime, Time.unscaledDeltaTime, DecayEnabled ? DecayPerSecond : 0f, DecayDelay);
             if (e == AdrenalineEvent.WindowExpired)
             {
@@ -262,6 +310,10 @@ namespace DMCS
                     return;
                 }
                 var source = HitInfo.SourceOf(hit);
+                if (target.isPlayer && source == HitSource.NotPlayer)
+                {
+                    AdrenalineDodgeCatch.PlayerHit(hit);
+                }
                 if (eventTime == EventTime.OnStart)
                 {
                     if (AdrenalineCritical.IsKneeling(target))
@@ -380,6 +432,10 @@ namespace DMCS
         {
             try
             {
+                if (parried != null && parrying != null && parrying.isPlayer)
+                {
+                    AdrenalineDodgeCatch.Parried(parried);
+                }
                 var source = AdrenalineSources.FromParry(parried != null && parried.isPlayer, parrying != null && parrying.isPlayer);
                 if (source.HasValue)
                 {
@@ -396,7 +452,7 @@ namespace DMCS
 
         private static void OnDisarm(Creature target) => Add(AdrenalineSource.Disarm, target != null ? target.name : "?");
 
-        private static void Add(AdrenalineSource source, string who) => Gain(Gains.For(source), source.ToString(), who);
+        internal static void Add(AdrenalineSource source, string who) => Gain(Gains.For(source), source.ToString(), who);
 
         /// <summary>
         /// Public API for other mods (called by name through reflection, e.g. the Achilles Tendon mod for a heel cut or the

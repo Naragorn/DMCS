@@ -129,7 +129,7 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 
 **Config:** gain values per event, `meterMax`, `adrenalineWindowDuration`, `slowMoScale`, `slowMoDuration`, `knockbackForce`, toggles for each visual effect.
 
-### 4b. Adrenaline design (2026-11-16; 4a–4d built, see README)
+### 4b. Adrenaline design (2026-11-16; 4a–4e built, see README)
 
 Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSON.
 
@@ -205,15 +205,15 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 
 **Build order:** 4a meter, gains (hit, damage, parry, stagger, disarm), decay, window, Mod Menu, debug log; 4b critical (time mode, kill, dismember, knockback, battle cry, chest-stab fatality); 4c kneel and execution; 4d signals, ready sound and the vignette (built 2026-11-17); 4e dodge and catch bonus (marked "not verified in game" until a headset check; design below). Each: unit tests first, then a harness scenario (the harness can deal hits and damage and read `Time.timeScale` and `isSliced`; parry and dodge are hard to force there).
 
-**4e Dodge and catch bonus (designed 2026-11-17, user go the same day):**
-- Dodge: an NPC melee attack on the player (`EventManager.onCreatureAttacking`, `AttackType.Melee`, target = the player) that reached `AttackStage.Attack` and then ends with `AttackStage.End` (not `Cancel`: the game raises Cancel when an attack that could already damage is interrupted, `BrainModuleMelee`) without hitting the player (`onCreatureHit` on the player from that NPC; a hit whose attacker cannot be read voids every open attack) and without a block/parry (`onCreatureAttackParry` with that NPC as the parried side), while the player's **head** moved at least `dodgeMinSpeed` (m/s, horizontal, fastest value between Attack and End). Head instead of `Locomotion.horizontalSpeed`, because a VR dodge is mostly a real step or lean, which the stick speed does not show; head speed sees both. Jumps above 20 m/s (teleports) are ignored. An approximation; the default speed (2 m/s) is a guess for the headset.
+**4e Dodge and catch bonus (designed and built 2026-11-17, user go the same day):**
+- Dodge: an NPC melee attack on the player (`EventManager.onCreatureAttacking`, `AttackType.Melee`, target = the player) that reached `AttackStage.Attack` and then ends with `AttackStage.End` (not `Cancel`: the game raises Cancel when an attack that could already damage is interrupted, `BrainModuleMelee`) without hitting the player (`onCreatureHit` on the player from that NPC; a hit whose attacker cannot be read voids every open attack) and without a block/parry (`onCreatureAttackParry` with that NPC as the parried side), while the player's **head** moved at least `dodgeMinSpeed` (m/s, horizontal, measured over 0.1 s, fastest value between Attack and End). Head instead of `Locomotion.horizontalSpeed`, because a VR dodge is mostly a real step or lean, which the stick speed does not show; head speed sees both. A jump of more than 1 m between two frames (teleport) starts the measurement over. An approximation; the default speed (2 m/s) is a guess for the headset.
 - Catch: a weapon DMCS knocked out of an NPC's hand (every Disarm Strike path), grabbed by the player's hand (`EventManager.OnItemGrab`) before it touched the ground and within `catchMaxAirTime` (default 3 s). "Touched the ground" = the weapon's rigidbody collides with a collider that belongs to no `ColliderGroup` (no creature part, no item: level geometry and static props), read with an own `OnCollisionEnter` component on the weapon, because the game's `CollisionHandler.OnCollisionStartEvent` drops slow contacts and contacts without known physics materials. Telekinesis catches do not count (hand only). An NPC grabbing it first ends the chance.
 - Mod Menu (in the gain block after `Per Disarm`): `Adrenaline Per Dodge` (10), `Dodge Min Speed` (0.5–6 m/s, 2), `Adrenaline Per Catch` (10), `Catch Max Air Time` (0.5–5 s, 3).
 - Harness: BasHarness gets `npc-attack <stage>` (raises the game's own `EventManager.InvokeCreatureAttack` for the spawned NPC against the player; tests DMCS's listening, not a real NPC swing) and `player-grab-dropped` (the player's hand grabs the weapon the spawned NPC was given with `npc-grab`). A real NPC swing and a real dodge stay a headset check.
 
 **Open work (listed 2026-11-17, in this order):**
 1. Headset check of 4a–4d: meter, critical, kneel/execution, signals (vignette size, haptics, sounds, DMCS 1–4 against Dark Messiah). Cost: small for code, the user's time in the headset; brings back the values everything else rests on (hard-swing 3 m/s, vignette 50°, haptics strength, volumes).
-2. 4e dodge and catch bonus (see above). Cost: medium; dodge needs the headset to be confirmed.
+2. ~~4e dodge and catch bonus~~ built 2026-11-17 (see above and README); the dodge speed needs the headset.
 3. Step 5: Clash of Might + Twist Disarm (shared weapon-on-weapon contact code). Cost: large; contact duration and controller micro-movement intensity are tuned only in the headset.
 4. DMCS 4 vignette fine-tuning: Dark Messiah's streaks are a bit more brownish and blurrier. Cost: small (colour and blur in the generator plus a statistics test); only when the headset shows it matters.
 5. Later, not scheduled: `Gamey` / `Realistic` presets for the disarm values (Realistic needs headset values), and features as skill-tree powers (below). Cost: medium to large; whether a mod can add a skill to the Body tree is not checked yet.

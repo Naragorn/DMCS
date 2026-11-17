@@ -36,6 +36,9 @@ namespace DMCS
         /// <summary>Raised for each disarm (Adrenaline can gain from it).</summary>
         public static event Action<Creature> Disarmed;
 
+        /// <summary>Raised for each weapon a DMCS disarm path released from an NPC's hand (step 4e: the catch bonus).</summary>
+        public static event Action<Item> KnockedAway;
+
         [ModOption(
             name = DmcsCategories.DisarmStrike + " Enabled",
             nameLocalizationId = DmcsCategories.EnabledLocalizationId,
@@ -556,6 +559,10 @@ namespace DMCS
                 name += " (flung at " + FlingForce.ToString("0.0", CultureInfo.InvariantCulture) + " m/s)";
             }
             dropped.Add(name);
+            if (item.handlers.Count == 0)
+            {
+                KnockedAway?.Invoke(item);
+            }
         }
 
         private static void ReleaseIfHolding(Creature creature, RagdollHand hand, string what)

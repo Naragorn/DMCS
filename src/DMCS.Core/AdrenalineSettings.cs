@@ -34,6 +34,20 @@ namespace DMCS.Core
         public const int DefaultGainChargeStagger = 15;
         public const int DefaultGainDisarm = 15;
 
+        // Step 4e (CLAUDE.md 4b table: dodge 10, catch 10).
+        public const string GainDodgeName = "Adrenaline Per Dodge";
+        public const string DodgeMinSpeedName = "Dodge Min Speed";
+        public const string GainCatchName = "Adrenaline Per Catch";
+        public const string CatchMaxAirTimeName = "Catch Max Air Time";
+        public const int DefaultGainDodge = 10;
+        public const int DefaultGainCatch = 10;
+
+        /// <summary>m/s the player's head must reach (horizontally) during a missed attack (a first guess; needs the headset).</summary>
+        public static readonly SliderSpec DodgeMinSpeed = new SliderSpec(DodgeMinSpeedName, 0.5f, 6f, 0.25f, 2f);
+
+        /// <summary>Seconds a knocked-away weapon may fly and still be caught (safety limit besides touching the ground).</summary>
+        public static readonly SliderSpec CatchMaxAirTime = new SliderSpec(CatchMaxAirTimeName, 0.5f, 5f, 0.5f, 3f);
+
         public const string DamageTakenLowersName = "Damage Taken Lowers Adrenaline";
         public const string DecayEnabledName = "Adrenaline Decay";
 

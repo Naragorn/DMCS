@@ -1,0 +1,97 @@
+# Step 4e: dodge and catch bonus.
+# Catch: a weapon DMCS knocked out of an NPC's hand, grabbed by the player before it touched the ground.
+# Dodge: the game's own attack event (npc-attack raises EventManager.InvokeCreatureAttack; the NPC does not really
+# swing) reaches Attack and ends without a hit while the player's head moves fast. A hit or parry during the attack is
+# unit-tested only (the harness cannot make an NPC hit the player or the player parry). Expects the defaults at the start.
+
+wait-level
+press DMCS "Reset To Defaults"
+option-exists DMCS "Adrenaline Per Dodge" category=Adrenaline type=Int32 interaction=Slider save=true
+option-exists DMCS "Dodge Min Speed" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Adrenaline Per Catch" category=Adrenaline type=Int32 interaction=Slider save=true
+option-exists DMCS "Catch Max Air Time" category=Adrenaline type=Single interaction=Slider save=true
+expect-option DMCS "Adrenaline Per Dodge" 10
+expect-option DMCS "Dodge Min Speed" 2
+expect-option DMCS "Adrenaline Per Catch" 10
+expect-option DMCS "Catch Max Air Time" 3
+set-option DMCS "Debug Logging" true
+set-option DMCS "Body Hit Drop" false
+# Running into the NPCs would charge-stagger them and fill the meter (window open = no more gains)
+set-option DMCS "Charge Stagger Enabled" false
+
+# 1. Catch: disarm (stagger, then a hand hit) and grab the weapon at once
+spawn-npc HumanMale distance=2 angle=0 brain=HumanDummy
+npc-grab DaggerCommon hand=right
+expect-npc holding true
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc RightHand
+player-grab-dropped
+expect-log disarmed
+expect-log [DMCS][Adrenaline] caught DaggerCommon in the air
+expect-log [DMCS][Adrenaline] +10 Catch (DaggerCommon)
+
+# 2. No catch: the weapon lands first
+spawn-npc HumanMale distance=2 angle=0 brain=HumanDummy
+npc-grab DaggerCommon hand=right
+expect-npc holding true
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc RightHand
+expect-log DaggerCommon touched the ground: no catch bonus
+player-grab-dropped
+wait 0.5
+expect-no-log +10 Catch
+
+# 3. Dodge: the attack misses while the player runs (away from the NPCs)
+turn-player 180
+mark
+run 1
+expect-player-speed 2.5
+npc-attack Attack
+wait 0.4
+npc-attack End
+stop-run
+expect-log [DMCS][Adrenaline] dodged
+expect-log [DMCS][Adrenaline] +10 Dodge (
+
+# 4. Standing still: missed, but no dodge
+wait 1
+mark
+npc-attack Attack
+wait 0.4
+npc-attack End
+expect-log : TooSlow (head
+expect-no-log +10 Dodge
+
+# 5. A cancelled attack (interrupted) is no dodge, even when running
+turn-player 180
+mark
+run 1
+expect-player-speed 2.5
+npc-attack Attack
+npc-attack Cancel
+npc-attack End
+stop-run
+wait 0.3
+expect-no-log [DMCS][Adrenaline] dodged
+
+# 6. Adrenaline off: nothing counts
+set-option DMCS "Adrenaline Enabled" false
+mark
+run 1
+expect-player-speed 2.5
+npc-attack Attack
+wait 0.4
+npc-attack End
+stop-run
+wait 0.3
+expect-no-log [DMCS][Adrenaline]
+set-option DMCS "Adrenaline Enabled" true
+
+press DMCS "Reset To Defaults"
+expect-no-log Exception
+screenshot step4e-adrenaline-dodge-catch
+quit
