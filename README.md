@@ -274,7 +274,9 @@ While the adrenaline window or an execution window is open (`AdrenalineSignalRul
   but the frames are DMCS's own drawing. Shown on a spherical cap 0.1 m around the eyes, child of the head camera (near
   plane 0.02 m), with the game's `Universal Render Pipeline/Particles/Unlit` set to additive (harness probe 2026-11-17:
   loaded and supported; `Universal Render Pipeline/Unlit` and the legacy particle shaders are not). *Vignette Size* is the
-  angle from the view centre to the frame's edge; it flares on the critical (*Vignette Flare*).
+  angle from the view centre to the frame's edge; the cap fades out over its outer 15 % (vertex alpha), as the frames'
+  corners are lit and the square border would otherwise show as a hard line (seen with DMCS 1 at 30°, 2026-11-17); it
+  flares on the critical (*Vignette Flare*).
 - **Versions to compare** (*Ready Sound Style*, *Vignette Style*, *Heartbeat Sound*): every version DMCS built stays
   selectable, byte for byte as built (checked against the old commits): sound DMCS 1 (rumble, hiss, ring), DMCS 2 (+ a
   crackling thunder crack), DMCS 3 (+ a dark thunder roar, default); vignette DMCS 1 (flames), DMCS 2 (even radial

@@ -744,6 +744,7 @@ namespace DMCS
             var n = CapSegments + 1;
             var vertices = new Vector3[n * n];
             var uvs = new Vector2[n * n];
+            var colors = new Color[n * n];
             for (var y = 0; y < n; y++)
             {
                 for (var x = 0; x < n; x++)
@@ -754,6 +755,10 @@ namespace DMCS
                     var pitch = ((v * 2f) - 1f) * VignetteSize;
                     vertices[(y * n) + x] = Quaternion.Euler(-pitch, yaw, 0f) * Vector3.forward * CapRadius;
                     uvs[(y * n) + x] = new Vector2(u, v);
+                    // The frames' corners are lit (Dark Messiah's too), so the cap's square border would show as a hard
+                    // line; it fades out over the outer 15 % instead (the particle shader multiplies the vertex colour).
+                    var border = Mathf.Max(Mathf.Abs(u - 0.5f), Mathf.Abs(v - 0.5f)) * 2f;
+                    colors[(y * n) + x] = new Color(1f, 1f, 1f, 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.85f, 1f, border)));
                 }
             }
             var triangles = new int[CapSegments * CapSegments * 6];
@@ -771,7 +776,7 @@ namespace DMCS
                     triangles[k++] = i + n + 1;
                 }
             }
-            var mesh = new Mesh { name = "DMCS Vignette Cap", vertices = vertices, uv = uvs, triangles = triangles };
+            var mesh = new Mesh { name = "DMCS Vignette Cap", vertices = vertices, uv = uvs, colors = colors, triangles = triangles };
             mesh.bounds = new Bounds(Vector3.forward * CapRadius, Vector3.one * CapRadius * 4f);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             var renderer = go.AddComponent<MeshRenderer>();
