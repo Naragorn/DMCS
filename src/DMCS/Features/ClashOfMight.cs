@@ -89,6 +89,9 @@ namespace DMCS
         [ModOptionSlider]
         public static float BlockAngleTolerance { get; set; } = ClashSettings.BlockAngleTolerance.Default;
 
+        [ModOption(name = ClashSettings.FlashAtTopName, tooltip = "The blade flashes when the enemy has raised it all the way, just before the strike, like sunlight caught on it. Off: as soon as the wind-up starts (more warning).", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 14)]
+        public static bool FlashAtTop { get; set; } = ClashSettings.DefaultFlashAtTop;
+
         [ModOption(name = ClashSettings.PointToleranceName, tooltip = "How close (m) to the flash your block must hit the enemy's blade to lock the blades. Elsewhere it is an ordinary parry.", valueSourceName = nameof(PointToleranceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 8)]
         [ModOptionSlider]
         public static float PointTolerance { get; set; } = ClashSettings.PointTolerance.Default;
@@ -195,7 +198,15 @@ namespace DMCS
                     RemoveFlash(pair.Key);
                     continue;
                 }
-                var age = Time.unscaledTime - flash.StartedAt;
+                if (!flash.ShownAt.HasValue)
+                {
+                    var tip = flash.TipHeight();
+                    if (flash.Top == null || (tip.HasValue && flash.Top.Sample(Time.time - flash.WindUpAt, tip.Value)))
+                    {
+                        Show(flash);
+                    }
+                }
+                var age = flash.ShownAt.HasValue ? Time.unscaledTime - flash.ShownAt.Value : 0f;
                 flash.Glint.transform.position = flash.Point;
                 flash.Glint.transform.localScale = Vector3.one * (GlintSize * Glint.Scale(age));
                 if (cam != null)
@@ -259,6 +270,11 @@ namespace DMCS
                         break;
                     case BrainModuleAttack.AttackStage.Attack:
                         Telegraph.StrikeStarted(id, Time.unscaledTime);
+                        if (Flashes.TryGetValue(id, out var striking) && !striking.ShownAt.HasValue)
+                        {
+                            // No top seen before the strike: the flash shows now at the latest.
+                            Show(striking);
+                        }
                         break;
                     case BrainModuleAttack.AttackStage.End:
                     case BrainModuleAttack.AttackStage.Cancel:
@@ -331,8 +347,27 @@ namespace DMCS
                 return;
             }
             Telegraph.WindUp(id);
-            Flashes[id] = new Flash(attacker, weapon, attacker.GetHand(side), local, glint, Time.unscaledTime);
-            Dmcs.Log.Debug(Channel, name + " winds up " + attack.id + " (" + F(windUp) + " s) with " + weapon.data?.id + ": flash" + PlayFlashSound(Flashes[id].Point));
+            var flash = new Flash(attacker, weapon, attacker.GetHand(side), local, glint, Time.unscaledTime)
+            {
+                WindUpAt = Time.time,
+                WindUpSeconds = windUp,
+                Top = FlashAtTop ? new SwingTop(windUp) : null,
+            };
+            Flashes[id] = flash;
+            Dmcs.Log.Debug(Channel, name + " winds up " + attack.id + " (" + F(windUp) + " s) with " + weapon.data?.id + ": flash" + (FlashAtTop ? " at the swing top" : string.Empty));
+            if (!FlashAtTop)
+            {
+                Show(flash);
+            }
+        }
+
+        /// <summary>The flash appears (at the swing top, or at once): its burst starts, its sound plays.</summary>
+        private static void Show(Flash flash)
+        {
+            flash.ShownAt = Time.unscaledTime;
+            var into = Time.time - flash.WindUpAt;
+            Dmcs.Log.Debug(Channel, flash.NpcName + "'s blade flashes " + (flash.Top != null ? "at the swing top" : "as the wind-up starts") + " ("
+                + F(into) + " of " + F(flash.WindUpSeconds) + " s)" + PlayFlashSound(flash.Point));
         }
 
         /// <summary>The middle of the weapon's slashing blade along handle → tip, as a point local to the weapon.</summary>
@@ -797,6 +832,23 @@ namespace DMCS
             public GameObject Glint { get; }
             public MeshRenderer Renderer { get; }
             public float StartedAt { get; }
+
+            /// <summary>Game time (Time.time) the wind-up started, its length, and the top tracker (null = show at once).</summary>
+            public float WindUpAt { get; set; }
+
+            public float WindUpSeconds { get; set; }
+
+            public SwingTop Top { get; set; }
+
+            /// <summary>Real time the flash appeared; null while it waits for the swing top.</summary>
+            public float? ShownAt { get; set; }
+
+            /// <summary>The blade tip's height above the NPC's feet.</summary>
+            public float? TipHeight()
+            {
+                Weapon.GetFurthestDamagerCollider(out _, out var tip);
+                return tip != null ? tip.bounds.center.y - Npc.transform.position.y : (float?)null;
+            }
             public string LastDetail { get; set; } = "";
 
             /// <summary>The swing plane's normal from the strike start (null until read).</summary>

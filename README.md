@@ -72,7 +72,8 @@ The window closes unused after its time, and the meter starts over.
 
 Dark Messiah's blade lock, made for VR. Built so far: **the warning**.
 - When an enemy with a sword winds up a big swing (a long wind-up: overhead, lunging, stepping or counter swings),
-  its blade flashes at the middle: a warm star with rays bursts up and keeps glittering until the swing comes, with a
+  its blade flashes at the middle when it is raised all the way (like sunlight caught on it): a warm star with rays
+  bursts up and keeps glittering until the swing comes, with a
   warning sound (DMCS's own, modelled on Sekiro's perilous-attack cue, and/or one of Blade & Sorcery's own).
   Plain quick swings and thrusts do not flash.
 - If the enemy is close, your blade is near the flash and you hold it roughly across the swing when the strike
@@ -117,6 +118,7 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Clash Enemy Reach | 2.5 m | 1–4 m | How close the enemy must be |
 | Clash Block Reach | 0.6 m | 0.2–1.5 m | How close your blade must be to the flash |
 | Clash Block Angle Tolerance | 45° | 10–80° | How far your blade may be off a right angle to the swing |
+| Clash Flash At Swing Top | on | | The flash comes when the blade is raised all the way, just before the strike; off: as soon as the wind-up starts (more warning) |
 | Clash Point Tolerance | 0.25 m | How close to the flash your block must hit to lock the blades |
 | Clash Weapon Weight | 20× | How much heavier your weapon gets while the blades are locked |
 | Clash Max Duration | 4 s | How long the blades stay locked at most |

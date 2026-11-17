@@ -21,7 +21,6 @@ set-option DMCS "Clash Min Wind Up" 0.2
 set-option DMCS "Clash Max Duration" 2
 player-invincible true
 spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
-npc-grab SwordShortCommon hand=right
 player-grab SwordShortCommon
 
 # 1. Block at the flash: the blades lock, the NPC freezes, the weapon gets heavy, released after 2 s.

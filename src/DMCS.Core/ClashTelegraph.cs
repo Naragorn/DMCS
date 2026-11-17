@@ -68,6 +68,11 @@ namespace DMCS.Core
             }
         }
 
+        public const string FlashAtTopName = "Clash Flash At Swing Top";
+
+        /// <summary>The flash appears at the top of the wind-up (user 2026-11-17, default on); off: when the wind-up starts.</summary>
+        public const bool DefaultFlashAtTop = true;
+
         public const string PointToleranceName = "Clash Point Tolerance";
         public const string WeaponWeightName = "Clash Weapon Weight";
         public const string MaxDurationName = "Clash Max Duration";
@@ -153,6 +158,44 @@ namespace DMCS.Core
             }
             _nextDiagnostic = now + DiagnosticEvery;
             return true;
+        }
+    }
+
+    /// <summary>
+    /// The top of a wind-up, where the flash appears (user 2026-11-17: like sunlight caught when the blade is raised all the
+    /// way). Harness probe 2026-11-17, 11 big swings: the blade tip is highest at 79–100 % of the wind-up (0.03–0.08 s before
+    /// the strike), except a lunge that starts high (0–12 %). So: the tip's height has fallen 2 cm below its highest point,
+    /// not before 40 % of the wind-up; at the latest when the wind-up is over.
+    /// </summary>
+    public sealed class SwingTop
+    {
+        public const float Drop = 0.02f;
+        public const float EarliestShare = 0.4f;
+
+        private readonly float _windUp;
+        private float _highest = float.NegativeInfinity;
+
+        public SwingTop(float windUpSeconds)
+        {
+            _windUp = windUpSeconds;
+        }
+
+        public bool Reached { get; private set; }
+
+        /// <summary>One sample (seconds since the wind-up started, tip height); true once, when the top is reached.</summary>
+        public bool Sample(float elapsed, float height)
+        {
+            if (Reached)
+            {
+                return false;
+            }
+            _highest = Math.Max(_highest, height);
+            if (elapsed >= _windUp || (elapsed >= _windUp * EarliestShare && height <= _highest - Drop))
+            {
+                Reached = true;
+                return true;
+            }
+            return false;
         }
     }
 

@@ -271,6 +271,14 @@ Design and probe results: `CLAUDE.md`, section 1.
   Over time: burst from 0.5× to 1.5× size and full brightness in 0.08 s, settling within 0.25 s to 1× and 80 %, turning 40°/s so the
   rays glitter, until the attack ends. The first version (64², thin rays, 0.14 m, 60 % glow) was hard to see from the player's
   eye (picture probe 2026-11-17, user: too small and pale).
+- **Flash at the swing top (user 2026-11-17, *Clash Flash At Swing Top*, default on):** the flash (and its sound) waits for the
+  top of the wind-up (`SwingTop`: the blade tip's height above the NPC's feet has fallen 2 cm below its highest point, not before
+  40 % of the wind-up, at the latest when the strike starts). Probe (11 big swings): the tip is highest at 79–100 % of the wind-up
+  (0.03–0.08 s before the strike); a lunge starts high and dips first, so it flashes at 40 %. In `step5a` the flashes came at
+  0.20–0.44 s of 0.44–0.50 s. This shortens the warning: off brings back the flash at the wind-up start. Log: `<npc>'s blade
+  flashes at the swing top (0.26 of 0.44 s), sound DMCS 1 (3.60 s)`.
+- **Two blades on the first pictures:** a test setup artefact. The container `CivilianMeleeSword` puts a sword on the NPC's back,
+  and an extra `npc-grab` gave it a second one; it drew the back sword into its other hand. The clash scenarios no longer grab.
 - **Flash sound (2026-11-17, user: "one should sound 99 % like Sekiro's"):** *Clash Flash Sound* (Off, DMCS 1, synthesised by
   `FlashSound`, built in the background at level load, 2D on DMCS's own AudioSource) and *Clash Flash Game Sound* (Off, Metal Hit =
   `HitMaterialMetal` with sparks, Focus Ready = `FocusReady`, Gravity Pulse = `ImpactPulse`, spawned at the flash point); both play

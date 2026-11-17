@@ -4,7 +4,7 @@
 wait-level
 
 # Loads
-expect-log [DMCS] v0.3.0 loaded from folder 'DMCS' with 97 mod options
+expect-log [DMCS] v0.3.0 loaded from folder 'DMCS' with 98 mod options
 expect-log [DMCS] Settings: Debug Logging=off | Clash of Might=Enabled | Disarm Strike=Enabled | Charge Stagger=Enabled | Adrenaline=Enabled
 expect-log [ModManager][ThunderScript][DMCS] Loaded ThunderScript: DMCS.DmcsScript
 
@@ -45,7 +45,7 @@ set-option DMCS "Disarm Strike Enabled" false
 set-option DMCS "Debug Logging" true
 mark
 press DMCS "Reset To Defaults"
-expect-log [DMCS] Reset 96 options to defaults.
+expect-log [DMCS] Reset 97 options to defaults.
 expect-option DMCS "Debug Logging" false
 expect-option DMCS "Disarm Strike Enabled" true
 save-options

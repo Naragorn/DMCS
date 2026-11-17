@@ -174,6 +174,7 @@ public class ModOptionMetadataTests
                 (ClashSettings.FlashSoundName, "System.String", "ArrowList"),
                 (ClashSettings.FlashGameSoundName, "System.String", "ArrowList"),
                 (ClashSettings.FlashSoundVolumeName, "System.Single", "Slider"),
+                (ClashSettings.FlashAtTopName, "System.Boolean", "ArrowList"),
             },
             group.Select(o => (o.Name, o.DataType, o.InteractionType)));
         Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));

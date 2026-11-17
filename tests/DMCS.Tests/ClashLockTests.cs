@@ -110,3 +110,59 @@ public class ClashLockSettingsTests
         Assert.Equal(4f, ClashSettings.MaxDuration.Default);
     }
 }
+
+public class SwingTopTests
+{
+    private const float WindUp = 0.5f;
+
+    [Fact]
+    public void Rising_IsNotTheTopYet()
+    {
+        var t = new SwingTop(WindUp);
+
+        Assert.False(t.Sample(0.1f, 1.2f));
+        Assert.False(t.Sample(0.3f, 1.6f));
+    }
+
+    [Fact]
+    public void Falling_FromTheHighestPoint_IsTheTop()
+    {
+        var t = new SwingTop(WindUp);
+        t.Sample(0.2f, 1.5f);
+        t.Sample(0.35f, 1.8f);
+
+        Assert.False(t.Sample(0.38f, 1.79f), "within the 2 cm jitter");
+        Assert.True(t.Sample(0.4f, 1.77f));
+    }
+
+    [Fact]
+    public void ADropTooEarly_InTheWindUp_DoesNotCount()
+    {
+        // LungeSwingTopToLeft starts high and dips first (harness probe 2026-11-17): not before 40 % of the wind-up.
+        var t = new SwingTop(WindUp);
+        t.Sample(0.0f, 1.7f);
+
+        Assert.False(t.Sample(0.1f, 1.5f));
+        Assert.True(t.Sample(0.21f, 1.5f));
+    }
+
+    [Fact]
+    public void NoTopSeen_TheStrikeStartIsTheLatest()
+    {
+        var t = new SwingTop(WindUp);
+        t.Sample(0.2f, 1.2f);
+
+        Assert.True(t.Sample(0.5f, 1.9f));
+    }
+
+    [Fact]
+    public void TheTopComesOnce()
+    {
+        var t = new SwingTop(WindUp);
+        t.Sample(0.3f, 1.8f);
+        Assert.True(t.Sample(0.4f, 1.7f));
+
+        Assert.False(t.Sample(0.45f, 1.6f));
+        Assert.True(t.Reached);
+    }
+}

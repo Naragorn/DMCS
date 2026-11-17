@@ -18,6 +18,8 @@ option-exists DMCS "Clash Flash Sound Volume" category="Clash of Might" type=Sin
 expect-option DMCS "Clash Flash Sound" "DMCS 1"
 expect-option DMCS "Clash Flash Game Sound" Off
 expect-option DMCS "Clash Flash Sound Volume" 0.8
+option-exists DMCS "Clash Flash At Swing Top" category="Clash of Might" type=Boolean interaction=ArrowList save=true
+expect-option DMCS "Clash Flash At Swing Top" true
 expect-option DMCS "Clash Only Swords" true
 expect-option DMCS "Clash Min Wind Up" 0.4
 expect-option DMCS "Clash Slow Motion" true
@@ -35,13 +37,14 @@ set-option DMCS "Charge Stagger Enabled" false
 player-invincible true
 
 # 1. Big swings flash, plain swings do not; no blade in hand → no slow-motion
-# The default loadout (CivilianMelee) is random and may add a shield, mace or axe; CivilianMeleeSword is only a sword.
+# The default loadout (CivilianMelee) is random and may add a shield, mace or axe; CivilianMeleeSword is only a sword,
+# which the NPC draws from its back (an extra npc-grab gave it a second sword: two blades on the pictures, 2026-11-17).
 spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
-npc-grab SwordShortCommon hand=right
 mark
 wait 60
 expect-log [DMCS][Clash] HumanMale
-expect-log : flash, sound DMCS 1 (3.60 s)
+expect-log flashes at the swing top (
+expect-log s), sound DMCS 1 (3.60 s)
 expect-log no slow-motion for
 expect-log BladeTooFar
 expect-no-log [DMCS][Disarm Strike] disarmed
@@ -52,15 +55,21 @@ screenshot clash-npc of=npc
 set-option DMCS "Clash Flash Game Sound" "Metal Hit"
 mark
 wait 20
-expect-log : flash, sound DMCS 1 (3.60 s), game sound Metal Hit
+expect-log s), sound DMCS 1 (3.60 s), game sound Metal Hit
 set-option DMCS "Clash Flash Sound" Off
 set-option DMCS "Clash Flash Game Sound" "Focus Ready"
 mark
 wait 20
-expect-log : flash, game sound Focus Ready
+expect-log s), game sound Focus Ready
 expect-no-log sound DMCS
 set-option DMCS "Clash Flash Sound" "DMCS 1"
 set-option DMCS "Clash Flash Game Sound" Off
+
+# 1c. Flash at the swing top off: it shows as the wind-up starts
+set-option DMCS "Clash Flash At Swing Top" false
+mark
+await-log 30 flashes as the wind-up starts (0.00 of
+set-option DMCS "Clash Flash At Swing Top" true
 
 # 2. Min wind-up above every attack of the game (max 0.77 s): nothing flashes any more
 set-option DMCS "Clash Min Wind Up" 0.8
