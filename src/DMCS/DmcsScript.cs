@@ -92,6 +92,7 @@ namespace DMCS
             }
             Dmcs.Log.Info(DmcsStatus.Describe(Dmcs.Log.DebugEnabled, Features.All));
             AdrenalineSignals.Prewarm();
+            ClashOfMight.Prewarm();
         }
     }
 }

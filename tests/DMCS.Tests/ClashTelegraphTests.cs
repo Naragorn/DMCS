@@ -306,6 +306,31 @@ public class ClashSettingsTests
     }
 
     [Fact]
+    public void FlashSounds_DefaultToTheSekiroLikeOne_AndNoGameSound()
+    {
+        Assert.Equal("DMCS 1", ClashSettings.DefaultFlashSound);
+        Assert.Equal(FlashSound.Off, ClashSettings.DefaultFlashGameSound);
+        Assert.Equal(0.8f, ClashSettings.FlashSoundVolume.Default);
+    }
+
+    [Theory]
+    [InlineData("Metal Hit", "HitMaterialMetal")]
+    [InlineData("Focus Ready", "FocusReady")]
+    [InlineData("Gravity Pulse", "ImpactPulse")]
+    [InlineData("Off", null)]
+    [InlineData("nonsense", null)]
+    public void GameSounds_MapToTheGamesEffects(string name, string effectId)
+    {
+        Assert.Equal(effectId, ClashSettings.GameSoundEffect(name));
+    }
+
+    [Fact]
+    public void GameSounds_ListOffFirst()
+    {
+        Assert.Equal(new[] { "Off", "Metal Hit", "Focus Ready", "Gravity Pulse" }, ClashSettings.GameSounds);
+    }
+
+    [Fact]
     public void Defaults_AreOnTheirSliders()
     {
         foreach (var s in ClashSettings.Sliders)

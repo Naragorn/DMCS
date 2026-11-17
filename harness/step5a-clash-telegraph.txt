@@ -12,6 +12,12 @@ option-exists DMCS "Clash Slow Motion Scale" category="Clash of Might" type=Sing
 option-exists DMCS "Clash Enemy Reach" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Block Reach" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Block Angle Tolerance" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Flash Sound" category="Clash of Might" type=String interaction=ArrowList save=true
+option-exists DMCS "Clash Flash Game Sound" category="Clash of Might" type=String interaction=ArrowList save=true
+option-exists DMCS "Clash Flash Sound Volume" category="Clash of Might" type=Single interaction=Slider save=true
+expect-option DMCS "Clash Flash Sound" "DMCS 1"
+expect-option DMCS "Clash Flash Game Sound" Off
+expect-option DMCS "Clash Flash Sound Volume" 0.8
 expect-option DMCS "Clash Only Swords" true
 expect-option DMCS "Clash Min Wind Up" 0.4
 expect-option DMCS "Clash Slow Motion" true
@@ -35,11 +41,26 @@ npc-grab SwordShortCommon hand=right
 mark
 wait 60
 expect-log [DMCS][Clash] HumanMale
-expect-log : flash
+expect-log : flash, sound DMCS 1 (3.60 s)
 expect-log no slow-motion for
 expect-log BladeTooFar
 expect-no-log slow-motion 0.30x
 screenshot clash-npc of=npc
+
+# 1b. A DMCS sound together with a game sound (any combination)
+set-option DMCS "Clash Flash Sound" "DMCS 4"
+set-option DMCS "Clash Flash Game Sound" "Metal Hit"
+mark
+wait 20
+expect-log : flash, sound DMCS 4 (0.90 s), game sound Metal Hit
+set-option DMCS "Clash Flash Sound" Off
+set-option DMCS "Clash Flash Game Sound" "Focus Ready"
+mark
+wait 20
+expect-log : flash, game sound Focus Ready
+expect-no-log sound DMCS
+set-option DMCS "Clash Flash Sound" "DMCS 1"
+set-option DMCS "Clash Flash Game Sound" Off
 
 # 2. Min wind-up above every attack of the game (max 0.77 s): nothing flashes any more
 set-option DMCS "Clash Min Wind Up" 0.8

@@ -168,6 +168,9 @@ public class ModOptionMetadataTests
                 (ClashSettings.NpcReachName, "System.Single", "Slider"),
                 (ClashSettings.BlockReachName, "System.Single", "Slider"),
                 (ClashSettings.BlockAngleToleranceName, "System.Single", "Slider"),
+                (ClashSettings.FlashSoundName, "System.String", "ArrowList"),
+                (ClashSettings.FlashGameSoundName, "System.String", "ArrowList"),
+                (ClashSettings.FlashSoundVolumeName, "System.Single", "Slider"),
             },
             group.Select(o => (o.Name, o.DataType, o.InteractionType)));
         Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));

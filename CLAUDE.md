@@ -51,6 +51,7 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 7. **Win:** `clashWinDisarms` (default on; later a buyable Body-tree power) disarms through the Disarm Strike path (fling, no-regrab lock, catch bonus); the NPC is staggered; +25 Adrenaline (clash win); with `clashWinKneelChance` (default 25 %) it also kneels and the execution window of 4c opens.
 8. **Lose:** `clashLoseOutcome` dropdown `Disarm + Hit` (default), `Disarm`, `Hit`, `None`; the hit is `clashLoseDamage` (default 20; the player has 100 health, `Creature_PlayerDefault*.json`).
 - Feedback during the clash: haptics, sparks and a grinding sound at the contact.
+- Flash sound (user 2026-11-17, built): *Clash Flash Sound* (Off, DMCS 1–4; DMCS 1 modelled on Sekiro's perilous-attack cue, measured in a recording, Sekiro's files are encrypted and never read or shipped) and *Clash Flash Game Sound* (Off or one of three B&S catalog effects), any combination, plus a volume slider.
 
 **Harness probe 2026-11-17** (temporary probe code, not committed; NPC `HumanMale`/`HumanMedium` with `SwordShortCommon` attacking the standing player, 2 runs, 21 swings):
 - Real wind-up (to `start`) of all 68 attack motions in the three melee stances: 0.13–0.77 s; time to the hit (`peak`) 0.33–1.37 s. In game the Attack stage came on time (e.g. 0.500 s computed, 0.489 s measured). A wind-up threshold of ~0.4 s splits the plain swings (0.13–0.37 s) from the overhead, counter, lunge and step swings and most dual-wield swings (0.40–0.77 s); the exact value is a slider.

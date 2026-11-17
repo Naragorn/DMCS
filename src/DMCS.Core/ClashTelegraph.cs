@@ -42,7 +42,33 @@ namespace DMCS.Core
         /// <summary>Minimum speed (m/s) of the NPC's blade for its swing plane to be read.</summary>
         public const float MinBladeSpeed = 0.3f;
 
-        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, BlockReach, BlockAngleTolerance };
+        public const string FlashSoundName = "Clash Flash Sound";
+        public const string FlashGameSoundName = "Clash Flash Game Sound";
+        public const string FlashSoundVolumeName = "Clash Flash Sound Volume";
+
+        /// <summary>DMCS 1 = modelled on Sekiro's perilous-attack cue (user 2026-11-17).</summary>
+        public const string DefaultFlashSound = "DMCS 1";
+
+        public const string DefaultFlashGameSound = FlashSound.Off;
+
+        public static readonly SliderSpec FlashSoundVolume = new SliderSpec(FlashSoundVolumeName, 0f, 1f, 0.05f, 0.8f);
+
+        /// <summary>The game's own catalog effects that can sound with the flash (any combination with a DMCS sound).</summary>
+        public static readonly string[] GameSounds = { FlashSound.Off, "Metal Hit", "Focus Ready", "Gravity Pulse" };
+
+        /// <summary>Catalog effect id of a game sound name; null for Off or unknown. Metal Hit also sparks (Effect_HitMaterialMetal).</summary>
+        public static string GameSoundEffect(string name)
+        {
+            switch (name)
+            {
+                case "Metal Hit": return "HitMaterialMetal";
+                case "Focus Ready": return "FocusReady";
+                case "Gravity Pulse": return "ImpactPulse";
+                default: return null;
+            }
+        }
+
+        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, BlockReach, BlockAngleTolerance, FlashSoundVolume };
     }
 
     public enum SlowMoVerdict

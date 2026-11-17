@@ -32,6 +32,11 @@ namespace DMCS
         private static bool _timeOwned;
         private static float _timeScale;
         private static float _timeEndsAt;
+        private const int SoundRate = 48000;
+        private static readonly Dictionary<string, System.Threading.Tasks.Task<float[]>> SoundTasks = new Dictionary<string, System.Threading.Tasks.Task<float[]>>();
+        private static readonly Dictionary<string, AudioClip> SoundClips = new Dictionary<string, AudioClip>();
+        private static GameObject _audioHost;
+        private static AudioSource _audio;
 
         [ModOption(
             name = DmcsCategories.ClashOfMight + " Enabled",
@@ -71,6 +76,22 @@ namespace DMCS
         [ModOption(name = ClashSettings.BlockAngleToleranceName, tooltip = "How far (degrees) your blade may be off a right angle to the enemy's swing.", valueSourceName = nameof(BlockAngleToleranceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 7)]
         [ModOptionSlider]
         public static float BlockAngleTolerance { get; set; } = ClashSettings.BlockAngleTolerance.Default;
+
+        [ModOption(name = ClashSettings.FlashSoundName, tooltip = "Sound when an enemy's blade flashes. DMCS 1 is modelled on Sekiro's perilous-attack cue; DMCS 2 a short blade ring, DMCS 3 a low gong, DMCS 4 a high ping. Combines with the game sound below.", valueSourceName = nameof(FlashSoundValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 8)]
+        public static string FlashSoundStyle { get; set; } = ClashSettings.DefaultFlashSound;
+
+        [ModOption(name = ClashSettings.FlashGameSoundName, tooltip = "One of Blade & Sorcery's own sounds with the flash (Metal Hit also sparks). Plays together with the sound above.", valueSourceName = nameof(FlashGameSoundValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 9)]
+        public static string FlashGameSound { get; set; } = ClashSettings.DefaultFlashGameSound;
+
+        [ModOption(name = ClashSettings.FlashSoundVolumeName, tooltip = "Volume of the DMCS flash sound.", valueSourceName = nameof(FlashSoundVolumeValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 10)]
+        [ModOptionSlider]
+        public static float FlashSoundVolume { get; set; } = ClashSettings.FlashSoundVolume.Default;
+
+        public static ModOptionString[] FlashSoundValues() => FlashSound.Styles.Select(v => new ModOptionString(v, v)).ToArray();
+
+        public static ModOptionString[] FlashGameSoundValues() => ClashSettings.GameSounds.Select(v => new ModOptionString(v, v)).ToArray();
+
+        public static ModOptionFloat[] FlashSoundVolumeValues() => Floats(ClashSettings.FlashSoundVolume, "0.00", "");
 
         public static ModOptionFloat[] MinWindUpValues() => Floats(ClashSettings.MinWindUp, "0.00", " s");
 
@@ -273,7 +294,7 @@ namespace DMCS
             }
             Telegraph.WindUp(id);
             Flashes[id] = new Flash(attacker, weapon, attacker.GetHand(side), local, glint, Time.unscaledTime);
-            Dmcs.Log.Debug(Channel, name + " winds up " + attack.id + " (" + F(windUp) + " s) with " + weapon.data?.id + ": flash");
+            Dmcs.Log.Debug(Channel, name + " winds up " + attack.id + " (" + F(windUp) + " s) with " + weapon.data?.id + ": flash" + PlayFlashSound(Flashes[id].Point));
         }
 
         /// <summary>The middle of the weapon's slashing blade along handle → tip, as a point local to the weapon.</summary>
@@ -423,6 +444,89 @@ namespace DMCS
             }
             TimeManager.SetSlowMotion(false, _timeScale, AnimationCurve.EaseInOut(0f, 0f, 0.1f, 1f));
             Dmcs.Log.Debug(Channel, "slow-motion over: time back to normal");
+        }
+
+        /// <summary>Builds every DMCS flash sound in the background (each takes a moment in the game's Mono), at level load.</summary>
+        public static void Prewarm()
+        {
+            foreach (var style in FlashSound.Sounding)
+            {
+                Samples(style);
+            }
+        }
+
+        private static System.Threading.Tasks.Task<float[]> Samples(string style)
+        {
+            if (!SoundTasks.TryGetValue(style, out var task))
+            {
+                var spec = FlashSound.Spec(style);
+                task = System.Threading.Tasks.Task.Run(() => FlashSound.Generate(SoundRate, 1, spec));
+                SoundTasks[style] = task;
+            }
+            return task;
+        }
+
+        /// <summary>The chosen DMCS sound and game sound, together; returns what played, for the log.</summary>
+        private static string PlayFlashSound(Vector3 point)
+        {
+            var played = "";
+            try
+            {
+                var style = FlashSoundStyle;
+                if (FlashSound.Spec(style) != null)
+                {
+                    var task = Samples(style);
+                    if (!task.IsCompleted)
+                    {
+                        played += ", sound " + style + " still building";
+                    }
+                    else
+                    {
+                        if (!SoundClips.TryGetValue(style, out var clip) || clip == null)
+                        {
+                            var samples = task.Result;
+                            clip = AudioClip.Create("DMCS Clash Flash (" + style + ")", samples.Length / 2, 2, SoundRate, false);
+                            clip.SetData(samples, 0);
+                            SoundClips[style] = clip;
+                        }
+                        EnsureAudio();
+                        _audio.PlayOneShot(clip, FlashSoundVolume);
+                        played += ", sound " + style + " (" + clip.length.ToString("0.00", CultureInfo.InvariantCulture) + " s)";
+                    }
+                }
+                var effectId = ClashSettings.GameSoundEffect(FlashGameSound);
+                if (effectId != null)
+                {
+                    var effect = Catalog.GetData<EffectData>(effectId, false)?.Spawn(point, Quaternion.identity);
+                    if (effect != null)
+                    {
+                        effect.Play();
+                        played += ", game sound " + FlashGameSound;
+                    }
+                    else
+                    {
+                        played += ", game sound " + FlashGameSound + " missing (" + effectId + ")";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Dmcs.Log.Info("Clash flash sound error: " + ex);
+            }
+            return played;
+        }
+
+        private static void EnsureAudio()
+        {
+            if (_audio != null)
+            {
+                return;
+            }
+            _audioHost = new GameObject("DMCS Clash Audio");
+            UnityEngine.Object.DontDestroyOnLoad(_audioHost);
+            _audio = _audioHost.AddComponent<AudioSource>();
+            _audio.spatialBlend = 0f;
+            _audio.playOnAwake = false;
         }
 
         private static GameObject NewGlint()
