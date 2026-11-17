@@ -37,20 +37,29 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 
 ## 1. Clash of Might (blade lock)
 
-**Behavior**
-- When the player's weapon and an NPC's weapon stay in contact for longer than `clashMinContactTime` (e.g. 0.3 s), a clash begins. Short/glancing contacts are ignored.
-- During the clash, measure the player's **push intensity**: the sum of small, rapid controller movements (micro-movements while holding the blade against the enemy) over time, from the weapon-holding hand's velocity/acceleration.
-- The NPC has a fixed **resistance** value (config, optionally scaled by difficulty / NPC type).
-- Clash resolves when one side's accumulated value wins or after `clashMaxDuration`:
-  - Player wins → NPC is disarmed (drops weapon) → counts as a clash win for Adrenaline.
-  - NPC wins → player's weapon is pushed away / player is briefly staggered or disarmed (configurable).
-- Feedback during clash: controller haptics + sparks/grinding sound on the blades so the player knows the clash is active.
+**Redesigned with the user 2026-11-17** (replaces the first draft "any blade contact longer than 0.3 s + controller micro-movements"). Not built yet.
 
-**Implementation hints**
-- Detect sustained weapon-on-weapon collision (collision enter/stay/exit on both items, track contact duration).
-- Each frame: read the holding hand's velocity, accumulate `intensity += |Δvelocity| * weight`, decay slightly over time so idle holding doesn't win.
+**Dark Messiah's own clash (read 2026-11-17):** both sides do a power attack at once → the blades lock (`sword_versus_sword`, a click counter `m_iVersusClick`, win/lose animations `ACT_VERSUS_*_OUT_WIN/_OUT_LOOSE` in DM's `server.dll`); the player mashes to push back, the loser is knocked back and briefly stunned ([mthec 2009](https://mthec.wordpress.com/2009/03/23/dark-messiah-might-and-magic-part-one/)). With the Disarming skill (melee level 2) the winner disarms the loser ([GameSpot walkthrough](https://www.gamespot.com/articles/dark-messiah-of-might-and-magic-walkthrough/1100-6160412/)). DMCS's lose outcome is harsher than DM's (user's choice).
 
-**Config:** `clashMinContactTime`, `clashMaxDuration`, `npcResistanceBase`, `intensityWeight`, `intensityDecay`, `playerLoseOutcome` (`stagger` | `disarm` | `none`), `hapticsStrength`.
+**Flow**
+1. **Big swing:** an NPC melee attack with a long wind-up. B&S has no power-attack class: at `AttackStage.WindUp` the running attack is `BrainModuleMelee.attack` (`AttackMotion`; `lastAttack` is the one before); its real wind-up in seconds is `animationClip.length × start / (animationSpeed × brain speed)` (`AttackMotion.GetRealTime`). A big swing = real wind-up ≥ `clashMinWindUp` (value from the probe that measures all of the game's attacks; the clip lengths are not in the catalog JSON). Thrusts do not count.
+2. **Flash:** a short bright glint at the middle of the NPC's blade (middle of its slash damager) = the signal. `clashOnlySwords` (default on): only swords; off: every blade with a slash damager.
+3. **Auto slow-motion** (`clashSlowMo`, default on, scale `clashSlowMoScale` 0.3) when, at the start of the strike (the first physics frames of `AttackStage.Attack`, see the probe), all hold: the NPC is within its swing reach of the player; the player's blade is within `clashBlockReach` (~0.6 m, guess) of the flash point; and the player's blade is roughly at a right angle to the swing: perpendicular to the swing plane (the plane of the NPC blade's axis and its motion), within `clashBlockAngleTolerance` (very generous, default 45°). Skipped when another slow-motion runs (as the critical). Ends when the clash starts, or at the end of the swing.
+4. **Block at the flash point:** the game reports the NPC attack hitting the player's weapon (`EventManager.onCreatureAttackParry`, with the contact point). Contact within `clashPointTolerance` of the flash point and the same angle check → clash. Anything else = an ordinary parry (+10 Adrenaline as now), no clash.
+5. **Clash:** DMCS holds the NPC in its swing pose (AI hold as the kneel in 4c; risk, see the probe) and makes the player's weapon heavy (mass ×`clashWeaponWeight` while it lasts; B&S's own weight handling makes it lag behind the controller), so the player cannot just push through.
+6. **Push measure (a), decided:** how far the player's real controller is ahead of the lagging weapon towards the NPC = push strength; accumulated over time against `npcResistance`. Win when it is reached; lose after `clashMaxDuration`.
+7. **Win:** `clashWinDisarms` (default on; later a buyable Body-tree power) disarms through the Disarm Strike path (fling, no-regrab lock, catch bonus); the NPC is staggered; +25 Adrenaline (clash win); with `clashWinKneelChance` (default 25 %) it also kneels and the execution window of 4c opens.
+8. **Lose:** `clashLoseOutcome` dropdown `Disarm + Hit` (default), `Disarm`, `Hit`, `None`; the hit is `clashLoseDamage` (default 20; the player has 100 health, `Creature_PlayerDefault*.json`).
+- Feedback during the clash: haptics, sparks and a grinding sound at the contact.
+
+**Harness probe 2026-11-17** (temporary probe code, not committed; NPC `HumanMale`/`HumanMedium` with `SwordShortCommon` attacking the standing player, 2 runs, 21 swings):
+- Real wind-up (to `start`) of all 68 attack motions in the three melee stances: 0.13–0.77 s; time to the hit (`peak`) 0.33–1.37 s. In game the Attack stage came on time (e.g. 0.500 s computed, 0.489 s measured). A wind-up threshold of ~0.4 s splits the plain swings (0.13–0.37 s) from the overhead, counter, lunge and step swings and most dual-wield swings (0.40–0.77 s); the exact value is a slider.
+- The wind-up does **not** move the blade in the strike plane: angle between the two planes 15–88° (mostly 45–88°, 14 swings). So the angle check reads the strike plane in the first physics frames of `AttackStage.Attack`; the flash and the reach checks run from the wind-up on.
+- Freezing works: `creature.animator.speed = 0` mid-swing kept the sword in place for 3 s (it settled 4–28 cm in the first 0.25 s, then stayed), held, alive, still `isAttacking`; the game's End event still came on time; after `speed = 1` the NPC fought on normally. Whether the frozen blade pushes back against the player's blade is not tested (the harness player cannot press a blade).
+- Weight: the player's sword at mass ×5/×20/×50 sagged at the tip by 1/5/11 cm while held still; how heavy that feels when pushing is a headset check. Alternative if it is too weak: the player's arm joint force (`Creature.AddJointForceMultiplier` < 1, as the Hyperfocus buff uses > 1).
+- The controller-ahead-of-hand offset cannot be measured headless (the mock headset's hand target does not move); `PlayerHand.grip` (target, driven by the controller's `TrackedPoseDriver`) vs `RagdollHand` position is the candidate pair, to be checked in the headset with a diagnostic log.
+
+**Config:** `clashOnlySwords`, `clashMinWindUp`, `clashSlowMo`, `clashSlowMoScale`, `clashBlockReach`, `clashBlockAngleTolerance`, `clashPointTolerance`, `clashWeaponWeight`, `npcResistance`, `clashMaxDuration`, `clashWinDisarms`, `clashWinKneelChance`, `clashLoseOutcome`, `clashLoseDamage`, `hapticsStrength`.
 
 ## 2. Disarm Strike
 
@@ -214,7 +223,7 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 **Open work (listed 2026-11-17, in this order):**
 1. Headset check of 4a–4d: meter, critical, kneel/execution, signals (vignette size, haptics, sounds, DMCS 1–4 against Dark Messiah). Cost: small for code, the user's time in the headset; brings back the values everything else rests on (hard-swing 3 m/s, vignette 50°, haptics strength, volumes).
 2. ~~4e dodge and catch bonus~~ built 2026-11-17 (see above and docs/IMPLEMENTATION.md); the dodge speed needs the headset.
-3. Step 5: Clash of Might + Twist Disarm (shared weapon-on-weapon contact code). Cost: large; contact duration and controller micro-movement intensity are tuned only in the headset.
+3. Step 5: Clash of Might (redesigned 2026-11-17, see section 1) + Twist Disarm (blade-on-blade contact). Cost: large; first a harness probe (wind-up times, freezing an NPC mid-swing, swing plane, controller offset), then build; push strength, weight and timings are tuned in the headset.
 4. DMCS 4 vignette fine-tuning: Dark Messiah's streaks are a bit more brownish and blurrier. Cost: small (colour and blur in the generator plus a statistics test); only when the headset shows it matters.
 5. Later, not scheduled: `Gamey` / `Realistic` presets for the disarm values (Realistic needs headset values), and features as skill-tree powers (below). Cost: medium to large; whether a mod can add a skill to the Body tree is not checked yet.
 
@@ -228,6 +237,7 @@ Instead of an on/off toggle, each feature's main setting becomes **Off / On / Po
 - **Off** — feature disabled.
 - **On** — always active (today's behaviour).
 - **Power** — the feature becomes a power the player has to **buy in the Body crystal skill tree**; it only works once bought.
+- First candidate (user, 2026-11-17): Clash of Might's win disarm (`clashWinDisarms`) as a buyable power, as Dark Messiah's Disarming skill.
 
 To verify before building: how a mod adds a skill to an existing tree (the game's skills are `SkillData` catalog entries, e.g. `SkillCharger`; whether a mod can add one to the Body tree via its own catalog JSON is not checked yet), and how "bought" is read at runtime (e.g. `Creature.HasSkill`).
 
