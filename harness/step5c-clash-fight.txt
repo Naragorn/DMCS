@@ -1,0 +1,113 @@
+# Step 5c: Clash of Might outcomes (user 2026-11-18). Simple mode (the default): a block at the star knocks the
+# enemy's sword away. On mode: the blades lock for a few rounds; the player holds a round by leading the heavy weapon
+# with the real controller towards the enemy (beyond the dead zone, more than the enemy's push wave), then brings the
+# controller back to the blades. The harness moves the player's right controller with player-push (the PlayerHand pose
+# the hand follows) and raises the game's block event with player-parry. How a push feels: headset.
+
+wait-level
+press DMCS "Reset To Defaults"
+option-exists DMCS "Clash of Might Mode" category="Clash of Might" type=String interaction=ArrowList save=true
+option-exists DMCS "Clash Difficulty" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Difficulty Scales With Height" category="Clash of Might" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Clash Difficulty Scales With Gender" category="Clash of Might" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Clash Female Strength Reduction" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Min Rounds" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Max Rounds" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Fewer Rounds Against Weaker" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Enemy Push" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Push Dead Zone" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Push Phase" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Return Window" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Return Tolerance" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Win Disarms" category="Clash of Might" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Clash Win Kneel Chance" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Lose Outcome" category="Clash of Might" type=String interaction=ArrowList save=true
+option-exists DMCS "Clash Lose Damage" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Haptics Strength" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Dark Messiah Sounds" category="Clash of Might" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Adrenaline Per Clash Win" category=Adrenaline type=Int32 interaction=Slider save=true
+expect-option DMCS "Clash of Might Mode" Simple
+expect-option DMCS "Clash Difficulty" 50
+expect-option DMCS "Clash Difficulty Scales With Height" true
+expect-option DMCS "Clash Difficulty Scales With Gender" true
+expect-option DMCS "Clash Female Strength Reduction" 50
+expect-option DMCS "Clash Min Rounds" 3
+expect-option DMCS "Clash Max Rounds" 5
+expect-option DMCS "Clash Win Disarms" true
+expect-option DMCS "Clash Win Kneel Chance" 25
+expect-option DMCS "Clash Lose Outcome" "Disarm + Hit"
+expect-option DMCS "Clash Lose Damage" 20
+expect-option DMCS "Clash Dark Messiah Sounds" false
+expect-option DMCS "Adrenaline Per Clash Win" 25
+set-option DMCS "Debug Logging" true
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Clash Min Wind Up" 0.2
+set-option DMCS "Clash Block Angle Tolerance" 90
+player-invincible true
+spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
+player-grab SwordShortCommon
+
+# 1. Simple (default): a block at the star knocks the enemy's sword away, Clash Win adrenaline
+mark
+await-log 30 blade flashes
+player-parry
+expect-log its sword flies away (simple clash)
+expect-log (clash at the star): dropped SwordShortCommon
+expect-log [DMCS][Adrenaline] +25 ClashWin (HumanMale
+expect-npc holding false within=1
+screenshot simple-disarm of=npc
+expect-no-log blades locked
+
+# 2. On, no push: round 1 is lost; Lose Outcome Hit takes 20 health and leaves the sword in hand
+set-option DMCS "Clash of Might Mode" On
+set-option DMCS "Clash Min Rounds" 2
+set-option DMCS "Clash Max Rounds" 2
+set-option DMCS "Clash Lose Outcome" Hit
+spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
+mark
+await-log 30 blade flashes
+# the hit must really cost health here: invincible only outside this lock
+player-invincible false
+player-parry
+expect-log blades locked with HumanMale
+expect-log 2 rounds
+screenshot clash-locked of=npc
+await-log 5 the enemy pushed harder in round 1/2
+expect-log you take 20 damage (health
+expect-no-log -> 100.00)
+expect-log blades unlocked (Decided: you lost)
+player-invincible true
+
+# 3. On, holding and coming back each round: won after 2 rounds, its sword flies away. The harness player's sword
+# does not touch the frozen enemy blade (player-parry is a raised event, the blades stay apart), so nothing holds the
+# heavy weapon back: the hand catches up with the moved controller within ~0.4 s (measured 2026-11-18) and no lead
+# lasts. Difficulty 0 (no enemy push) lets the rounds run anyway; how far a real press leads: headset.
+set-option DMCS "Clash Difficulty" 0
+mark
+await-log 30 blade flashes
+player-parry
+expect-log blades locked with HumanMale
+player-push 0.25 2.3
+await-log 3 round 1/2 held
+await-log 3 back at the blades
+player-push 0.25 2.3
+await-log 3 after 2 rounds: its sword flies away
+expect-log blades unlocked (Decided: you won)
+expect-log [DMCS][Adrenaline] +25 ClashWin (HumanMale
+expect-npc holding false within=1
+screenshot clash-won of=npc
+
+# 4. On, letting go of the weapon during the lock: a lost clash, only the hit (the weapon is gone already).
+# (Not coming back within the return window is unit-tested only, ClashRoundsTests.NotComingBack_*: in the harness a
+# controller moved 0.8 m out gave three different results in four runs, depending on where the sword ended up.)
+set-option DMCS "Clash Lose Outcome" "Disarm + Hit"
+spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
+mark
+await-log 30 blade flashes
+player-parry
+expect-log blades locked with HumanMale
+player-release
+await-log 3 you let go of your weapon; you take 20 damage
+expect-no-log flies away
+screenshot clash-lost of=npc
+quit

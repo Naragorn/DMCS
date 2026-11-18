@@ -289,11 +289,18 @@ public class AdrenalineSettingsTests
     [InlineData(AdrenalineSource.Disarm, 5)]
     [InlineData(AdrenalineSource.Dodge, 6)]
     [InlineData(AdrenalineSource.Catch, 7)]
+    [InlineData(AdrenalineSource.ClashWin, 8)]
     public void EachSource_UsesItsOwnGain(AdrenalineSource source, int expected)
     {
-        var gains = new AdrenalineGains(1, 2, 3, 4, 5, 6, 7);
+        var gains = new AdrenalineGains(1, 2, 3, 4, 5, 6, 7, 8);
 
         Assert.Equal(expected, gains.For(source));
+    }
+
+    [Fact]
+    public void ClashWin_DefaultsTo25()
+    {
+        Assert.Equal(25, new AdrenalineGains(1, 2, 3, 4, 5, 6, 7).For(AdrenalineSource.ClashWin));
     }
 }
 

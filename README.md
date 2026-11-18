@@ -68,9 +68,11 @@ Hits you take drain the meter. You can switch that so they fill it instead.
 
 The window closes unused after its time, and the meter starts over.
 
-### Clash of Might (in progress)
+### Clash of Might (testing)
 
-Dark Messiah's blade lock, made for VR. Built so far: **the warning**.
+Dark Messiah's blade lock, made for VR. Three modes in the Mod Menu: **Off**, **Simple** (the default) and **On**.
+
+**The warning (both modes):**
 - When an enemy with a sword winds up a big swing (a long wind-up: overhead, lunging, stepping or counter swings),
   its blade flashes at the middle when it is raised all the way (like sunlight caught on it): a warm star with rays
   bursts up and keeps glittering until the swing comes, with a
@@ -79,9 +81,25 @@ Dark Messiah's blade lock, made for VR. Built so far: **the warning**.
 - If the enemy is close, your blade is near the flash and you hold it roughly across the swing when the strike
   comes, time slows down (0.3×) until the swing is over.
 
-**The lock (testing):** block the flashing swing right at the flash, with your blade roughly across it, and the blades
-lock: the enemy freezes in its swing and your weapon turns heavy. For now the lock simply ends after its time. Still to
-come: pushing against the enemy's force decides it; win and it loses its weapon, lose and you lose yours and take a hit.
+**Simple:** block the flashing swing right at the star, with your blade roughly across it, and the enemy's sword flies
+out of its hand.
+
+**On, the blade lock:** the same block locks the blades. The enemy freezes in its swing and your weapon turns heavy.
+Then it is strength against strength, over a few rounds (3 to 5 by default):
+- **Push:** press your weapon towards the enemy with your real hand. The enemy pushes back in a wave, swelling and
+  easing off again; you hold the round if you pushed at least as hard as it did.
+- **Come back:** after each round the enemy shoves back (a jolt in your hand). Bring your hand back to where the blades
+  meet within a second, or you lose. Only then does the next round start.
+- **Win** every round and the enemy's sword flies away; it staggers, or (25 %) drops to its knees for you to execute.
+- **Lose** a round, miss the way back or let go of your weapon, and you lose: your weapon flies away and you take a
+  hit (20 health), as set.
+- How hard enemies push is the **Difficulty** (0–200, default 50). Taller enemies push harder and smaller ones weaker;
+  female enemies push 50 % weaker (women have about 40–60 % of men's upper-body strength). Smaller and female enemies
+  also last one round fewer. Each of these can be switched off or changed.
+- You feel the enemy's push in the controller, sparks fly at the blades, and the blades grind (Blade & Sorcery's own
+  sounds; or, with *Clash Dark Messiah Sounds*, Dark Messiah's blade lock and disarm sounds from your own install).
+
+How hard the push should be is not tuned in the headset yet; the values may change.
 
 ## Dark Messiah's own sounds and vignette (optional)
 
@@ -92,7 +110,11 @@ DMCS ships only its own sounds and graphics, made to sound and look close to Dar
 The install is found automatically in your Steam libraries and in the usual Steam library folders on every drive
 (on Linux under Proton also on mounted drives).
 
-If it is not found, DMCS falls back to its own versions (DMCS 3, and Blade & Sorcery's heartbeat).
+Clash of Might's *Clash Dark Messiah Sounds* switch works the same way and plays Dark Messiah's own blade lock and
+disarm sounds.
+
+If it is not found, DMCS falls back to its own versions (DMCS 3, and Blade & Sorcery's heartbeat; for the clash,
+Blade & Sorcery's own sounds).
 
 ## Mod Menu
 
@@ -110,21 +132,38 @@ All options with their defaults. Every slider shows its unit in the menu.
 
 | Option | Default | Range | What it does |
 |---|---|---|---|
-| Enabled | on | | The flash and slow-motion on big swings |
+| Clash of Might Mode | Simple | Off, Simple, On | Simple: a block at the star knocks the enemy's sword away. On: the blades lock and you push over a few rounds |
 | Clash Only Swords | on | | Only enemies with a sword flash; off: any blade that cuts |
 | Clash Min Wind Up | 0.4 s | 0.2–0.8 s | How long an enemy must wind up for its swing to flash |
 | Clash Slow Motion | on | | Time slows when your blade is ready to block a flashing swing |
 | Clash Slow Motion Scale | 0.3 | 0.1–0.8 | World speed during it |
 | Clash Enemy Reach | 2.5 m | 1–4 m | How close the enemy must be |
 | Clash Block Reach | 0.6 m | 0.2–1.5 m | How close your blade must be to the flash |
-| Clash Block Angle Tolerance | 45° | 10–80° | How far your blade may be off a right angle to the swing |
+| Clash Block Angle Tolerance | 45° | 10–90° | How far your blade may be off a right angle to the swing (90°: any angle) |
 | Clash Flash At Swing Top | on | | The flash comes when the blade is raised all the way, just before the strike; off: as soon as the wind-up starts (more warning) |
-| Clash Point Tolerance | 0.25 m | How close to the flash your block must hit to lock the blades |
-| Clash Weapon Weight | 20× | How much heavier your weapon gets while the blades are locked |
-| Clash Max Duration | 4 s | How long the blades stay locked at most |
+| Clash Point Tolerance | 0.25 m | 0.05–0.6 m | How close to the flash your block must hit |
+| Clash Weapon Weight | 20× | 1–50× | How much heavier your weapon gets while the blades are locked |
 | Clash Flash Sound | DMCS 1 | Off, DMCS 1 | The warning sound: a deep boom with a metallic ring, after Sekiro's perilous-attack cue |
 | Clash Flash Game Sound | Off | Off, Metal Hit, Focus Ready, Gravity Pulse | One of the game's own sounds on top (Metal Hit also sparks) |
 | Clash Flash Sound Volume | 0.8 | 0–1 | Volume of the DMCS sound |
+| Clash Difficulty | 50 | 0–200 | How hard enemies push back in a lock: 0 barely, 100 twice as hard as 50, 200 you hardly have a chance |
+| Clash Difficulty Scales With Height | on | | Taller enemies push harder, smaller ones weaker (in proportion), and smaller ones last fewer rounds |
+| Clash Difficulty Scales With Gender | on | | Female enemies push weaker and last fewer rounds |
+| Clash Female Strength Reduction | 50 % | 0–90 % | How much weaker a female enemy pushes |
+| Clash Min Rounds | 3 | 1–10 | Fewest rounds of a lock (each lock picks a random number between min and max) |
+| Clash Max Rounds | 5 | 1–10 | Most rounds of a lock |
+| Clash Fewer Rounds Against Weaker | 1 | 0–5 | Rounds fewer against a smaller or female enemy (at least one stays) |
+| Clash Enemy Push | 0.06 m | 0.01–0.2 m | How far your hand must lead your heavy weapon towards the enemy to match its push at its strongest (at difficulty 50) |
+| Clash Push Dead Zone | 0.03 m | 0–0.1 m | Lead that does not count as pushing (the heavy weapon's natural lag) |
+| Clash Push Phase | 2 s | 0.5–5 s | Length of one push round |
+| Clash Return Window | 1 s | 0.25–3 s | Time to bring your hand back to the blades after a round |
+| Clash Return Tolerance | 0.08 m | 0.02–0.3 m | How close your hand must come back to your weapon |
+| Clash Win Disarms | on | | Winning a lock knocks the enemy's sword away |
+| Clash Win Kneel Chance | 25 % | 0–100 % | Chance a beaten enemy kneels for an execution instead of staggering |
+| Clash Lose Outcome | Disarm + Hit | Disarm + Hit, Disarm, Hit, None | What a lost lock costs you |
+| Clash Lose Damage | 20 | 0–100 | Health the hit costs (you have 100) |
+| Clash Haptics Strength | 0.6 | 0–1 | Vibration in your weapon hand during a lock |
+| Clash Dark Messiah Sounds | off | | Dark Messiah's own blade lock and disarm sounds from your install |
 
 **Disarm Strike**
 
@@ -187,6 +226,7 @@ on body hits.
 | Dodge Min Speed | 2 m/s | 0.5–6 m/s | How fast your head must move for a dodge |
 | Adrenaline Per Catch | 10 | 0–50 | Points per knocked-out weapon caught in the air |
 | Catch Max Air Time | 3 s | 0.5–5 s | How long after the disarm a catch still counts |
+| Adrenaline Per Clash Win | 25 | 0–50 | Points for a won Clash of Might (also the simple one) |
 | Critical Time Mode | Hyperfocus | Hyperfocus, Slow Time | Hyperfocus: the world slows, you don't. Slow Time: you slow too |
 | Critical Hyperfocus Time Scale | 0.1 | 0.05–0.5 | World speed in Hyperfocus |
 | Critical Hyperfocus Duration | 3 s | 0.5–10 s | How long Hyperfocus lasts |

@@ -539,7 +539,28 @@ namespace DMCS
             return hand != null && hand.grabbedHandle != null && hand.grabbedHandle.item != null;
         }
 
-        private static void Release(Creature target, RagdollHand hand, CollisionInstance hit, List<string> dropped, bool fling)
+        /// <summary>
+        /// Clash of Might's disarm (a won lock, or the simple variant's block at the star): the hand lets go, the weapon flies
+        /// off along the direction (Fling Force), then the same no-regrab lock as every other disarm path. Runs while Disarm
+        /// Strike itself is off too: it is Clash of Might's own outcome.
+        /// </summary>
+        internal static bool DisarmFromClash(Creature target, RagdollHand hand, Vector3 direction, string how, CollisionInstance hit = null)
+        {
+            if (target == null || target.isKilled || !Holds(hand))
+            {
+                return false;
+            }
+            var dropped = new List<string>();
+            Release(target, hand, hit, dropped, true, direction);
+            if (dropped.Count == 0)
+            {
+                return false;
+            }
+            MarkDisarmed(target, new DisarmHands(hand.side == Side.Left, hand.side == Side.Right), how, dropped);
+            return true;
+        }
+
+        private static void Release(Creature target, RagdollHand hand, CollisionInstance hit, List<string> dropped, bool fling, Vector3? along = null)
         {
             if (!Holds(hand))
             {
@@ -550,9 +571,10 @@ namespace DMCS
             hand.TryRelease();
             EventManager.InvokeDisarm(target, hand, handle, hit);
             var name = item.data != null ? item.data.id : item.name;
-            if (fling && hit != null && FlingForce > 0f && item.handlers.Count == 0 && item.physicBody != null)
+            if (fling && (hit != null || along.HasValue) && FlingForce > 0f && item.handlers.Count == 0 && item.physicBody != null)
             {
-                var direction = hit.impactVelocity.sqrMagnitude > 0.0001f
+                var direction = along.HasValue && along.Value.sqrMagnitude > 0.0001f ? along.Value.normalized
+                    : hit != null && hit.impactVelocity.sqrMagnitude > 0.0001f
                     ? hit.impactVelocity.normalized
                     : (item.transform.position - target.transform.position).normalized;
                 item.physicBody.AddForce(direction * FlingForce, ForceMode.VelocityChange);

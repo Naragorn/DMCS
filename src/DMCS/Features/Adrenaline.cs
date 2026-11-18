@@ -200,6 +200,16 @@ namespace DMCS
         [ModOptionSlider]
         public static float CatchMaxAirTime { get; set; } = AdrenalineSettings.CatchMaxAirTime.Default;
 
+        [ModOption(
+            name = AdrenalineSettings.GainClashWinName,
+            tooltip = "Points for winning a Clash of Might (also the simple one: blocking at the star).",
+            valueSourceName = nameof(GainValues),
+            category = DmcsCategories.Adrenaline,
+            categoryOrder = DmcsCategories.AdrenalineOrder,
+            order = 16)]
+        [ModOptionSlider]
+        public static int GainClashWin { get; set; } = AdrenalineSettings.DefaultGainClashWin;
+
         public static ModOptionFloat[] DodgeMinSpeedValues() => Floats(AdrenalineSettings.DodgeMinSpeed, "0.00", " m/s");
 
         public static ModOptionFloat[] CatchMaxAirTimeValues() => Floats(AdrenalineSettings.CatchMaxAirTime, "0.0", " s");
@@ -216,7 +226,7 @@ namespace DMCS
             AdrenalineSettings.GainValues().Select(v => new ModOptionInt(v.ToString(CultureInfo.InvariantCulture), v)).ToArray();
 
         private static AdrenalineGains Gains =>
-            new AdrenalineGains(GainHit, GainBlockParry, GainDamageTaken, GainChargeStagger, GainDisarm, GainDodge, GainCatch);
+            new AdrenalineGains(GainHit, GainBlockParry, GainDamageTaken, GainChargeStagger, GainDisarm, GainDodge, GainCatch, GainClashWin);
 
         /// <summary>Raised for each critical (later steps hook in here).</summary>
         public static event Action<Creature> Critical;

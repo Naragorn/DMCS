@@ -21,7 +21,7 @@ Blade & Sorcery (VR) mod built with the official B&S SDK (Unity + C#, `ThunderRo
 
 - Use the SDK's built-in mod options system (in recent versions: `[ModOption]` attributes on static fields/properties in a `ThunderScript` — **verify the exact attribute, parameters and supported types against the current SDK**).
 - Group settings per feature (category = feature name), e.g. `Clash of Might`, `Disarm Strike`, `Charge Stagger`, `Adrenaline`.
-- Each group starts with `Enabled` (bool toggle), followed by its settings.
+- Each group starts with `Enabled` (bool toggle), followed by its settings. Exception (user 2026-11-18): Clash of Might starts with its mode dropdown `Off` / `Simple` / `On`.
 - Use sliders with sensible min/max/step for numbers, dropdowns for enums, toggles for bools. Give every option a short tooltip/description.
 - Changes must apply **live** without restarting the game or reloading the level. Toggling a feature off mid-fight must cleanly stop it (e.g. restore `Time.timeScale`, remove screen effects, stop bleed-out coroutines if desired).
 - Settings must persist between sessions (via the mod options system's own saving, or a JSON fallback if not supported).
@@ -37,7 +37,7 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 
 ## 1. Clash of Might (blade lock)
 
-**Redesigned with the user 2026-11-17** (replaces the first draft "any blade contact longer than 0.3 s + controller micro-movements"). **5a built 2026-11-17** (flow steps 1–3: big swing, flash, slow-motion; see docs/IMPLEMENTATION.md); 5b (block at the flash, freeze, weight, diagnostic log for the push measure) built 2026-11-17; 5c (push measure, outcomes, Mod Menu rest) not built.
+**Redesigned with the user 2026-11-17** (replaces the first draft "any blade contact longer than 0.3 s + controller micro-movements"). **5a built 2026-11-17** (flow steps 1–3: big swing, flash, slow-motion; see docs/IMPLEMENTATION.md); 5b (block at the flash, freeze, weight, diagnostic log for the push measure) built 2026-11-17; 5c (mode, rounds, push measure, outcomes, Mod Menu rest) built 2026-11-18 (docs/IMPLEMENTATION.md); feel and values: headset.
 
 **Dark Messiah's own clash (read 2026-11-17):** both sides do a power attack at once → the blades lock (`sword_versus_sword`, a click counter `m_iVersusClick`, win/lose animations `ACT_VERSUS_*_OUT_WIN/_OUT_LOOSE` in DM's `server.dll`); the player mashes to push back, the loser is knocked back and briefly stunned ([mthec 2009](https://mthec.wordpress.com/2009/03/23/dark-messiah-might-and-magic-part-one/)). With the Disarming skill (melee level 2) the winner disarms the loser ([GameSpot walkthrough](https://www.gamespot.com/articles/dark-messiah-of-might-and-magic-walkthrough/1100-6160412/)). DMCS's lose outcome is harsher than DM's (user's choice).
 
@@ -47,23 +47,28 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 3. **Auto slow-motion** (`clashSlowMo`, default on, scale `clashSlowMoScale` 0.3) when, at the start of the strike (the first physics frames of `AttackStage.Attack`, see the probe), all hold: the NPC is within its swing reach of the player; the player's blade is within `clashBlockReach` (~0.6 m, guess) of the flash point; and the player's blade is roughly at a right angle to the swing: perpendicular to the swing plane (the plane of the NPC blade's axis and its motion), within `clashBlockAngleTolerance` (very generous, default 45°). Skipped when another slow-motion runs (as the critical). Ends when the clash starts, or at the end of the swing.
 4. **Block at the flash point:** the game reports the NPC attack hitting the player's weapon (`EventManager.onCreatureAttackParry`, with the contact point). Contact within `clashPointTolerance` of the flash point and the same angle check → clash. Anything else = an ordinary parry (+10 Adrenaline as now), no clash.
 5. **Clash:** DMCS holds the NPC in its swing pose (AI hold as the kneel in 4c; risk, see the probe) and makes the player's weapon heavy (mass ×`clashWeaponWeight` while it lasts; B&S's own weight handling makes it lag behind the controller), so the player cannot just push through.
-6. **Push measure (a), decided:** how far the player's real controller is ahead of the lagging weapon towards the NPC = push strength; accumulated over time against `npcResistance`. Win when it is reached; lose after `clashMaxDuration`.
+6. **Push measure (a), decided:** how far the player's real controller is ahead of the lagging weapon towards the NPC = push strength; per push round against the enemy's push wave (2026-11-18: rounds replace the first draft "accumulate against `npcResistance`, lose after `clashMaxDuration`"; see "Decisions for 5c").
 7. **Win:** `clashWinDisarms` (default on; later a buyable Body-tree power) disarms through the Disarm Strike path (fling, no-regrab lock, catch bonus); the NPC is staggered; +25 Adrenaline (clash win); with `clashWinKneelChance` (default 25 %) it also kneels and the execution window of 4c opens.
 8. **Lose:** `clashLoseOutcome` dropdown `Disarm + Hit` (default), `Disarm`, `Hit`, `None`; the hit is `clashLoseDamage` (default 20; the player has 100 health, `Creature_PlayerDefault*.json`).
 - Feedback during the clash: haptics, sparks and a grinding sound at the contact.
 - Flash sound (user 2026-11-17, built): *Clash Flash Sound* (Off, DMCS 1; DMCS 1 modelled on Sekiro's perilous-attack cue, measured in a recording, Sekiro's files are encrypted and never read or shipped) and *Clash Flash Game Sound* (Off or one of three B&S catalog effects), any combination, plus a volume slider. User 2026-11-17: DMCS 1 is usable, the other three were dropped; make three new ones at the end of step 5.
 
 **Decisions for 5c (user 2026-11-18):**
-- **Feature mode** `clashMode` dropdown `Off` / `On` / `Simple` (replaces the plain `Enabled` toggle of this group; default `On`).
+- **Feature mode** `clashMode` dropdown `Off` / `On` / `Simple` (replaces the plain `Enabled` toggle of this group; default `Simple`, user 2026-11-18).
   - **Simple** = the easier variant of this feature: the star comes, and a block exactly where the star is (same point and angle checks as the clash) knocks the enemy's sword away (Disarm Strike path: fling, no-regrab lock). No lock, no pushing.
   - **On** = the full lock below.
 - **Difficulty** `clashDifficulty` slider 0–200, default 50: how hard the enemy pushes back. 0 = it barely pushes, 50 = some, 100 = twice as hard as 50, 200 = the player hardly has a chance (linear in the enemy's force).
 - **Difficulty scales with height** `clashDifficultyScalesWithHeight` (toggle): taller enemies than the player push harder, smaller ones weaker (`Creature.GetHeight`).
+- **No progress bar** (user 2026-11-18): every round counts on its own; the player just has to engage.
+- **Rounds:** random between `clashMinRounds` and `clashMaxRounds` (default 3–5, each 1–10); `clashFewerRounds` (x, default 1) fewer against a smaller enemy (height scaling on) and/or a female one (gender scaling on).
+- **Difficulty scales with gender** `clashDifficultyScalesWithGender` (default on): female enemies push `clashFemaleStrength` (default 50 %) weaker; literature: women have 40–60 % of men's upper-body strength.
+- **Lose hit default on** (Lose Outcome `Disarm + Hit`).
+- Mode default **Simple** (user 2026-11-18).
 - **Push measure:** the player's real controller ahead of the weapon towards the enemy, minus a dead zone (`clashPushDeadZone`, ~3 cm guess) for the heavy weapon's natural lag; against `npcResistance`. All values guessed until the headset log.
 - **Enemy pushes back periodically** (user: so the player can "play" at measuring strength). The lock runs in a few rounds: in a push phase the player pushes; then the player must bring the real controller back to the block point of the two blades, or loses. Only after coming back the next push phase starts. This repeats a few times.
 - **Letting go** of the own weapon during the lock = lose (hit only; the weapon is already gone). Enemy dead, gone or letting go = the lock just ends.
 - **Lose hit:** the enemy moves again (its swing animation runs on) and DMCS deals `clashLoseDamage` directly (deterministic, testable).
-- **Feedback during the lock:** haptics that get denser with progress, sparks at the contact, a grinding sound (first a B&S catalog effect). A toggle uses Dark Messiah's own sounds from the player's install when found (as Ready Sound): `Sword_Versus_Sword` (`mm/sound/arkane/weapons/sword/sword_vs_sword01–03.wav`, volume 0.5–0.7, pitch 95–105, read in `mm/scripts/game_sounds_sword.txt` 2026-11-18) for the lock, `Sword_Disarm` (`sword_disarm.wav`, volume 0.6) for the disarm. Never shipped.
+- **Feedback during the lock:** haptics that follow the enemy's push, sparks at the contact, a grinding sound (first a B&S catalog effect). A toggle uses Dark Messiah's own sounds from the player's install when found (as Ready Sound): `Sword_Versus_Sword` (`mm/sound/arkane/weapons/sword/sword_vs_sword01–03.wav`, volume 0.5–0.7, pitch 95–105, read in `mm/scripts/game_sounds_sword.txt` 2026-11-18) for the lock, `Sword_Disarm` (`sword_disarm.wav`, volume 0.6) for the disarm. Never shipped.
 
 **Harness probe 2026-11-17** (temporary probe code, not committed; NPC `HumanMale`/`HumanMedium` with `SwordShortCommon` attacking the standing player, 2 runs, 21 swings):
 - Real wind-up (to `start`) of all 68 attack motions in the three melee stances: 0.13–0.77 s; time to the hit (`peak`) 0.33–1.37 s. In game the Attack stage came on time (e.g. 0.500 s computed, 0.489 s measured). A wind-up threshold of ~0.4 s splits the plain swings (0.13–0.37 s) from the overhead, counter, lunge and step swings and most dual-wield swings (0.40–0.77 s); the exact value is a slider.
@@ -72,7 +77,7 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 - Weight: the player's sword at mass ×5/×20/×50 sagged at the tip by 1/5/11 cm while held still; how heavy that feels when pushing is a headset check. Alternative if it is too weak: the player's arm joint force (`Creature.AddJointForceMultiplier` < 1, as the Hyperfocus buff uses > 1).
 - The controller-ahead-of-hand offset cannot be measured headless (the mock headset's hand target does not move); `PlayerHand.grip` (target, driven by the controller's `TrackedPoseDriver`) vs `RagdollHand` position is the candidate pair, to be checked in the headset with a diagnostic log.
 
-**Config:** `clashMode`, `clashDifficulty`, `clashDifficultyScalesWithHeight`, `clashPushDeadZone`, `clashDarkMessiahSounds`, `clashOnlySwords`, `clashMinWindUp`, `clashSlowMo`, `clashSlowMoScale`, `clashBlockReach`, `clashBlockAngleTolerance`, `clashPointTolerance`, `clashWeaponWeight`, `npcResistance`, `clashMaxDuration`, `clashWinDisarms`, `clashWinKneelChance`, `clashLoseOutcome`, `clashLoseDamage`, `hapticsStrength`.
+**Config:** `clashMode`, `clashDifficulty`, `clashDifficultyScalesWithHeight`, `clashDifficultyScalesWithGender`, `clashFemaleStrength`, `clashMinRounds`, `clashMaxRounds`, `clashFewerRounds`, `clashPushPhase`, `clashReturnWindow`, `clashReturnTolerance`, `clashPushDeadZone`, `clashDarkMessiahSounds`, `clashOnlySwords`, `clashMinWindUp`, `clashSlowMo`, `clashSlowMoScale`, `clashBlockReach`, `clashBlockAngleTolerance`, `clashPointTolerance`, `clashWeaponWeight`, `npcResistance` (built as *Clash Enemy Push*),  `clashWinDisarms`, `clashWinKneelChance`, `clashLoseOutcome`, `clashLoseDamage`, `hapticsStrength`.
 
 ## 2. Disarm Strike
 

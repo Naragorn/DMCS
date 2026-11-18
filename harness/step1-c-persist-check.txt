@@ -5,7 +5,7 @@ wait-level
 expect-log [DMCS] Settings: Debug Logging=on | Clash of Might=Enabled | Disarm Strike=Disabled | Charge Stagger=Enabled | Adrenaline=Enabled
 expect-option DMCS "Debug Logging" true
 expect-option DMCS "Disarm Strike Enabled" false
-expect-option DMCS "Clash of Might Enabled" true
+expect-option DMCS "Clash of Might Mode" On
 expect-option DMCS "Charge Speed Threshold" 6
 expect-option DMCS "Charge Stagger Strength" "Knock Down"
 expect-option DMCS "Charge Stagger Preset" Custom

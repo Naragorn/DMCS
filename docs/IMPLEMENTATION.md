@@ -13,7 +13,7 @@ the player-facing description and the full Mod Menu list are in `README.md`.
 | 3. Disarm Strike | **Built, unit tests PASS, in-game harness PASS (2026-11-16).** Not checked in the headset yet. |
 | 3b. Body Hit Drop, chances per NPC type, shields, fling | **Built, unit tests + in-game harness PASS (2026-11-16, chance-per-type version).** Not checked in the headset; Twist Disarm not built (with step 5). |
 | 4. Adrenaline | **4a (meter), 4b (critical / fatality, chest-stab finish), 4c (kneel and execution) and 4d (signals: ready sound, heartbeat, haptics, hand glow, Dark Messiah-style vignette) built, unit tests + in-game harness PASS (2026-11-16/17).** Block/parry and damage taken are unit-tested only. Nothing checked in the headset (sound, haptics and the vignette's look need it). 4e (dodge and catch bonus) built 2026-11-17, unit tests + harness PASS; the harness raises the game's attack event but no NPC really swings, so a real dodge is a headset check. |
-| 5. Clash of Might | **5a (telegraph: big swing, flash, slow-motion) built 2026-11-17, unit tests + harness PASS.** The slow-motion's "go" path, the flash's look and the timing are unit-tested / headset only. Block, lock, push and outcomes not built. |
+| 5. Clash of Might | **5a (telegraph: big swing, flash, slow-motion) built 2026-11-17, 5b (block at the flash, lock) 2026-11-17, 5c (mode Off/Simple/On, rounds, push measure, outcomes) 2026-11-18; unit tests + harness PASS.** The slow-motion's "go" path, the flash's look, the timing and every push value are unit-tested / headset only. A real press against the frozen blade was never measured (see 5c). Twist Disarm and the three more flash sounds not built. |
 
 ## Versions (checked 2026-11-16)
 
@@ -324,7 +324,7 @@ Design and probe results: `CLAUDE.md`, section 1.
 - **Lock:** our slow-motion ends; `creature.animator.speed = 0` (harness probe: the NPC holds its swing pose); the player's weapon
   `physicBody.mass ×` *Clash Weapon Weight* (20); the flash stays at the crossing. Every 0.1 s a diagnostic for the push measure of
   5c: `lock t=0.51 s: hand ahead 0.04 m (towards the enemy 0.00 m), blades 0.24 m apart` (`PlayerHand.grip`, the controller's target,
-  minus `RagdollHand.grip`; towards the enemy = projected on the horizontal direction to it). After *Clash Max Duration* (4 s) or
+  minus `RagdollHand.grip`; towards the enemy = projected on the horizontal direction to it). Until the rounds decide it (step 5c; first: after *Clash Max Duration*, 4 s, removed in 5c) or
   when a fighter or weapon is gone, feature off or level unload: animator speed and mass back, flash off. Outcomes: step 5c.
 - Pure logic in Core (`ClashRules.JudgeBlock`, `ClashLock`), unit-tested.
 - Harness `step5b-clash-lock` (new BasHarness verbs `player-grab`, `player-parry [offset=]` and `await-log`): the game's block event
@@ -341,6 +341,55 @@ Design and probe results: `CLAUDE.md`, section 1.
   1× weight too, whenever the probe led the hand out of reach. For 5c: overstretching while pushing loses the weapon through
   the game itself. Crossed-blade pictures were taken by stepping the player 0.65–1.96 m closer first (blade middle then
   1–3 cm from the flash point).
+
+## Clash of Might, step 5c: modes, rounds, outcomes (2026-11-18)
+
+Decided with the user 2026-11-18 (spec, CLAUDE.md section 1).
+- **Mode** `Clash of Might Mode` (string dropdown Off / Simple / On, default **Simple**) replaces the group's `Enabled`
+  toggle; `FeatureToggle` stays on for Simple and On. The only group without an `Enabled` toggle (metadata test).
+- **Simple:** a block that passes `JudgeBlock` (point and angle as for the lock) knocks the sword away:
+  `DisarmStrike.DisarmFromClash` (new; release, `EventManager.InvokeDisarm` with the parry's `CollisionInstance`, fling
+  away from the player at *Fling Force*, the no-regrab lock and stand-still of every disarm path; runs while Disarm Strike
+  itself is off too). Adrenaline: `+10 BlockParry` (the game's block event, as before), `+15 Disarm` (Disarm Strike's
+  event) and the new `+25 ClashWin`, so one simple block is worth 50 by default (measured in the harness).
+- **On:** the lock of 5b, then `ClashRounds` (pure, Core). Each push phase (*Clash Push Phase*, 2 s) the enemy's push is a
+  half sine with peak *Clash Enemy Push* (0.06 m) × `ClashStrength.Factor` (difficulty/50 × npc height/player height ×
+  (1 − female reduction), each scaling switchable). The player's push = lead of the controller towards the enemy minus
+  *Clash Push Dead Zone* (0.03 m); the round is held when its integral reaches the enemy's (exact half-sine integral).
+  Then the return phase: `|PlayerHand.grip − RagdollHand.grip|` ≤ *Clash Return Tolerance* (0.08 m) within *Clash Return
+  Window* (1 s) starts the next round; else lost. Rounds per lock: random between min and max (3–5), minus *Fewer Rounds*
+  (1) against a smaller or female enemy, at least 1. No progress bar (user): every round counts on its own; the last held
+  round wins.
+- **Win:** `DisarmFromClash` (*Clash Win Disarms*), then kneel with *Clash Win Kneel Chance* (25 %, `AdrenalineCritical.KneelAlive`,
+  `KneelReason.ClashWin`) or `Creature.ForceStagger(away, StaggerMedium)`; `+25 ClashWin`.
+- **Lose:** `ClashLoseOutcomes` (Disarm + Hit default): the player's hand lets go (`RagdollHand.TryRelease`) and the weapon
+  flies off away from the enemy; `Creature.Damage(LoseDamage, Blunt)` on the player (read: `Damage(float, DamageType)` builds
+  a `CollisionInstance` and raises `onCreatureHit`, so DMCS counts it as damage taken too). Letting go of the weapon during the
+  lock = lost, hit only. The enemy's animator runs on: its swing finishes.
+- **Feedback:** `HapticTick` in the weapon hand every 0.05 s following the enemy's wave (× *Clash Haptics Strength*), a full
+  tick when a round is held; sparks + clang `HitMaterialMetal` at the lock and each held round; the game's metal rubbing loop
+  `RubbingMetalSound` (`Bas.AudioGroup.Collision.Rubbing.Metal`, intensity-driven) for the whole lock. *Clash Dark Messiah Sounds*:
+  DM's `Sword_Versus_Sword` (three takes, volume 0.5–0.7, pitch 95–105 %) at the lock and each held round, `Sword_Disarm` (0.6) at
+  a disarm, read through `DarkMessiahAssets` from the player's install (16-bit PCM 22050 Hz mono, read 2026-11-18), on its own
+  AudioSource (a source's pitch bends everything it plays).
+- **Female strength:** default 50 % weaker as asked; literature: women 40–60 % of men's upper-body strength (Roberts et al. 2016,
+  doi 10.1139/apnm-2015-0540, after Wilmore 2008), men ~90 % more (Lassek & Gaulin 2009, cited in Morris et al. 2020, J Exp Biol 223).
+- *Clash Block Angle Tolerance* now goes to 90° (= any angle), so the harness can lock whatever angle the mock-held sword has.
+- **Harness** `step5c-clash-fight` (new BasHarness verbs `player-push <m> <s> [back=]` and `player-release [hand=]`): Simple
+  disarms (`+10 BlockParry`, `+15 Disarm`, `+25 ClashWin`); On without push loses round 1 (you 0.000 vs the enemy 0.076 m·s) and
+  costs real health (100 → 80, invincibility off for that section); On with pushes and returns at difficulty 0 wins after 2
+  rounds (sword flies, NPC staggers); letting go during the lock loses with the hit only. PASS three times in a row, full suite
+  15/15 with it (one earlier suite run failed in the then section 4, see below).
+- **Not coming back** is unit-tested only. In the harness a controller moved 0.8 m out and left there gave three different
+  results in four runs: the game's arm's-length drop (let go), the return window running out (hand stuck 0.10 m off), and
+  once a win, because DMCS read `hand ahead 0.05 m` throughout while BasHarness read a lead of 0.65 m for the same pair
+  (`PlayerHand.grip` vs `RagdollHand.grip`) in the same frames. **Open:** why the two readings differ beyond arm's length (both
+  read in Update; within reach they agree in sign and size). This is the headset diagnostic's own data path, so the first
+  headset log must show whether the lead it logs follows the real controller.
+- **Measured, important for the headset:** in the harness the player's sword never touches the frozen enemy blade (the block is
+  a raised event), and then nothing holds the 20× heavy weapon back: the hand catches up with a moved controller within
+  ~0.3–0.4 s (`hand ahead 0.13 → 0.05 m`). The push measure only works if the frozen enemy blade really resists a press.
+  Not measured. If it does not, the fallback is to make the enemy's weapon kinematic during the lock (cheap, not built).
 
 ### Open findings
 
@@ -444,6 +493,7 @@ a real physical weapon hit (held-weapon attribution) and how the stagger *feels*
 
 | Date | Step | Result |
 |---|---|---|
+| 2026-11-18 | 5c | Clash modes (Off/Simple/On, default Simple), rounds, push measure, win/lose, sounds. Unit tests 591 **PASS**, BasHarness 125 **PASS**. Harness: all fifteen scenarios **PASS** (step5c three times in a row). Before (red): the same step5c on ff931db fails at its first check (no `Clash of Might Mode`); the old lock just ended (`TimeUp`) with the enemy still armed. Found on the way: in the harness nothing holds the heavy weapon back (the blades never touch), so the hand catches up with a moved controller within ~0.4 s; a controller beyond arm's length is read differently by DMCS and BasHarness (open). |
 | 2026-11-17 | 5a | Clash telegraph (big swing, flash, slow-motion). Harness: all thirteen scenarios **PASS** (`step3` on a rerun: the known "may re-arm" timeout, passed twice after). Unit tests 499 **PASS**. Before: a probe measured all 68 attacks' wind-ups and found that the wind-up moves in another plane than the strike (so the angle is read at the strike start) and that an NPC can be frozen mid-swing (`animator.speed = 0`). First 5a runs found: the NPC's random loadout (a mace) and the player dying after a minute made the scenario flaky → BasHarness `container=` and `player-invincible`; Disarm Strike disarmed the NPC on its own swings (open finding). |
 | 2026-11-17 | 4e | Dodge and catch bonus. Harness: all twelve scenarios **PASS**; unit tests 445 **PASS**. The first 4e run found two bugs: dodges were still judged with Adrenaline off (all handlers now check the toggle), and the per-frame head speed read 19.85 m/s from a 2.5 m/s run (now measured over 0.1 s, then 5.05 m/s while sprinting up). Also: running into the test NPCs charge-staggered them and filled the meter, so the scenario turns away and switches Charge Stagger off. |
 | 2026-11-17 | 4d | DMCS 4 vignette (tuned to Dark Messiah's frame statistics), style switches in game (frames, sounds and Dark Messiah's files built/read in the background: the first in-game build took 0.4 s on the main thread), `Adrenaline.AddExternal` for other mods. Harness: all eleven scenarios **PASS**, `step4d-b` switches DMCS 1–4 and Dark Messiah (found on this machine under Proton at `Z:\run\media\…\Programs\Steam`, read in 115 ms). Unit tests 406 **PASS**. |

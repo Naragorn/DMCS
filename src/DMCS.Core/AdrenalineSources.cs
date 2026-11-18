@@ -10,6 +10,7 @@ namespace DMCS.Core
         Disarm,
         Dodge,
         Catch,
+        ClashWin,
     }
 
     /// <summary>Which game events count for the meter (plain values, read from the game by the caller).</summary>
@@ -42,8 +43,9 @@ namespace DMCS.Core
     /// <summary>The gain per source, as set in the Mod Menu.</summary>
     public readonly struct AdrenalineGains
     {
-        public AdrenalineGains(int hit, int blockParry, int damageTaken, int chargeStagger, int disarm, int dodge, int @catch)
+        public AdrenalineGains(int hit, int blockParry, int damageTaken, int chargeStagger, int disarm, int dodge, int @catch, int clashWin = AdrenalineSettings.DefaultGainClashWin)
         {
+            ClashWin = clashWin;
             Dodge = dodge;
             Catch = @catch;
             Hit = hit;
@@ -60,6 +62,7 @@ namespace DMCS.Core
         public int Disarm { get; }
         public int Dodge { get; }
         public int Catch { get; }
+        public int ClashWin { get; }
 
         public int For(AdrenalineSource source)
         {
@@ -71,6 +74,7 @@ namespace DMCS.Core
                 case AdrenalineSource.ChargeStagger: return ChargeStagger;
                 case AdrenalineSource.Dodge: return Dodge;
                 case AdrenalineSource.Catch: return Catch;
+                case AdrenalineSource.ClashWin: return ClashWin;
                 default: return Disarm;
             }
         }

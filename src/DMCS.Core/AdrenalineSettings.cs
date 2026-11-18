@@ -42,6 +42,11 @@ namespace DMCS.Core
         public const int DefaultGainDodge = 10;
         public const int DefaultGainCatch = 10;
 
+        public const string GainClashWinName = "Adrenaline Per Clash Win";
+
+        /// <summary>Spec: clash win +25.</summary>
+        public const int DefaultGainClashWin = 25;
+
         /// <summary>m/s the player's head must reach (horizontally) during a missed attack (a first guess; needs the headset).</summary>
         public static readonly SliderSpec DodgeMinSpeed = new SliderSpec(DodgeMinSpeedName, 0.5f, 6f, 0.25f, 2f);
 

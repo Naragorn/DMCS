@@ -18,6 +18,19 @@ namespace DMCS.Core
         public const string GameFolderName = "Dark Messiah Might and Magic Single Player";
         public const string ReadySoundPath = "mm/sound/arkane/character_sheet/adrenaline_reached.wav";
         public const string HeartbeatPath = "mm/sound/arkane/player/player_heartbeat01.wav";
+
+        /// <summary>
+        /// Dark Messiah's blade lock sound "Sword_Versus_Sword" (three takes, volume 0.5–0.7, pitch 95–105) and its "Sword_Disarm"
+        /// (volume 0.6), read in mm/scripts/game_sounds_sword.txt 2026-11-18; 16-bit PCM, 22050 Hz, mono.
+        /// </summary>
+        public static readonly string[] VersusPaths =
+        {
+            "mm/sound/arkane/weapons/sword/sword_vs_sword01.wav",
+            "mm/sound/arkane/weapons/sword/sword_vs_sword02.wav",
+            "mm/sound/arkane/weapons/sword/sword_vs_sword03.wav",
+        };
+
+        public const string DisarmPath = "mm/sound/arkane/weapons/sword/sword_disarm.wav";
         public const string VignettePath = "mm/materials/hud/fullscreen_adrenaline2_.vtf";
 
         /// <summary>Dark Messiah plays Adrenaline_Reached at 0.6 and its heartbeat at 0.5 (its sound scripts).</summary>

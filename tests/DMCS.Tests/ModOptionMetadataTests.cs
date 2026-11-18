@@ -160,7 +160,7 @@ public class ModOptionMetadataTests
         Assert.Equal(
             new[]
             {
-                (DmcsCategories.ClashOfMight + " Enabled", "System.Boolean", "ArrowList"),
+                (ClashModes.ModeName, "System.String", "ArrowList"),
                 (ClashSettings.OnlySwordsName, "System.Boolean", "ArrowList"),
                 (ClashSettings.MinWindUpName, "System.Single", "Slider"),
                 (ClashSettings.SlowMoName, "System.Boolean", "ArrowList"),
@@ -170,11 +170,28 @@ public class ModOptionMetadataTests
                 (ClashSettings.BlockAngleToleranceName, "System.Single", "Slider"),
                 (ClashSettings.PointToleranceName, "System.Single", "Slider"),
                 (ClashSettings.WeaponWeightName, "System.Single", "Slider"),
-                (ClashSettings.MaxDurationName, "System.Single", "Slider"),
                 (ClashSettings.FlashSoundName, "System.String", "ArrowList"),
                 (ClashSettings.FlashGameSoundName, "System.String", "ArrowList"),
                 (ClashSettings.FlashSoundVolumeName, "System.Single", "Slider"),
                 (ClashSettings.FlashAtTopName, "System.Boolean", "ArrowList"),
+                (ClashFightSettings.DifficultyName, "System.Single", "Slider"),
+                (ClashFightSettings.ScalesWithHeightName, "System.Boolean", "ArrowList"),
+                (ClashFightSettings.ScalesWithGenderName, "System.Boolean", "ArrowList"),
+                (ClashFightSettings.FemaleStrengthName, "System.Single", "Slider"),
+                (ClashFightSettings.MinRoundsName, "System.Single", "Slider"),
+                (ClashFightSettings.MaxRoundsName, "System.Single", "Slider"),
+                (ClashFightSettings.FewerRoundsName, "System.Single", "Slider"),
+                (ClashFightSettings.EnemyPushName, "System.Single", "Slider"),
+                (ClashFightSettings.DeadZoneName, "System.Single", "Slider"),
+                (ClashFightSettings.PushPhaseName, "System.Single", "Slider"),
+                (ClashFightSettings.ReturnWindowName, "System.Single", "Slider"),
+                (ClashFightSettings.ReturnToleranceName, "System.Single", "Slider"),
+                (ClashFightSettings.WinDisarmsName, "System.Boolean", "ArrowList"),
+                (ClashFightSettings.WinKneelChanceName, "System.Single", "Slider"),
+                (ClashFightSettings.LoseOutcomeName, "System.String", "ArrowList"),
+                (ClashFightSettings.LoseDamageName, "System.Single", "Slider"),
+                (ClashFightSettings.HapticsName, "System.Single", "Slider"),
+                (ClashFightSettings.DarkMessiahSoundsName, "System.Boolean", "ArrowList"),
             },
             group.Select(o => (o.Name, o.DataType, o.InteractionType)));
         Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));
@@ -236,6 +253,7 @@ public class ModOptionMetadataTests
                 (AdrenalineSettings.DodgeMinSpeedName, "System.Single", "Slider"),
                 (AdrenalineSettings.GainCatchName, "System.Int32", "Slider"),
                 (AdrenalineSettings.CatchMaxAirTimeName, "System.Single", "Slider"),
+                (AdrenalineSettings.GainClashWinName, "System.Int32", "Slider"),
                 (AdrenalineSettings.CriticalTimeModeName, "System.String", "ArrowList"),
                 (AdrenalineSettings.HyperfocusScaleName, "System.Single", "Slider"),
                 (AdrenalineSettings.HyperfocusDurationName, "System.Single", "Slider"),
@@ -312,8 +330,20 @@ public class ModOptionMetadataTests
         }
     }
 
+    [Fact]
+    public void ClashOfMight_StartsWithItsModeDropdown_OffSimpleOn_InsteadOfAToggle()
+    {
+        // User 2026-11-18: the feature is Off / Simple / On (default Simple), not a plain on/off toggle.
+        var inGroup = Options.Value.Where(o => o.Category == DmcsCategories.ClashOfMight).ToList();
+        var first = inGroup.OrderBy(o => o.Order).First();
+
+        Assert.Equal(ClashModes.ModeName, first.Name);
+        Assert.Equal("System.String", first.DataType);
+        Assert.True(first.SaveValue);
+        Assert.DoesNotContain(inGroup, o => o.NameLocalizationId == DmcsCategories.EnabledLocalizationId);
+    }
+
     [Theory]
-    [InlineData(DmcsCategories.ClashOfMight)]
     [InlineData(DmcsCategories.DisarmStrike)]
     [InlineData(DmcsCategories.ChargeStagger)]
     [InlineData(DmcsCategories.Adrenaline)]

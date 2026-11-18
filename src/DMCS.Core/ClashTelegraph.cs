@@ -30,8 +30,8 @@ namespace DMCS.Core
         /// <summary>Metres from the flash point to the player's blade within which the slow-motion can start (a guess).</summary>
         public static readonly SliderSpec BlockReach = new SliderSpec(BlockReachName, 0.2f, 1.5f, 0.1f, 0.6f);
 
-        /// <summary>Degrees the player's blade may be off a right angle to the swing (user 2026-11-17: very generous).</summary>
-        public static readonly SliderSpec BlockAngleTolerance = new SliderSpec(BlockAngleToleranceName, 10f, 80f, 5f, 45f);
+        /// <summary>Degrees the player's blade may be off a right angle to the swing (user 2026-11-17: very generous); 90 = no angle check.</summary>
+        public static readonly SliderSpec BlockAngleTolerance = new SliderSpec(BlockAngleToleranceName, 10f, 90f, 5f, 45f);
 
         /// <summary>Seconds after the strike starts in which the swing plane is read and the slow-motion decided.</summary>
         public const float JudgeWindow = 0.1f;
@@ -75,7 +75,6 @@ namespace DMCS.Core
 
         public const string PointToleranceName = "Clash Point Tolerance";
         public const string WeaponWeightName = "Clash Weapon Weight";
-        public const string MaxDurationName = "Clash Max Duration";
 
         /// <summary>Metres between the block's contact and the flash point within which the blades lock (a guess, headset).</summary>
         public static readonly SliderSpec PointTolerance = new SliderSpec(PointToleranceName, 0.05f, 0.6f, 0.05f, 0.25f);
@@ -83,10 +82,7 @@ namespace DMCS.Core
         /// <summary>The player's weapon's mass factor during the lock (harness probe: ×20 sags the tip 5 cm held still; a guess).</summary>
         public static readonly SliderSpec WeaponWeight = new SliderSpec(WeaponWeightName, 1f, 50f, 1f, 20f);
 
-        /// <summary>Real seconds a lock lasts at most (the NPC wins then, step 5c; a guess).</summary>
-        public static readonly SliderSpec MaxDuration = new SliderSpec(MaxDurationName, 1f, 10f, 0.5f, 4f);
-
-        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, BlockReach, BlockAngleTolerance, FlashSoundVolume, PointTolerance, WeaponWeight, MaxDuration };
+        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, BlockReach, BlockAngleTolerance, FlashSoundVolume, PointTolerance, WeaponWeight };
     }
 
     public enum BlockVerdict
@@ -105,14 +101,14 @@ namespace DMCS.Core
     {
         None,
 
-        /// <summary>The lock ran its maximum time.</summary>
-        TimeUp,
+        /// <summary>The rounds decided the lock (won or lost).</summary>
+        Decided,
 
         /// <summary>Ended from outside: NPC dead or gone, weapon dropped, feature off, level unload.</summary>
         Broken,
     }
 
-    /// <summary>One clash lock: started, ticked until its maximum time, or broken; diagnostics every 0.1 s.</summary>
+    /// <summary>One clash lock: started, then decided by its rounds or broken from outside; diagnostics every 0.1 s.</summary>
     public sealed class ClashLock
     {
         private const float DiagnosticEvery = 0.1f;
@@ -130,14 +126,14 @@ namespace DMCS.Core
 
         public float Elapsed(float now) => now - _startedAt;
 
-        public LockEnd Tick(float now, float maxDuration)
+        public LockEnd Decide()
         {
-            if (!IsLocked || now - _startedAt < maxDuration)
+            if (!IsLocked)
             {
                 return LockEnd.None;
             }
             IsLocked = false;
-            return LockEnd.TimeUp;
+            return LockEnd.Decided;
         }
 
         public LockEnd Break()

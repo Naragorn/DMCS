@@ -28,6 +28,13 @@ public class ClashBlockVerdictTests
     public void SwingPlaneUnknown_TheContactAtTheFlashDecides() =>
         Assert.Equal(BlockVerdict.Clash, ClashRules.JudgeBlock(0.1f, Point, null, Angle));
 
+    [Theory]
+    [InlineData(0f)]
+    [InlineData(45f)]
+    [InlineData(90f)]
+    public void Tolerance90_TakesAnyAngle(float angle) =>
+        Assert.Equal(BlockVerdict.Clash, ClashRules.JudgeBlock(0f, Point, angle, 90f));
+
     [Fact]
     public void DistanceIsCheckedFirst() =>
         Assert.Equal(BlockVerdict.OffPoint, ClashRules.JudgeBlock(1f, Point, 80f, Angle));
@@ -35,28 +42,17 @@ public class ClashBlockVerdictTests
 
 public class ClashLockTests
 {
-    private const float Max = 4f;
-
     [Fact]
-    public void ALock_RunsUntilItsMaxDuration()
+    public void ALock_RunsUntilTheRoundsDecideIt_AndEndsOnce()
     {
         var l = new ClashLock();
         l.Start(10f);
 
         Assert.True(l.IsLocked);
-        Assert.Equal(LockEnd.None, l.Tick(13.9f, Max));
-        Assert.Equal(LockEnd.TimeUp, l.Tick(14f, Max));
+        Assert.Equal(LockEnd.Decided, l.Decide());
         Assert.False(l.IsLocked);
-    }
-
-    [Fact]
-    public void ALock_EndsOnce()
-    {
-        var l = new ClashLock();
-        l.Start(10f);
-        l.Tick(14f, Max);
-
-        Assert.Equal(LockEnd.None, l.Tick(15f, Max));
+        Assert.Equal(LockEnd.None, l.Decide());
+        Assert.Equal(LockEnd.None, l.Break());
     }
 
     [Fact]
@@ -71,11 +67,11 @@ public class ClashLockTests
     }
 
     [Fact]
-    public void NoLock_NothingToTickOrBreak()
+    public void NoLock_NothingToDecideOrBreak()
     {
         var l = new ClashLock();
 
-        Assert.Equal(LockEnd.None, l.Tick(1f, Max));
+        Assert.Equal(LockEnd.None, l.Decide());
         Assert.Equal(LockEnd.None, l.Break());
     }
 
@@ -107,7 +103,6 @@ public class ClashLockSettingsTests
     {
         Assert.Equal(0.25f, ClashSettings.PointTolerance.Default);
         Assert.Equal(20f, ClashSettings.WeaponWeight.Default);
-        Assert.Equal(4f, ClashSettings.MaxDuration.Default);
     }
 }
 

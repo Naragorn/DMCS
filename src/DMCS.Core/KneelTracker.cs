@@ -11,6 +11,9 @@ namespace DMCS.Core
 
         /// <summary>Only light hits landed: the set number of them.</summary>
         LightHits,
+
+        /// <summary>The player won a Clash of Might and the kneel chance came up.</summary>
+        ClashWin,
     }
 
     /// <summary>

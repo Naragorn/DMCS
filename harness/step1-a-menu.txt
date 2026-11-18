@@ -1,15 +1,16 @@
-# Step 1: the mod loads, the Mod Menu has every group with its Enabled toggle,
+# Step 1: the mod loads, the Mod Menu has every group with its Enabled toggle (Clash of Might: its mode),
 # options apply live, Debug Logging gates the debug lines, Reset To Defaults works.
 
 wait-level
 
 # Loads
-expect-log [DMCS] v0.3.0 loaded from folder 'DMCS' with 98 mod options
+expect-log [DMCS] v0.3.0 loaded from folder 'DMCS' with 116 mod options
 expect-log [DMCS] Settings: Debug Logging=off | Clash of Might=Enabled | Disarm Strike=Enabled | Charge Stagger=Enabled | Adrenaline=Enabled
 expect-log [ModManager][ThunderScript][DMCS] Loaded ThunderScript: DMCS.DmcsScript
 
 # Menu: groups, "Enabled" label (game's own localized text), types, tooltips
-option-exists DMCS "Clash of Might Enabled" category="Clash of Might" display=Enabled type=Boolean save=true interaction=ArrowList tooltip="Blade lock"
+# Clash of Might has a mode dropdown instead of a toggle (user 2026-11-18: Off / Simple / On)
+option-exists DMCS "Clash of Might Mode" category="Clash of Might" type=String save=true interaction=ArrowList tooltip="Simple"
 option-exists DMCS "Disarm Strike Enabled" category="Disarm Strike" display=Enabled type=Boolean save=true interaction=ArrowList tooltip="staggered"
 option-exists DMCS "Charge Stagger Enabled" category="Charge Stagger" display=Enabled type=Boolean save=true interaction=ArrowList tooltip="sprinting"
 option-exists DMCS "Adrenaline Enabled" category=Adrenaline display=Enabled type=Boolean save=true interaction=ArrowList tooltip="critical"
@@ -18,7 +19,7 @@ option-exists DMCS "Reset To Defaults" category=General display="Reset To Defaul
 
 # Defaults
 expect-option DMCS "Debug Logging" false
-expect-option DMCS "Clash of Might Enabled" true
+expect-option DMCS "Clash of Might Mode" Simple
 expect-option DMCS "Disarm Strike Enabled" true
 expect-option DMCS "Charge Stagger Enabled" true
 expect-option DMCS "Adrenaline Enabled" true
@@ -29,25 +30,27 @@ set-option DMCS "Debug Logging" true
 expect-log [DMCS] Debug Logging on
 expect-option DMCS "Debug Logging" true
 mark
-set-option DMCS "Clash of Might Enabled" false
+set-option DMCS "Clash of Might Mode" Off
 expect-log [DMCS][Clash of Might] Disabled
-expect-option DMCS "Clash of Might Enabled" false
+expect-option DMCS "Clash of Might Mode" Off
 
 # Debug Logging off: the toggle still switches, but no debug line
 set-option DMCS "Debug Logging" false
 mark
-set-option DMCS "Clash of Might Enabled" true
-expect-option DMCS "Clash of Might Enabled" true
+set-option DMCS "Clash of Might Mode" Simple
+expect-option DMCS "Clash of Might Mode" Simple
 expect-no-log [DMCS][Clash of Might] Enabled
 
 # Reset To Defaults
 set-option DMCS "Disarm Strike Enabled" false
+set-option DMCS "Clash of Might Mode" On
 set-option DMCS "Debug Logging" true
 mark
 press DMCS "Reset To Defaults"
-expect-log [DMCS] Reset 97 options to defaults.
+expect-log [DMCS] Reset 115 options to defaults.
 expect-option DMCS "Debug Logging" false
 expect-option DMCS "Disarm Strike Enabled" true
+expect-option DMCS "Clash of Might Mode" Simple
 save-options
 
 screenshot step1-arena

@@ -80,7 +80,7 @@ expect-no-log : flash
 
 # 3. Feature off: no clash lines at all
 set-option DMCS "Clash Min Wind Up" 0.4
-set-option DMCS "Clash of Might Enabled" false
+set-option DMCS "Clash of Might Mode" Off
 mark
 wait 15
 expect-no-log [DMCS][Clash] HumanMale

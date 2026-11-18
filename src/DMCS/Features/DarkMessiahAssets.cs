@@ -23,6 +23,8 @@ namespace DMCS
         private static WavData _ready;
         private static WavData _heartbeat;
         private static VtfData _vignette;
+        private static WavData[] _versus = new WavData[0];
+        private static WavData _disarm;
 
         /// <summary>Starts searching and reading in the background (once). Call on the main thread.</summary>
         public static void Begin()
@@ -72,6 +74,16 @@ namespace DMCS
             return _task.IsCompleted;
         }
 
+        /// <summary>False while still reading; then Dark Messiah's blade lock takes (maybe none) and its disarm sound (or null).</summary>
+        public static bool TryClashSounds(out WavData[] versus, out WavData disarm)
+        {
+            Begin();
+            var done = _task.IsCompleted;
+            versus = done ? _versus : new WavData[0];
+            disarm = done ? _disarm : null;
+            return done;
+        }
+
         private static void LoadAll(string common)
         {
             var dir = Find(common);
@@ -80,7 +92,8 @@ namespace DMCS
                 return;
             }
             var watch = Stopwatch.StartNew();
-            var wanted = new[] { DarkMessiahFiles.ReadySoundPath, DarkMessiahFiles.HeartbeatPath, DarkMessiahFiles.VignettePath };
+            var wanted = new[] { DarkMessiahFiles.ReadySoundPath, DarkMessiahFiles.HeartbeatPath, DarkMessiahFiles.VignettePath, DarkMessiahFiles.DisarmPath }
+                .Concat(DarkMessiahFiles.VersusPaths).ToArray();
             var found = new Dictionary<string, byte[]>();
             foreach (var dirPath in Directory.GetFiles(Path.Combine(dir, "vpks"), "*_dir.vpk"))
             {
@@ -105,8 +118,11 @@ namespace DMCS
             _ready = Decode(found, DarkMessiahFiles.ReadySoundPath, WavData.Decode);
             _heartbeat = Decode(found, DarkMessiahFiles.HeartbeatPath, WavData.Decode);
             _vignette = Decode(found, DarkMessiahFiles.VignettePath, VtfData.Decode);
+            _versus = DarkMessiahFiles.VersusPaths.Select(p => Decode(found, p, WavData.Decode)).Where(w => w != null).ToArray();
+            _disarm = Decode(found, DarkMessiahFiles.DisarmPath, WavData.Decode);
             Dmcs.Log.Info("Dark Messiah files read in " + watch.ElapsedMilliseconds + " ms: ready sound " + Describe(_ready)
-                + ", heartbeat " + Describe(_heartbeat) + ", vignette " + (_vignette == null ? "missing" : _vignette.Frames.Length + " frames"));
+                + ", heartbeat " + Describe(_heartbeat) + ", vignette " + (_vignette == null ? "missing" : _vignette.Frames.Length + " frames")
+                + ", blade lock " + _versus.Length + " takes, disarm " + Describe(_disarm));
         }
 
         private static string Describe(WavData w) =>

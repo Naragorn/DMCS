@@ -9,10 +9,12 @@ using UnityEngine;
 namespace DMCS
 {
     /// <summary>
-    /// Clash of Might (blade lock), step 5a: the telegraph. An NPC's big swing (long wind-up, read from the running
-    /// AttackMotion at AttackStage.WindUp) flashes at the middle of its blade; when the strike starts and the NPC is in
-    /// reach, the player's blade near the flash and roughly at a right angle to the swing, time slows down until the
-    /// swing ends. The block at the flash point and the clash itself come in the next build steps.
+    /// Clash of Might (blade lock). An NPC's big swing (long wind-up, read from the running AttackMotion at
+    /// AttackStage.WindUp) flashes at the middle of its blade; when the strike starts and the NPC is in reach, the
+    /// player's blade near the flash and roughly at a right angle to the swing, time slows down until the swing ends.
+    /// A block at the flash point: in the Simple mode the enemy's sword flies away; in the On mode the blades lock and
+    /// the player pushes against the enemy over a few rounds (ClashRounds), then wins (disarm, stagger or kneel,
+    /// Adrenaline) or loses (disarm and/or hit).
     /// </summary>
     public static class ClashOfMight
     {
@@ -21,7 +23,16 @@ namespace DMCS
         private const float GlintSize = 0.3f;
         private const int GlintTextureSize = 128;
 
-        public static readonly FeatureToggle Toggle = new FeatureToggle(DmcsCategories.ClashOfMight, true, Dmcs.Log);
+        public static readonly FeatureToggle Toggle = new FeatureToggle(DmcsCategories.ClashOfMight, ClashModes.IsActive(ClashModes.Default), Dmcs.Log);
+
+        private static string _mode = ClashModes.Default;
+        private static readonly System.Random Dice = new System.Random();
+        private static ClashRounds _rounds;
+        private static float _lastTick;
+        private static float _nextHaptic;
+        private static float _enemyPeak;
+        private static EffectInstance _grind;
+        private static readonly Dictionary<WavData, AudioClip> DarkMessiahClips = new Dictionary<WavData, AudioClip>();
 
         private static readonly ClashTelegraph<int> Telegraph = new ClashTelegraph<int>(ClashSettings.JudgeWindow);
         private static readonly Dictionary<int, Flash> Flashes = new Dictionary<int, Flash>();
@@ -49,19 +60,142 @@ namespace DMCS
         private static readonly Dictionary<string, AudioClip> SoundClips = new Dictionary<string, AudioClip>();
         private static GameObject _audioHost;
         private static AudioSource _audio;
+        private static AudioSource _darkMessiahAudio;
 
         [ModOption(
-            name = DmcsCategories.ClashOfMight + " Enabled",
-            nameLocalizationId = DmcsCategories.EnabledLocalizationId,
-            tooltip = "Blade lock: block an enemy's big swing where its blade flashes, then push back to disarm it.",
+            name = ClashModes.ModeName,
+            tooltip = "Off. Simple: block exactly where an enemy's blade flashes and its sword flies away. On: the blades lock and you push against the enemy over a few rounds.",
+            valueSourceName = nameof(ModeValues),
             category = DmcsCategories.ClashOfMight,
             categoryOrder = DmcsCategories.ClashOfMightOrder,
             order = 0)]
-        public static bool Enabled
+        public static string Mode
         {
-            get => Toggle.Enabled;
-            set => Toggle.Set(value);
+            get => _mode;
+            set
+            {
+                var mode = ClashModes.Normalize(value);
+                if (mode == _mode)
+                {
+                    return;
+                }
+                _mode = mode;
+                Dmcs.Log.Debug(Channel, "mode " + mode);
+                if (!ClashModes.Locks(mode))
+                {
+                    EndLock(Lock.Break(), "mode " + mode);
+                }
+                Toggle.Set(ClashModes.IsActive(mode));
+            }
         }
+
+        public static ModOptionString[] ModeValues() => ClashModes.All.Select(v => new ModOptionString(v, v)).ToArray();
+
+        [ModOption(name = ClashFightSettings.DifficultyName, tooltip = "How hard enemies push back in a blade lock. 0: barely; 50: some; 100: twice as hard; 200: you hardly have a chance.", valueSourceName = nameof(DifficultyValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 14)]
+        [ModOptionSlider]
+        public static float Difficulty { get; set; } = ClashFightSettings.Difficulty.Default;
+
+        [ModOption(name = ClashFightSettings.ScalesWithHeightName, tooltip = "Taller enemies than you push harder, smaller ones weaker (in proportion to their height), and smaller ones last fewer rounds.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 15)]
+        public static bool ScalesWithHeight { get; set; } = ClashFightSettings.DefaultScalesWithHeight;
+
+        [ModOption(name = ClashFightSettings.ScalesWithGenderName, tooltip = "Female enemies push weaker (by the reduction below) and last fewer rounds.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 16)]
+        public static bool ScalesWithGender { get; set; } = ClashFightSettings.DefaultScalesWithGender;
+
+        [ModOption(name = ClashFightSettings.FemaleStrengthName, tooltip = "How much weaker (percent) a female enemy pushes. Women have about 40-60 % of men's upper-body strength.", valueSourceName = nameof(FemaleStrengthValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 17)]
+        [ModOptionSlider]
+        public static float FemaleStrength { get; set; } = ClashFightSettings.FemaleStrength.Default;
+
+        [ModOption(name = ClashFightSettings.MinRoundsName, tooltip = "Fewest rounds of a blade lock (each lock picks a random number between min and max).", valueSourceName = nameof(RoundsValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 18)]
+        [ModOptionSlider]
+        public static float MinRounds { get; set; } = ClashFightSettings.MinRounds.Default;
+
+        [ModOption(name = ClashFightSettings.MaxRoundsName, tooltip = "Most rounds of a blade lock.", valueSourceName = nameof(RoundsValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 19)]
+        [ModOptionSlider]
+        public static float MaxRounds { get; set; } = ClashFightSettings.MaxRounds.Default;
+
+        [ModOption(name = ClashFightSettings.FewerRoundsName, tooltip = "Rounds fewer against a smaller or a female enemy (while the matching scaling is on); at least one round stays.", valueSourceName = nameof(FewerRoundsValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 20)]
+        [ModOptionSlider]
+        public static float FewerRounds { get; set; } = ClashFightSettings.FewerRounds.Default;
+
+        [ModOption(name = ClashFightSettings.EnemyPushName, tooltip = "How far (m) your real hand must lead your heavy weapon towards the enemy to match its push at its strongest, at difficulty 50.", valueSourceName = nameof(EnemyPushValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 21)]
+        [ModOptionSlider]
+        public static float EnemyPush { get; set; } = ClashFightSettings.EnemyPush.Default;
+
+        [ModOption(name = ClashFightSettings.DeadZoneName, tooltip = "Lead (m) of your hand that does not count as pushing: the heavy weapon's natural lag.", valueSourceName = nameof(DeadZoneValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 22)]
+        [ModOptionSlider]
+        public static float DeadZone { get; set; } = ClashFightSettings.DeadZone.Default;
+
+        [ModOption(name = ClashFightSettings.PushPhaseName, tooltip = "Seconds of one push round; the enemy's push swells and ebbs once in it.", valueSourceName = nameof(PushPhaseValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 23)]
+        [ModOptionSlider]
+        public static float PushPhase { get; set; } = ClashFightSettings.PushPhase.Default;
+
+        [ModOption(name = ClashFightSettings.ReturnWindowName, tooltip = "Seconds to bring your hand back to the blades after a round, or you lose.", valueSourceName = nameof(ReturnWindowValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 24)]
+        [ModOptionSlider]
+        public static float ReturnWindow { get; set; } = ClashFightSettings.ReturnWindow.Default;
+
+        [ModOption(name = ClashFightSettings.ReturnToleranceName, tooltip = "How close (m) your hand must come back to your weapon to count as back at the blades.", valueSourceName = nameof(ReturnToleranceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 25)]
+        [ModOptionSlider]
+        public static float ReturnTolerance { get; set; } = ClashFightSettings.ReturnTolerance.Default;
+
+        [ModOption(name = ClashFightSettings.WinDisarmsName, tooltip = "Winning a blade lock knocks the enemy's sword away.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 26)]
+        public static bool WinDisarms { get; set; } = ClashFightSettings.DefaultWinDisarms;
+
+        [ModOption(name = ClashFightSettings.WinKneelChanceName, tooltip = "Chance (percent) that a beaten enemy goes down on its knees and you can execute it. Otherwise it staggers.", valueSourceName = nameof(WinKneelChanceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 27)]
+        [ModOptionSlider]
+        public static float WinKneelChance { get; set; } = ClashFightSettings.WinKneelChance.Default;
+
+        [ModOption(name = ClashFightSettings.LoseOutcomeName, tooltip = "What a lost blade lock costs you: your weapon flies away, you take a hit, both, or nothing.", valueSourceName = nameof(LoseOutcomeValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 28)]
+        public static string LoseOutcome { get; set; } = ClashFightSettings.DefaultLoseOutcome;
+
+        [ModOption(name = ClashFightSettings.LoseDamageName, tooltip = "Health you lose with the hit of a lost blade lock (you have 100).", valueSourceName = nameof(LoseDamageValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 29)]
+        [ModOptionSlider]
+        public static float LoseDamage { get; set; } = ClashFightSettings.LoseDamage.Default;
+
+        [ModOption(name = ClashFightSettings.HapticsName, tooltip = "Strength of the vibration in your weapon hand during a blade lock (it follows the enemy's push).", valueSourceName = nameof(HapticsValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 30)]
+        [ModOptionSlider]
+        public static float Haptics { get; set; } = ClashFightSettings.Haptics.Default;
+
+        [ModOption(name = ClashFightSettings.DarkMessiahSoundsName, tooltip = "Dark Messiah's own blade lock and disarm sounds, read from your Dark Messiah install (never shipped). Falls back to Blade & Sorcery's sounds when it is not found.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 31)]
+        public static bool DarkMessiahSounds
+        {
+            get => _darkMessiahSounds;
+            set
+            {
+                _darkMessiahSounds = value;
+                if (value)
+                {
+                    DarkMessiahAssets.Begin();
+                }
+            }
+        }
+
+        private static bool _darkMessiahSounds = ClashFightSettings.DefaultDarkMessiahSounds;
+
+        public static ModOptionFloat[] DifficultyValues() => Floats(ClashFightSettings.Difficulty, "0", "");
+
+        public static ModOptionFloat[] FemaleStrengthValues() => Floats(ClashFightSettings.FemaleStrength, "0", " %");
+
+        public static ModOptionFloat[] RoundsValues() => Floats(ClashFightSettings.MinRounds, "0", "");
+
+        public static ModOptionFloat[] FewerRoundsValues() => Floats(ClashFightSettings.FewerRounds, "0", "");
+
+        public static ModOptionFloat[] EnemyPushValues() => Floats(ClashFightSettings.EnemyPush, "0.00", " m");
+
+        public static ModOptionFloat[] DeadZoneValues() => Floats(ClashFightSettings.DeadZone, "0.00", " m");
+
+        public static ModOptionFloat[] PushPhaseValues() => Floats(ClashFightSettings.PushPhase, "0.00", " s");
+
+        public static ModOptionFloat[] ReturnWindowValues() => Floats(ClashFightSettings.ReturnWindow, "0.00", " s");
+
+        public static ModOptionFloat[] ReturnToleranceValues() => Floats(ClashFightSettings.ReturnTolerance, "0.00", " m");
+
+        public static ModOptionFloat[] WinKneelChanceValues() => Floats(ClashFightSettings.WinKneelChance, "0", " %");
+
+        public static ModOptionString[] LoseOutcomeValues() => ClashLoseOutcomes.All.Select(v => new ModOptionString(v, v)).ToArray();
+
+        public static ModOptionFloat[] LoseDamageValues() => Floats(ClashFightSettings.LoseDamage, "0", "");
+
+        public static ModOptionFloat[] HapticsValues() => Floats(ClashFightSettings.Haptics, "0.0", "");
 
         [ModOption(name = ClashSettings.OnlySwordsName, tooltip = "Only enemies with a sword flash. Off: any blade that cuts.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 1)]
         public static bool OnlySwords { get; set; } = ClashSettings.DefaultOnlySwords;
@@ -85,11 +219,11 @@ namespace DMCS
         [ModOptionSlider]
         public static float BlockReach { get; set; } = ClashSettings.BlockReach.Default;
 
-        [ModOption(name = ClashSettings.BlockAngleToleranceName, tooltip = "How far (degrees) your blade may be off a right angle to the enemy's swing.", valueSourceName = nameof(BlockAngleToleranceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 7)]
+        [ModOption(name = ClashSettings.BlockAngleToleranceName, tooltip = "How far (degrees) your blade may be off a right angle to the enemy's swing. 90: any angle.", valueSourceName = nameof(BlockAngleToleranceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 7)]
         [ModOptionSlider]
         public static float BlockAngleTolerance { get; set; } = ClashSettings.BlockAngleTolerance.Default;
 
-        [ModOption(name = ClashSettings.FlashAtTopName, tooltip = "The blade flashes when the enemy has raised it all the way, just before the strike, like sunlight caught on it. Off: as soon as the wind-up starts (more warning).", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 14)]
+        [ModOption(name = ClashSettings.FlashAtTopName, tooltip = "The blade flashes when the enemy has raised it all the way, just before the strike, like sunlight caught on it. Off: as soon as the wind-up starts (more warning).", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 13)]
         public static bool FlashAtTop { get; set; } = ClashSettings.DefaultFlashAtTop;
 
         [ModOption(name = ClashSettings.PointToleranceName, tooltip = "How close (m) to the flash your block must hit the enemy's blade to lock the blades. Elsewhere it is an ordinary parry.", valueSourceName = nameof(PointToleranceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 8)]
@@ -100,23 +234,17 @@ namespace DMCS
         [ModOptionSlider]
         public static float WeaponWeight { get; set; } = ClashSettings.WeaponWeight.Default;
 
-        [ModOption(name = ClashSettings.MaxDurationName, tooltip = "Seconds the blades stay locked at most.", valueSourceName = nameof(MaxDurationValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 10)]
-        [ModOptionSlider]
-        public static float MaxDuration { get; set; } = ClashSettings.MaxDuration.Default;
-
         public static ModOptionFloat[] PointToleranceValues() => Floats(ClashSettings.PointTolerance, "0.00", " m");
 
         public static ModOptionFloat[] WeaponWeightValues() => Floats(ClashSettings.WeaponWeight, "0", "x");
 
-        public static ModOptionFloat[] MaxDurationValues() => Floats(ClashSettings.MaxDuration, "0.0", " s");
-
-        [ModOption(name = ClashSettings.FlashSoundName, tooltip = "Sound when an enemy's blade flashes. DMCS 1 is modelled on Sekiro's perilous-attack cue. Combines with the game sound below.", valueSourceName = nameof(FlashSoundValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 11)]
+        [ModOption(name = ClashSettings.FlashSoundName, tooltip = "Sound when an enemy's blade flashes. DMCS 1 is modelled on Sekiro's perilous-attack cue. Combines with the game sound below.", valueSourceName = nameof(FlashSoundValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 10)]
         public static string FlashSoundStyle { get; set; } = ClashSettings.DefaultFlashSound;
 
-        [ModOption(name = ClashSettings.FlashGameSoundName, tooltip = "One of Blade & Sorcery's own sounds with the flash (Metal Hit also sparks). Plays together with the sound above.", valueSourceName = nameof(FlashGameSoundValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 12)]
+        [ModOption(name = ClashSettings.FlashGameSoundName, tooltip = "One of Blade & Sorcery's own sounds with the flash (Metal Hit also sparks). Plays together with the sound above.", valueSourceName = nameof(FlashGameSoundValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 11)]
         public static string FlashGameSound { get; set; } = ClashSettings.DefaultFlashGameSound;
 
-        [ModOption(name = ClashSettings.FlashSoundVolumeName, tooltip = "Volume of the DMCS flash sound.", valueSourceName = nameof(FlashSoundVolumeValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 13)]
+        [ModOption(name = ClashSettings.FlashSoundVolumeName, tooltip = "Volume of the DMCS flash sound.", valueSourceName = nameof(FlashSoundVolumeValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 12)]
         [ModOptionSlider]
         public static float FlashSoundVolume { get; set; } = ClashSettings.FlashSoundVolume.Default;
 
@@ -567,7 +695,12 @@ namespace DMCS
                     Dmcs.Log.Debug(Channel, "you blocked " + flash.NpcName + "'s swing: " + verdict + " (" + detail + "), an ordinary parry");
                     return;
                 }
-                StartLock(id, flash, parryingItem, hand, detail);
+                if (!ClashModes.Locks(Mode))
+                {
+                    SimpleDisarm(id, flash, hit, detail);
+                    return;
+                }
+                StartLock(id, flash, parryingItem, hand, detail, hit.contactPoint);
             }
             catch (Exception ex)
             {
@@ -575,7 +708,30 @@ namespace DMCS
             }
         }
 
-        private static void StartLock(int id, Flash flash, Item item, RagdollHand hand, string detail)
+        /// <summary>
+        /// The simple variant (user 2026-11-18): a block exactly at the star knocks the enemy's sword away, through Disarm
+        /// Strike's path (fling away from the player, no-regrab lock, catch bonus); Clash Win adrenaline as for a won lock.
+        /// </summary>
+        private static void SimpleDisarm(int id, Flash flash, CollisionInstance hit, string detail)
+        {
+            EndTime(force: false);
+            var npc = flash.Npc;
+            var away = AwayFromPlayer(npc);
+            Spark(hit.contactPoint);
+            var disarmed = DisarmStrike.DisarmFromClash(npc, flash.Hand, away, "clash at the star", hit);
+            PlayDarkMessiahDisarm(disarmed);
+            Telegraph.Ended(id);
+            RemoveFlash(id);
+            if (!disarmed)
+            {
+                Dmcs.Log.Debug(Channel, "you blocked " + flash.NpcName + "'s swing at the star (" + detail + "), but it holds no weapon there any more");
+                return;
+            }
+            Dmcs.Log.Debug(Channel, "you blocked " + flash.NpcName + "'s swing at the star (" + detail + "): its sword flies away (simple clash)");
+            Adrenaline.Add(AdrenalineSource.ClashWin, flash.NpcName);
+        }
+
+        private static void StartLock(int id, Flash flash, Item item, RagdollHand hand, string detail, Vector3 contact)
         {
             EndTime(force: false);
             _lockNpc = id;
@@ -592,9 +748,25 @@ namespace DMCS
             {
                 item.physicBody.mass = _lockMass * WeaponWeight;
             }
+            var player = Player.currentCreature;
+            var npcHeight = flash.Npc.GetHeight();
+            var playerHeight = player != null ? player.GetHeight() : 0f;
+            var female = flash.Npc.data != null && flash.Npc.data.gender == CreatureData.Gender.Female;
+            var factor = ClashStrength.Factor(Difficulty, ScalesWithHeight, npcHeight, playerHeight, ScalesWithGender, female, FemaleStrength);
+            var weaker = ClashStrength.IsWeaker(ScalesWithHeight, npcHeight, playerHeight, ScalesWithGender, female);
+            var rounds = ClashStrength.Rounds(Mathf.RoundToInt(MinRounds), Mathf.RoundToInt(MaxRounds), Dice.NextDouble(), weaker, Mathf.RoundToInt(FewerRounds));
+            _enemyPeak = EnemyPush * factor;
+            _rounds = new ClashRounds(rounds, PushPhase, ReturnWindow, _enemyPeak, DeadZone, ReturnTolerance);
+            _lastTick = Time.unscaledTime;
+            _nextHaptic = 0f;
             Lock.Start(Time.unscaledTime);
+            Spark(contact);
+            PlayDarkMessiahVersus();
+            StartGrind(contact);
             Dmcs.Log.Debug(Channel, "blades locked with " + flash.NpcName + " (" + detail + "): enemy frozen, your " + item.data?.id + " "
-                + WeaponWeight.ToString("0", CultureInfo.InvariantCulture) + "x heavier for up to " + F(MaxDuration) + " s");
+                + WeaponWeight.ToString("0", CultureInfo.InvariantCulture) + "x heavier; " + rounds + " round" + (rounds == 1 ? "" : "s")
+                + " (difficulty " + Difficulty.ToString("0", CultureInfo.InvariantCulture) + ", enemy " + F(npcHeight) + " m vs you " + F(playerHeight) + " m"
+                + (female ? ", female" : "") + (weaker ? ", weaker" : "") + "): enemy push " + F(_enemyPeak) + " m at its peak");
         }
 
         private static void UpdateLock()
@@ -606,39 +778,171 @@ namespace DMCS
             var npc = _lockFlash?.Npc;
             var gone = npc == null || npc.isKilled ? "the enemy is dead or gone"
                 : _lockFlash.Weapon == null || _lockFlash.Weapon.mainHandler == null ? "the enemy let go of its weapon"
-                : _lockItem == null || _lockItem.mainHandler == null || _lockItem.mainHandler.creature == null || !_lockItem.mainHandler.creature.isPlayer ? "you let go of your weapon"
                 : null;
             if (gone != null)
             {
                 EndLock(Lock.Break(), gone);
                 return;
             }
+            if (_lockItem == null || _lockItem.mainHandler == null || _lockItem.mainHandler.creature == null || !_lockItem.mainHandler.creature.isPlayer)
+            {
+                // Letting go is a lost clash (user 2026-11-18): the weapon is gone already, so only the hit is left.
+                Lose("you let go of your weapon", disarmPlayer: false);
+                return;
+            }
             var now = Time.unscaledTime;
+            var dt = now - _lastTick;
+            _lastTick = now;
+            Measure(out var lead, out var gap);
+            var step = _rounds.Tick(dt, lead, gap);
+            Feel(now, lead);
             if (Lock.DiagnosticDue(now))
             {
-                LogDiagnostic(now);
+                LogDiagnostic(now, lead, gap);
             }
-            var end = Lock.Tick(now, MaxDuration);
-            if (end != LockEnd.None)
+            switch (step)
             {
-                EndLock(end, "time up (who wins comes in step 5c)");
+                case ClashStep.PushHeld:
+                    Dmcs.Log.Debug(Channel, "round " + _rounds.Round + "/" + _rounds.Rounds + " held (you " + F3(_rounds.PlayerSum) + " vs the enemy "
+                        + F3(_rounds.EnemySum) + " m·s): the enemy pushes back, bring your hand back to the blades within " + F(ReturnWindow) + " s");
+                    Pulse(1f);
+                    Spark(_lockFlash.Point);
+                    PlayDarkMessiahVersus();
+                    break;
+                case ClashStep.Returned:
+                    Dmcs.Log.Debug(Channel, "back at the blades (" + F(gap) + " m): round " + _rounds.Round + "/" + _rounds.Rounds + " starts");
+                    break;
+                case ClashStep.Won:
+                    Win();
+                    break;
+                case ClashStep.LostPush:
+                    Lose("the enemy pushed harder in round " + _rounds.Round + "/" + _rounds.Rounds + " (you " + F3(_rounds.PlayerSum) + " vs the enemy " + F3(_rounds.EnemySum) + " m·s)", disarmPlayer: true);
+                    break;
+                case ClashStep.LostReturn:
+                    Lose("your hand did not come back to the blades within " + F(ReturnWindow) + " s (still " + F(gap) + " m off)", disarmPlayer: true);
+                    break;
             }
         }
 
         /// <summary>
-        /// Headset diagnostic for the push measure (step 5c): how far the player's controller (its grip target) is ahead of the
-        /// weapon hand that lags behind, overall and towards the enemy; and how far the blades are apart at the flash.
+        /// How far the player's real controller (PlayerHand.grip, the target the hand follows) is ahead of the weapon hand
+        /// (RagdollHand.grip, lagging behind the heavy weapon): towards the enemy (lead) and at all (gap).
         /// </summary>
-        private static void LogDiagnostic(float now)
+        private static void Measure(out float lead, out float gap)
         {
-            var playerHand = _lockHand != null && _lockHand.playerHand != null ? _lockHand.playerHand : null;
-            var ahead = playerHand != null && playerHand.grip != null && _lockHand.grip != null ? playerHand.grip.position - _lockHand.grip.position : Vector3.zero;
+            lead = gap = 0f;
+            var playerHand = _lockHand != null ? _lockHand.playerHand : null;
+            if (playerHand == null || playerHand.grip == null || _lockHand.grip == null || Player.currentCreature == null)
+            {
+                return;
+            }
+            var ahead = playerHand.grip.position - _lockHand.grip.position;
             var toEnemy = _lockFlash.Npc.transform.position - Player.currentCreature.transform.position;
             toEnemy.y = 0f;
-            var towards = toEnemy.sqrMagnitude > 0.0001f ? Vector3.Dot(ahead, toEnemy.normalized) : 0f;
+            lead = toEnemy.sqrMagnitude > 0.0001f ? Vector3.Dot(ahead, toEnemy.normalized) : 0f;
+            gap = ahead.magnitude;
+        }
+
+        /// <summary>The enemy's push in the weapon hand (haptics) and in the grinding sound, every 0.05 s.</summary>
+        private static void Feel(float now, float lead)
+        {
+            var enemy = _enemyPeak > 0.0001f ? _rounds.EnemyPush / _enemyPeak : 0f;
+            var mine = _enemyPeak > 0.0001f ? Mathf.Clamp01(_rounds.PlayerPush(lead) / _enemyPeak) : 0f;
+            if (_grind != null)
+            {
+                _grind.SetIntensity(Mathf.Clamp01(0.3f + (0.5f * enemy) + (0.2f * mine)));
+            }
+            if (now >= _nextHaptic)
+            {
+                _nextHaptic = now + 0.05f;
+                if (_rounds.Phase == ClashPhase.Push)
+                {
+                    Pulse(0.2f + (0.6f * enemy));
+                }
+            }
+        }
+
+        private static void Pulse(float strength)
+        {
+            if (_lockHand != null && Haptics > 0f)
+            {
+                _lockHand.HapticTick(Mathf.Clamp01(strength * Haptics));
+            }
+        }
+
+        /// <summary>Headset diagnostic: the round, its phase, the lead and gap of the controller, the enemy's push, the blades' distance.</summary>
+        private static void LogDiagnostic(float now, float lead, float gap)
+        {
             var apart = TryPlayerBlade(_lockHand, out var a, out var b) ? ClashGeometry.DistanceToSegment(V(_lockFlash.Point), V(a), V(b)) : float.NaN;
-            Dmcs.Log.Debug(Channel, "lock t=" + F(Lock.Elapsed(now)) + " s: hand ahead " + F(ahead.magnitude) + " m (towards the enemy " + F(towards)
-                + " m), blades " + (float.IsNaN(apart) ? "n/a" : F(apart) + " m") + " apart");
+            Dmcs.Log.Debug(Channel, "lock t=" + F(Lock.Elapsed(now)) + " s, round " + _rounds.Round + "/" + _rounds.Rounds + " " + _rounds.Phase
+                + ": hand ahead " + F(gap) + " m (towards the enemy " + F(lead) + " m), enemy push " + F(_rounds.EnemyPush) + " m, sums you "
+                + F3(_rounds.PlayerSum) + " / enemy " + F3(_rounds.EnemySum) + ", blades " + (float.IsNaN(apart) ? "n/a" : F(apart) + " m") + " apart");
+        }
+
+        /// <summary>
+        /// The player won the lock: the enemy's sword flies away (Win Disarms), then it kneels with the kneel chance (the
+        /// execution window of 4c opens) or staggers; Clash Win adrenaline.
+        /// </summary>
+        private static void Win()
+        {
+            var npc = _lockFlash.Npc;
+            var hand = _lockFlash.Hand;
+            var name = _lockFlash.NpcName;
+            var rounds = _rounds.Rounds;
+            EndLock(Lock.Decide(), "you won");
+            var away = AwayFromPlayer(npc);
+            var disarmed = WinDisarms && DisarmStrike.DisarmFromClash(npc, hand, away, "won clash");
+            PlayDarkMessiahDisarm(disarmed);
+            var kneels = Dice.NextDouble() * 100.0 < WinKneelChance && AdrenalineCritical.KneelAlive(npc, KneelReason.ClashWin);
+            if (!kneels && npc != null && !npc.isKilled)
+            {
+                npc.ForceStagger(away, BrainModuleHitReaction.PushBehaviour.Effect.StaggerMedium);
+            }
+            Dmcs.Log.Debug(Channel, "you won the clash against " + name + " after " + rounds + " round" + (rounds == 1 ? "" : "s") + ": "
+                + (WinDisarms ? (disarmed ? "its sword flies away, " : "no sword to knock away, ") : "") + (kneels ? "it kneels" : "it staggers"));
+            Adrenaline.Add(AdrenalineSource.ClashWin, name);
+        }
+
+        /// <summary>The player lost the lock: per Lose Outcome the weapon flies away and/or the player takes the hit; the enemy swings on.</summary>
+        private static void Lose(string why, bool disarmPlayer)
+        {
+            var npc = _lockFlash?.Npc;
+            var name = _lockFlash?.NpcName ?? "the enemy";
+            var hand = _lockHand;
+            var item = _lockItem;
+            EndLock(Lock.Decide(), "you lost");
+            var parts = new List<string>();
+            if (disarmPlayer && ClashLoseOutcomes.Disarms(LoseOutcome) && hand != null && hand.grabbedHandle != null && hand.grabbedHandle.item == item)
+            {
+                hand.TryRelease();
+                if (item != null && item.physicBody != null && npc != null)
+                {
+                    var flight = item.transform.position - npc.transform.position;
+                    flight.y = 0.3f * flight.magnitude;
+                    item.physicBody.AddForce(flight.normalized * Mathf.Max(DisarmStrike.FlingForce, 2f), ForceMode.VelocityChange);
+                }
+                parts.Add("your " + (item != null ? item.data?.id : "weapon") + " flies away");
+            }
+            var player = Player.currentCreature;
+            if (ClashLoseOutcomes.Hits(LoseOutcome) && LoseDamage > 0f && player != null && !player.isKilled)
+            {
+                var before = player.currentHealth;
+                player.Damage(LoseDamage, DamageType.Blunt);
+                parts.Add("you take " + LoseDamage.ToString("0", CultureInfo.InvariantCulture) + " damage (health " + F(before) + " -> " + F(player.currentHealth) + ")");
+            }
+            Dmcs.Log.Debug(Channel, "you lost the clash against " + name + ": " + why + (parts.Count > 0 ? "; " + string.Join(", ", parts) : "; no penalty (" + LoseOutcome + ")"));
+        }
+
+        private static Vector3 AwayFromPlayer(Creature npc)
+        {
+            var player = Player.currentCreature;
+            if (npc == null || player == null)
+            {
+                return Vector3.up;
+            }
+            var away = npc.transform.position - player.transform.position;
+            away.y = 0f;
+            return (away.normalized + (Vector3.up * 0.5f)).normalized;
         }
 
         private static void EndLock(LockEnd end, string why)
@@ -656,17 +960,91 @@ namespace DMCS
             {
                 _lockItem.physicBody.mass = _lockMass;
             }
+            StopGrind();
             Telegraph.Ended(_lockNpc);
             RemoveFlash(_lockNpc);
             Dmcs.Log.Debug(Channel, "blades unlocked (" + end + ": " + why + ")" + (npc != null ? ": " + npc.name + " moves again" : string.Empty));
             _lockFlash = null;
             _lockItem = null;
             _lockHand = null;
+            _rounds = null;
+        }
+
+        /// <summary>Sparks (and the game's metal clang) at a point: Blade &amp; Sorcery's HitMaterialMetal effect.</summary>
+        private static void Spark(Vector3 point)
+        {
+            var effect = Catalog.GetData<EffectData>(ClashFightSounds.SparkEffectId, false)?.Spawn(point, Quaternion.identity);
+            effect?.Play();
+        }
+
+        /// <summary>The game's metal rubbing loop at the blades for the whole lock; its intensity follows the push.</summary>
+        private static void StartGrind(Vector3 point)
+        {
+            StopGrind();
+            _grind = Catalog.GetData<EffectData>(ClashFightSounds.GrindEffectId, false)?.Spawn(point, Quaternion.identity);
+            if (_grind != null)
+            {
+                _grind.SetIntensity(0.3f);
+                _grind.Play();
+            }
+        }
+
+        private static void StopGrind()
+        {
+            if (_grind != null)
+            {
+                _grind.End();
+                _grind = null;
+            }
+        }
+
+        /// <summary>Dark Messiah's "Sword_Versus_Sword" (a random take, volume 0.5–0.7, pitch 95–105 %) when switched on and found.</summary>
+        private static void PlayDarkMessiahVersus()
+        {
+            if (!DarkMessiahSounds || !DarkMessiahAssets.TryClashSounds(out var versus, out _) || versus.Length == 0)
+            {
+                return;
+            }
+            var take = versus[Dice.Next(versus.Length)];
+            PlayWav(take, 0.5f + ((float)Dice.NextDouble() * 0.2f), 0.95f + ((float)Dice.NextDouble() * 0.1f));
+        }
+
+        /// <summary>Dark Messiah's "Sword_Disarm" (volume 0.6) when switched on, found, and a sword flew.</summary>
+        private static void PlayDarkMessiahDisarm(bool disarmed)
+        {
+            if (disarmed && DarkMessiahSounds && DarkMessiahAssets.TryClashSounds(out _, out var disarm) && disarm != null)
+            {
+                PlayWav(disarm, 0.6f, 1f);
+            }
+        }
+
+        private static void PlayWav(WavData wav, float volume, float pitch)
+        {
+            if (!DarkMessiahClips.TryGetValue(wav, out var clip) || clip == null)
+            {
+                clip = AudioClip.Create("DMCS Clash (Dark Messiah)", wav.Samples.Length / wav.Channels, wav.Channels, wav.Rate, false);
+                clip.SetData(wav.Samples, 0);
+                DarkMessiahClips[wav] = clip;
+            }
+            EnsureAudio();
+            if (_darkMessiahAudio == null)
+            {
+                // Its own source: the pitch of a source bends every sound it is playing, the flash sound included.
+                _darkMessiahAudio = _audioHost.AddComponent<AudioSource>();
+                _darkMessiahAudio.spatialBlend = 0f;
+                _darkMessiahAudio.playOnAwake = false;
+            }
+            _darkMessiahAudio.pitch = pitch;
+            _darkMessiahAudio.PlayOneShot(clip, volume);
         }
 
         /// <summary>Builds every DMCS flash sound in the background (each takes a moment in the game's Mono), at level load.</summary>
         public static void Prewarm()
         {
+            if (DarkMessiahSounds)
+            {
+                DarkMessiahAssets.Begin();
+            }
             foreach (var style in FlashSound.Sounding)
             {
                 Samples(style);
@@ -806,6 +1184,8 @@ namespace DMCS
         private static Vec3 V(Vector3 v) => new Vec3(v.x, v.y, v.z);
 
         private static string F(float v) => v.ToString("0.00", CultureInfo.InvariantCulture);
+
+        private static string F3(float v) => v.ToString("0.000", CultureInfo.InvariantCulture);
 
         private static ModOptionFloat[] Floats(SliderSpec spec, string format, string unit) =>
             spec.Values().Select(v => new ModOptionFloat(v.ToString(format, CultureInfo.InvariantCulture) + unit, v)).ToArray();
