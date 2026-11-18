@@ -104,8 +104,10 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 - The existing hand-hit rule stays: a hit on a staggered NPC's hand disarms (`disarmChance`, default 100 %); forearm only with `includeForearm` (default off).
 - Dropped design: "grab the handle to take the weapon while staggered". The base game already hands a weapon with a short handle (dagger, short sword) to whoever grabs it, staggered or not (`Handle.OnGrab` releases all other holders when `axisLength == 0`; seen in a BasHarness run 2026-11-16). A chance on top would need DMCS to block the game's own grab.
 
+**Twist Disarm, built 2026-11-18** (docs/IMPLEMENTATION.md, step 3c; roll speed default 400°/s is a guess):
+- **Twist Disarm** (default on, chance default 50 %, no stagger needed): the player's weapon hits the NPC's **weapon** (blade on blade) while the blade rolls around its own long axis (wrist twist) faster than `twistMinRollSpeed` (deg/s). Total angular speed is not used, because every swing rotates around shoulder and elbow. Contact from the player's weapons' own collision events (not `onCreatureAttackParry`, which the game raises only while the NPC defends).
+
 **Not built yet:**
-- **Twist Disarm** (default on, chance default 50 %, no stagger needed): the player's weapon hits the NPC's **weapon** (blade on blade) while the blade rolls around its own long axis (wrist twist) faster than `twistMinRollSpeed` (deg/s). Total angular speed is not used, because every swing rotates around shoulder and elbow. Shares the weapon-on-weapon contact code with Clash of Might; build together with step 5.
 - Maybe `Gamey` / `Realistic` / `Custom` presets for the disarm values (as Charge Stagger has); Realistic values need the headset.
 - Adrenaline gain per disarm path and a catch bonus (catching a disarmed weapon in the air before it lands); with step 4.
 

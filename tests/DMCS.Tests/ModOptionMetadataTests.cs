@@ -224,6 +224,9 @@ public class ModOptionMetadataTests
                 (DisarmStrikeSettings.FemaleChanceName, "System.Int32", "Slider"),
                 (DisarmStrikeSettings.SmallerChanceName, "System.Int32", "Slider"),
                 (DisarmStrikeSettings.SmallerMarginName, "System.Single", "Slider"),
+                (TwistSettings.EnabledName, "System.Boolean", "ArrowList"),
+                (TwistSettings.ChanceName, "System.Single", "Slider"),
+                (TwistSettings.MinRollSpeedName, "System.Single", "Slider"),
             },
             group.Select(o => (o.Name, o.DataType, o.InteractionType)));
         Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));

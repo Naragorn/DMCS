@@ -1,0 +1,55 @@
+# Step 3c: Twist Disarm. The player's sword sweeps through the standing NPC's sword (real physics: the game's own
+# collision events between the two held weapons), the player's right controller rolling around the blade while it does
+# (BasHarness player-strike-weapon). Too slow a roll: no disarm; a fast one: the NPC drops its sword. How fast a real
+# wrist twist is: headset (the 400°/s default is a guess).
+
+wait-level
+press DMCS "Reset To Defaults"
+option-exists DMCS "Twist Disarm" category="Disarm Strike" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Twist Disarm Chance" category="Disarm Strike" type=Single interaction=Slider save=true
+option-exists DMCS "Twist Min Roll Speed" category="Disarm Strike" type=Single interaction=Slider save=true
+expect-option DMCS "Twist Disarm" true
+expect-option DMCS "Twist Disarm Chance" 50
+expect-option DMCS "Twist Min Roll Speed" 400
+set-option DMCS "Debug Logging" true
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Adrenaline Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+set-option DMCS "Twist Disarm Chance" 100
+# a short no-regrab time, so section 3 can hand the NPC a sword again
+set-option DMCS "Disarm No Regrab Time" 2
+player-invincible true
+spawn-npc HumanMale distance=0.9 angle=0 brain=HumanDummy
+npc-grab SwordShortCommon
+player-grab SwordShortCommon
+wait 1
+
+# 1. The blades meet without a twist: a contact, too slow, the NPC keeps its sword
+mark
+player-strike-weapon twist=0
+expect-log no twist disarm, TooSlow
+expect-npc holding true
+screenshot twist-slow of=npc
+
+# 2. The same strike with a fast twist (900°/s): the NPC drops its sword. The sweep can knock the player's own sword
+# out of the mock hand (seen 2026-11-18), so every strike starts with a fresh one.
+wait 1
+player-grab SwordShortCommon
+mark
+player-strike-weapon twist=900
+expect-log twist disarm on HumanMale
+expect-log (twist, roll
+expect-npc holding false within=1
+screenshot twist-disarm of=npc
+
+# 3. Twist Disarm off: a fast twist does nothing
+wait 3
+npc-grab SwordShortCommon
+player-grab SwordShortCommon
+set-option DMCS "Twist Disarm" false
+wait 1
+mark
+player-strike-weapon twist=900
+expect-no-log twist disarm
+expect-npc holding true
+quit

@@ -718,7 +718,7 @@ namespace DMCS
             var npc = flash.Npc;
             var away = AwayFromPlayer(npc);
             Spark(hit.contactPoint);
-            var disarmed = DisarmStrike.DisarmFromClash(npc, flash.Hand, away, "clash at the star", hit);
+            var disarmed = DisarmStrike.DisarmAlong(npc, flash.Hand, away, "clash at the star", hit);
             PlayDarkMessiahDisarm(disarmed);
             Telegraph.Ended(id);
             RemoveFlash(id);
@@ -891,7 +891,7 @@ namespace DMCS
             var rounds = _rounds.Rounds;
             EndLock(Lock.Decide(), "you won");
             var away = AwayFromPlayer(npc);
-            var disarmed = WinDisarms && DisarmStrike.DisarmFromClash(npc, hand, away, "won clash");
+            var disarmed = WinDisarms && DisarmStrike.DisarmAlong(npc, hand, away, "won clash");
             PlayDarkMessiahDisarm(disarmed);
             var kneels = Dice.NextDouble() * 100.0 < WinKneelChance && AdrenalineCritical.KneelAlive(npc, KneelReason.ClashWin);
             if (!kneels && npc != null && !npc.isKilled)

@@ -216,6 +216,40 @@ namespace DMCS
             DisarmStrikeSettings.SmallerMargin.Values()
                 .Select(v => new ModOptionFloat(v.ToString("0", CultureInfo.InvariantCulture) + " cm", v)).ToArray();
 
+        [ModOption(
+            name = TwistSettings.EnabledName,
+            tooltip = "Hit an enemy's weapon with yours while twisting your wrist (the blade rolls around itself) and it may drop it. No stagger needed.",
+            category = DmcsCategories.DisarmStrike,
+            categoryOrder = DmcsCategories.DisarmStrikeOrder,
+            order = 18)]
+        public static bool TwistEnabled { get; set; } = TwistSettings.DefaultEnabled;
+
+        [ModOption(
+            name = TwistSettings.ChanceName,
+            tooltip = "Chance (percent) that a fast enough twist knocks the enemy's weapon out.",
+            valueSourceName = nameof(TwistChanceValues),
+            category = DmcsCategories.DisarmStrike,
+            categoryOrder = DmcsCategories.DisarmStrikeOrder,
+            order = 19)]
+        [ModOptionSlider]
+        public static float TwistChance { get; set; } = TwistSettings.Chance.Default;
+
+        [ModOption(
+            name = TwistSettings.MinRollSpeedName,
+            tooltip = "How fast (degrees per second) your blade must roll around itself when it meets the enemy's weapon.",
+            valueSourceName = nameof(TwistMinRollSpeedValues),
+            category = DmcsCategories.DisarmStrike,
+            categoryOrder = DmcsCategories.DisarmStrikeOrder,
+            order = 20)]
+        [ModOptionSlider]
+        public static float TwistMinRollSpeed { get; set; } = TwistSettings.MinRollSpeed.Default;
+
+        public static ModOptionFloat[] TwistChanceValues() =>
+            TwistSettings.Chance.Values().Select(v => new ModOptionFloat(v.ToString("0", CultureInfo.InvariantCulture) + " %", v)).ToArray();
+
+        public static ModOptionFloat[] TwistMinRollSpeedValues() =>
+            TwistSettings.MinRollSpeed.Values().Select(v => new ModOptionFloat(v.ToString("0", CultureInfo.InvariantCulture) + "°/s", v)).ToArray();
+
         public static ModOptionFloat[] FlingForceValues() =>
             DisarmStrikeSettings.FlingForce.Values()
                 .Select(v => new ModOptionFloat(v.ToString("0.0", CultureInfo.InvariantCulture) + " m/s", v)).ToArray();
@@ -234,6 +268,7 @@ namespace DMCS
             {
                 EventManager.onCreatureHit += OnCreatureHit;
                 EventManager.onCreatureDespawn += OnCreatureDespawn;
+                TwistDisarm.Hook();
                 _hooked = true;
             }
         }
@@ -245,6 +280,7 @@ namespace DMCS
             {
                 EventManager.onCreatureHit -= OnCreatureHit;
                 EventManager.onCreatureDespawn -= OnCreatureDespawn;
+                TwistDisarm.Unhook();
                 _hooked = false;
             }
             RestoreAll();
@@ -528,7 +564,7 @@ namespace DMCS
         }
 
         /// <summary>As the game's own hand-hit disarm tells a shield (BrainModuleEquipment.OnDamage).</summary>
-        private static bool IsShieldItem(Item item)
+        internal static bool IsShieldItem(Item item)
         {
             return item != null && item.data != null && item.data.moduleAI != null
                 && item.data.moduleAI.primaryClass == ItemModuleAI.WeaponClass.Shield;
@@ -540,11 +576,11 @@ namespace DMCS
         }
 
         /// <summary>
-        /// Clash of Might's disarm (a won lock, or the simple variant's block at the star): the hand lets go, the weapon flies
-        /// off along the direction (Fling Force), then the same no-regrab lock as every other disarm path. Runs while Disarm
-        /// Strike itself is off too: it is Clash of Might's own outcome.
+        /// A disarm along a direction, for Clash of Might (a won lock, the simple variant's block at the star; runs while
+        /// Disarm Strike itself is off too, as it is Clash of Might's own outcome) and Twist Disarm: the hand lets go, the
+        /// weapon flies off along the direction (Fling Force), then the same no-regrab lock as every other disarm path.
         /// </summary>
-        internal static bool DisarmFromClash(Creature target, RagdollHand hand, Vector3 direction, string how, CollisionInstance hit = null)
+        internal static bool DisarmAlong(Creature target, RagdollHand hand, Vector3 direction, string how, CollisionInstance hit = null)
         {
             if (target == null || target.isKilled || !Holds(hand))
             {

@@ -39,6 +39,8 @@ Change any value and the preset shows *Custom*.
   chance, and every further hit in the same stagger adds 25 % (25 / 50 / 75 / 100 %). A hit that does not knock the
   weapon loose shows sparks on the enemy's weapon and gives a pulse in your hand.
 - Separate chances for female enemies and for enemies shorter than you.
+- **Twist (testing):** hit the enemy's weapon with yours while you twist your wrist, so your blade rolls around itself,
+  and the enemy drops its weapon (50 %). No stagger needed. How fast the twist must be is a guess until tested in VR.
 - **Fling:** a knocked-out weapon flies off in the direction of your hit.
 - **Shields** stay in the hand, as in the base game, unless you allow disarming them.
 - **After a disarm:** the enemy cannot pick up or draw a weapon for 10 s, or never with *Disarm Stays Permanent*. With
@@ -187,6 +189,9 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Body Hit Drop Chance Female | 25 % | 0–100 % | First body hit chance for female enemies |
 | Body Hit Drop Chance Smaller | 25 % | 0–100 % | First body hit chance for enemies shorter than you |
 | Smaller By | 0 cm | 0–50 cm | How much shorter an enemy must be for the chance above |
+| Twist Disarm | on | | A wrist twist on the enemy's weapon can knock it out, no stagger needed |
+| Twist Disarm Chance | 50 % | 0–100 % | Chance a fast enough twist disarms |
+| Twist Min Roll Speed | 400°/s | 100–1500°/s | How fast your blade must roll around itself when it meets the enemy's weapon |
 
 The highest chance that fits the enemy applies. Base 0 % with a female chance of 25 % means only female enemies drop
 on body hits.

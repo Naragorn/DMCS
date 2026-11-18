@@ -126,6 +126,27 @@ Not yet verified in game: that `HumanDummy` never picks anything up, and how the
   whoever grabs its handle, staggered or not (`Handle.OnGrab` → `Release()` when `axisLength == 0`; seen in a harness probe
   2026-11-16 with `DaggerCommon` and `SwordShortCommon`).
 
+### Twist Disarm (step 3c, built 2026-11-18 with step 5)
+
+- **Contact:** the player's held weapons' own collision handlers (`CollisionHandler.OnCollisionStartEvent`, subscribed on
+  `EventManager.OnItemGrab` by a player hand and dropped on `OnItemRelease` when no player hand holds it, as the game's own
+  `BladeDancer` subscribes `item.mainCollisionHandler`); the other side must be an item of type Weapon held by a living
+  non-player creature. Source and target are swapped when the event comes the other way round. The game's
+  `onCreatureAttackParry` was not used: `BrainModuleDefense.OnWeaponCollision` raises it only while the NPC is defending
+  (read 2026-11-18), so it misses most blade contacts.
+- **Roll:** `HandSpeeds` samples each controller's rig-local rotation (`PlayerHand.transform.localRotation`) every frame;
+  `RollMeter` turns it into an angular velocity over 0.03 s; at the contact the fastest component along the held blade's
+  long axis (grip → furthest damager, turned into the rig's space) in the last 0.15 s is the roll. A swing turns the blade
+  around shoulder and elbow, not around itself, so it adds next to nothing; only the wrist's roll counts (spec).
+- **Rule** (`TwistRule`, Core, unit-tested): Disarm Strike and *Twist Disarm* on, an enemy weapon, not a kept shield,
+  not during a Clash lock, one decision per enemy per 0.5 s (a single clash raises several collision events), roll ≥
+  *Twist Min Roll Speed* (400°/s, guess), then *Twist Disarm Chance* (50 %). No stagger needed. The disarm goes through
+  `DisarmStrike.DisarmAlong` (fling along the hit, no-regrab lock, stand still, Disarm adrenaline, catch bonus).
+- Log: `blade on HumanMale0's SwordShortCommon: no twist disarm, TooSlow (roll 0°/s (min 400), hit 2.52 m/s)` and
+  `twist disarm on HumanMale0's SwordShortCommon (roll 904°/s (min 400), hit 2.31 m/s)` (harness 2026-11-18).
+- Not verified: how fast a real wrist twist is in the headset (400°/s is a guess), and whether real swings in a fight give
+  contacts the game reports (CollisionHandler drops slow contacts; the harness strike was 2.2–2.5 m/s).
+
 ## Adrenaline (step 4a)
 
 - Meter `AdrenalineMeter` (Core): Filling → Ready (window) → empty again when the window runs out unused. Real time
@@ -348,7 +369,7 @@ Decided with the user 2026-11-18 (spec, CLAUDE.md section 1).
 - **Mode** `Clash of Might Mode` (string dropdown Off / Simple / On, default **Simple**) replaces the group's `Enabled`
   toggle; `FeatureToggle` stays on for Simple and On. The only group without an `Enabled` toggle (metadata test).
 - **Simple:** a block that passes `JudgeBlock` (point and angle as for the lock) knocks the sword away:
-  `DisarmStrike.DisarmFromClash` (new; release, `EventManager.InvokeDisarm` with the parry's `CollisionInstance`, fling
+  `DisarmStrike.DisarmAlong` (new; release, `EventManager.InvokeDisarm` with the parry's `CollisionInstance`, fling
   away from the player at *Fling Force*, the no-regrab lock and stand-still of every disarm path; runs while Disarm Strike
   itself is off too). Adrenaline: `+10 BlockParry` (the game's block event, as before), `+15 Disarm` (Disarm Strike's
   event) and the new `+25 ClashWin`, so one simple block is worth 50 by default (measured in the harness).
@@ -360,7 +381,7 @@ Decided with the user 2026-11-18 (spec, CLAUDE.md section 1).
   Window* (1 s) starts the next round; else lost. Rounds per lock: random between min and max (3–5), minus *Fewer Rounds*
   (1) against a smaller or female enemy, at least 1. No progress bar (user): every round counts on its own; the last held
   round wins.
-- **Win:** `DisarmFromClash` (*Clash Win Disarms*), then kneel with *Clash Win Kneel Chance* (25 %, `AdrenalineCritical.KneelAlive`,
+- **Win:** `DisarmAlong` (*Clash Win Disarms*), then kneel with *Clash Win Kneel Chance* (25 %, `AdrenalineCritical.KneelAlive`,
   `KneelReason.ClashWin`) or `Creature.ForceStagger(away, StaggerMedium)`; `+25 ClashWin`.
 - **Lose:** `ClashLoseOutcomes` (Disarm + Hit default): the player's hand lets go (`RagdollHand.TryRelease`) and the weapon
   flies off away from the enemy; `Creature.Damage(LoseDamage, Blunt)` on the player (read: `Damage(float, DamageType)` builds
@@ -495,6 +516,7 @@ a real physical weapon hit (held-weapon attribution) and how the stagger *feels*
 
 | Date | Step | Result |
 |---|---|---|
+| 2026-11-18 | 3c | Twist Disarm. Unit tests 611 **PASS**, BasHarness 127 **PASS**. Harness `step3c-twist-disarm` (new BasHarness verb `player-strike-weapon [twist=]`: real blade-on-blade physics against a standing `HumanDummy` with a sword) **PASS** three times in a row and in the full suite (16/16): no twist → `TooSlow (roll 0°/s, hit 2.49–2.52 m/s)`, NPC keeps its sword; 900°/s → measured `roll 904–926°/s`, disarmed; Twist off → nothing. Before (red): the same 900°/s strike on 31f38bd leaves the sword in the NPC's hand (whether the blades touched there cannot be read: that build logs no contacts). First runs found: a straight sweep from the player's blade to the NPC's often hit its body first → the verb now comes at the blade from outside the body; the sweep can knock the player's own sword out of the mock hand → each strike grabs a fresh one. |
 | 2026-11-18 | 5c | Clash modes (Off/Simple/On, default Simple), rounds, push measure, win/lose, sounds. Unit tests 591 **PASS**, BasHarness 125 **PASS**. Harness: full suite 14/15 **PASS**; the 15th, step5c, failed there in its first section 4 (controller left 0.8 m out, see 5c), which was then replaced by `player-release`; step5c then **PASS** three times in a row (DMCS code unchanged since the suite run). Before (red): the same step5c on ff931db fails at its first check (no `Clash of Might Mode`); the old lock just ended (`TimeUp`) with the enemy still armed. Found on the way: in the harness nothing holds the heavy weapon back (the blades never touch), so the hand catches up with a moved controller within ~0.4 s; a controller beyond arm's length is read differently by DMCS and BasHarness (open). |
 | 2026-11-17 | 5a | Clash telegraph (big swing, flash, slow-motion). Harness: all thirteen scenarios **PASS** (`step3` on a rerun: the known "may re-arm" timeout, passed twice after). Unit tests 499 **PASS**. Before: a probe measured all 68 attacks' wind-ups and found that the wind-up moves in another plane than the strike (so the angle is read at the strike start) and that an NPC can be frozen mid-swing (`animator.speed = 0`). First 5a runs found: the NPC's random loadout (a mace) and the player dying after a minute made the scenario flaky → BasHarness `container=` and `player-invincible`; Disarm Strike disarmed the NPC on its own swings (open finding). |
 | 2026-11-17 | 4e | Dodge and catch bonus. Harness: all twelve scenarios **PASS**; unit tests 445 **PASS**. The first 4e run found two bugs: dodges were still judged with Adrenaline off (all handlers now check the toggle), and the per-frame head speed read 19.85 m/s from a 2.5 m/s run (now measured over 0.1 s, then 5.05 m/s while sprinting up). Also: running into the test NPCs charge-staggered them and filled the meter, so the scenario turns away and switches Charge Stagger off. |
