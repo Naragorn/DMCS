@@ -381,11 +381,13 @@ Decided with the user 2026-11-18 (spec, CLAUDE.md section 1).
   rounds (sword flies, NPC staggers); letting go during the lock loses with the hit only. PASS three times in a row; the full suite
   ran 14/15 before that change (step5c failed in its then section 4, see below).
 - **Not coming back** is unit-tested only. In the harness a controller moved 0.8 m out and left there gave three different
-  results in four runs: the game's arm's-length drop (let go), the return window running out (hand stuck 0.10 m off), and
-  once a win, because DMCS read `hand ahead 0.05 m` throughout while BasHarness read a lead of 0.65 m for the same pair
-  (`PlayerHand.grip` vs `RagdollHand.grip`) in the same frames. **Open:** why the two readings differ beyond arm's length (both
-  read in Update; within reach they agree in sign and size). This is the headset diagnostic's own data path, so the first
-  headset log must show whether the lead it logs follows the real controller.
+  results in four runs (the game's arm's-length drop, the return window running out with the hand stuck 0.10 m off, once a
+  win). **Resolved 2026-11-18 (probe):** the hand follows even a 0.8 m jump within ~0.7 s (DMCS: `hand ahead 0.69 → 0.05 m`),
+  so which of the three comes depends on whether the sword gets stuck on something. The 0.65 m "lead" BasHarness reported was
+  its own misreading: same `RagdollHand` object (checked by reference), but read in its coroutine `RagdollHand.grip` sat up to
+  0.6 m away from the held sword, while DMCS read it 3 cm from the sword in the same frames. Why the bone has another pose at
+  that point of the frame was not looked into. BasHarness `player-push` now measures against the held handle (a physics body)
+  and agrees with DMCS (`mean 0.002 m` after the catch-up). DMCS's own push measure was right all along.
 - **Measured, important for the headset:** in the harness the player's sword never touches the frozen enemy blade (the block is
   a raised event), and then nothing holds the 20× heavy weapon back: the hand catches up with a moved controller within
   ~0.3–0.4 s (`hand ahead 0.13 → 0.05 m`). The push measure only works if the frozen enemy blade really resists a press.
