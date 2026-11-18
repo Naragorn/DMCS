@@ -35,6 +35,7 @@ dotnet test                                               # build + all tests
 dotnet format --verify-no-changes                         # lint
 dotnet build src/DMCS/DMCS.csproj -c Release -p:DeployToGame=true   # copies DMCS.dll + manifest.json to Mods/DMCS
 tools/harness.sh                                          # in-game scenarios, headless (see below)
+tools/deploy.sh                                           # committed build into BOTH game installs (Linux + Windows)
 ```
 
 Game path defaults to `~/.local/share/Steam/steamapps/common/Blade & Sorcery`; override with `-p:BasGameDir=...` or env `BAS_GAME_DIR`.

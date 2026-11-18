@@ -229,6 +229,8 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 5. End of step 5: three more clash flash sounds besides DMCS 1 (user 2026-11-17). Cost: small (the synth exists), the ear decides.
 6. Later, not scheduled: `Gamey` / `Realistic` presets for the disarm values (Realistic needs headset values), and features as skill-tree powers (below). Cost: medium to large; whether a mod can add a skill to the Body tree is not checked yet.
 
+**Deploy (rule, user 2026-11-18): always both installs.** Every committed, tested build goes into the Linux Steam copy **and** the Windows Steam copy of Blade & Sorcery (`…/BladeAndSorcery_Data/StreamingAssets/Mods/DMCS`; on Windows Vortex manages the Mods folder, DMCS lies next to the others), never only one. Use `tools/deploy.sh`: it refuses uncommitted `src` changes and builds with probe code, and checks the md5 of all three copies. Tell the Achilles session the deployed commit (it runs its compat check against DMCS).
+
 **Working on Windows:** the harness (`tools/harness.sh`) needs Linux (Bash, own Proton prefix). A Windows build needs `BAS_GAME_DIR` or `-p:BasGameDir=…`, as the default path in `Directory.Build.props` is the Linux Steam folder.
 
 ---
