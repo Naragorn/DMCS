@@ -247,13 +247,48 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 3. Step 5: Clash of Might (redesigned 2026-11-17, see section 1) + Twist Disarm (blade-on-blade contact). Cost: large; first a harness probe (wind-up times, freezing an NPC mid-swing, swing plane, controller offset), then build; push strength, weight and timings are tuned in the headset.
 4. DMCS 4 vignette fine-tuning: Dark Messiah's streaks are a bit more brownish and blurrier. Cost: small (colour and blur in the generator plus a statistics test); only when the headset shows it matters.
 5. End of step 5: three more clash flash sounds besides DMCS 1 (user 2026-11-17). Cost: small (the synth exists), the ear decides.
-6. Later, not scheduled: `Gamey` / `Realistic` presets for the disarm values (Realistic needs headset values), and features as skill-tree powers (below). Cost: medium to large; whether a mod can add a skill to the Body tree is not checked yet.
+6. Perfect Block (section 5, user idea 2026-11-20): design with the user first (what a short swing is, how the block shows, the guard-down exceptions). Cost: medium; the threshold needs the headset.
+7. Later, not scheduled: `Gamey` / `Realistic` presets for the disarm values (Realistic needs headset values), and features as skill-tree powers (below). Cost: medium to large; whether a mod can add a skill to the Body tree is not checked yet.
 
 **Deploy (rule, user 2026-11-18): always both installs.** Every committed, tested build goes into the Linux Steam copy **and** the Windows Steam copy of Blade & Sorcery (`…/BladeAndSorcery_Data/StreamingAssets/Mods/DMCS`; on Windows Vortex manages the Mods folder, DMCS lies next to the others), never only one. Use `tools/deploy.sh`: it refuses uncommitted `src` changes and builds with probe code, and checks the md5 of all three copies. Tell the Achilles session the deployed commit (it runs its compat check against DMCS).
 
 **Working on Windows:** the harness (`tools/harness.sh`) needs Linux (Bash, own Proton prefix). A Windows build needs `BAS_GAME_DIR` or `-p:BasGameDir=…`, as the default path in `Directory.Build.props` is the Linux Steam folder.
 
 ---
+
+## 5. Perfect Block (idea, user 2026-11-20; not designed, not built)
+
+**Idea (user):** enemies block 100 % of the player's attacks while the player only makes short swings. Waggling the
+controller must not win fights; the player has to bring finesse and skill into the fight.
+
+**Why it fits:** B&S's damage depends on blade speed, so quick short flicks of the wrist are the cheapest way to hit.
+Dark Messiah's melee rewards the opposite: power strikes break blocks, quick strikes mostly meet a raised guard (GameSpot:
+"most melee enemies will have their parries up, making these strikes useless"), and a counter after a parry opens the
+enemy.
+
+**To decide with the user before building:**
+- **What a short swing is.** Candidates: the hand's travel in the last ~0.3 s before the hit (a big swing travels far,
+  a flick barely), the swing's wind-up (the hand moved back before it came forward), the arc of the blade tip, or the
+  hit speed alone. The hand's travel and wind-up are read from the real controller (as HandSpeeds); the threshold is
+  a Mod Menu slider and needs the headset.
+- **What the block does.** (a) DMCS deflects the hit: no damage, sparks and a clang, the player's weapon is pushed back
+  (cheap, deterministic, works on every NPC whatever its AI does). (b) The NPC's own AI really raises its weapon
+  (BrainModuleDefense; whether DMCS can force a block in time is not checked). Recommendation: (a) first, (b) later if
+  the look matters.
+- **When the guard is down** (attacks that always get through): a staggered, kneeling, knocked-down or disarmed enemy;
+  an enemy in the middle of its own attack; a hit from behind or the side (outside its view); the counter window right
+  after the player's parry; thrown weapons and spells (switch).
+- **What skill gets through instead:** a big swing with wind-up (the VR power strike), a feint (a swing that changes
+  direction), a counter after a parry, Charge Stagger, Twist Disarm, Clash of Might.
+- **Gradual or all-or-nothing:** 100 % block below the threshold (user's words), or a block chance that falls as the
+  swing grows. A setting `perfectBlockChance` (default 100 %) keeps both possible.
+- **Which enemies:** only armed ones (a weapon or shield to block with); per difficulty or enemy type later.
+- **Interplay:** a blocked hit gives no Adrenaline for hits, but a block by the enemy could count as "parried" for
+  Dark Messiah's counter idea; Disarm Strike's hand hit and Body Hit Drop need an enemy whose guard is down anyway
+  (staggered), so they do not conflict.
+
+**Config (proposal):** `perfectBlock` (on/off), `perfectBlockChance`, `minSwingTravel` (m), `minWindUp`, `blockDeflect`
+(sparks, sound, push-back), guard-down exceptions as toggles.
 
 ## Later: features as skill-tree powers (not scheduled)
 
