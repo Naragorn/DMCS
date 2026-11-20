@@ -87,6 +87,83 @@ namespace DMCS.Core
             },
             RingLevel = 0.02f,
         };
+
+        /// <summary>
+        /// DMCS 2 (2026-11-20): DMCS 1 made short (1.6 s instead of 3.6 s) for fights where many swings flash: the same
+        /// boom, strike and 1863 Hz ring, the boom loud to ~0.3 s and gone by 1.5 s.
+        /// </summary>
+        public static FlashSoundSpec Version2()
+        {
+            var s = Version1();
+            s.Duration = 1.6f;
+            s.Hold = 0.3f;
+            s.Decay1 = 0.25f;
+            s.Knee = 0.8f;
+            s.Decay2 = 0.15f;
+            s.Ring = new[]
+            {
+                new Partial(1670f, 0.25f, 0.12f), new Partial(1790f, 0.25f, 0.15f), new Partial(1863f, 1.3f, 0.2f), new Partial(1863f, 0.3f, 0.3f),
+                new Partial(3670f, 5f, 0.07f), new Partial(3670f, 0.15f, 0.25f), new Partial(5460f, 3f, 0.06f), new Partial(7345f, 3f, 0.06f),
+            };
+            return s;
+        }
+
+        /// <summary>
+        /// DMCS 3 (2026-11-20): darker and longer than DMCS 1, like a distant bell over thunder: a sub boom down to 24 Hz that
+        /// holds ~1.2 s, a heavier body, and the ring an octave lower (932 Hz, beating with 885 Hz).
+        /// </summary>
+        public static FlashSoundSpec Version3() => new FlashSoundSpec
+        {
+            Duration = 4.5f,
+            Hold = 1.2f,
+            Decay1 = 0.8f,
+            Knee = 2.6f,
+            Decay2 = 0.5f,
+            Subs = new[] { new Partial(24f, 0.7f, 0f), new Partial(48f, 0.3f, 0f), new Partial(62f, 0.35f, 0f), new Partial(75f, 0.2f, 0f) },
+            SubNoiseCutoff = 80f,
+            SubNoiseLevel = 9f,
+            BodyHz = 220f,
+            BodyLevel = 2f,
+            BodyBurst = 1.2f,
+            UpperHz = 700f,
+            UpperLevel = 0.6f,
+            StrikeHz = 1500f,
+            StrikeLevel = 2.2f,
+            Ring = new[]
+            {
+                new Partial(885f, 0.25f, 0.2f), new Partial(932f, 1.3f, 0.4f), new Partial(932f, 0.3f, 1.1f),
+                new Partial(1840f, 2f, 0.12f), new Partial(2790f, 1f, 0.08f),
+            },
+            RingLevel = 0.03f,
+        };
+
+        /// <summary>
+        /// DMCS 4 (2026-11-20): bright, so it cuts through the noise of a fight: the ring (2794 Hz with its octave and a
+        /// high partial) carries the sound, over a light boom and a sharp high strike; 3 s.
+        /// </summary>
+        public static FlashSoundSpec Version4() => new FlashSoundSpec
+        {
+            Duration = 3f,
+            Hold = 0.4f,
+            Decay1 = 0.35f,
+            Knee = 1.2f,
+            Decay2 = 0.3f,
+            Subs = new[] { new Partial(45f, 0.4f, 0f), new Partial(90f, 0.3f, 0f) },
+            SubsLevel = 0.35f,
+            SubNoiseLevel = 3f,
+            BodyHz = 500f,
+            BodyLevel = 1.2f,
+            UpperHz = 1800f,
+            UpperLevel = 1.2f,
+            StrikeHz = 4500f,
+            StrikeLevel = 3f,
+            Ring = new[]
+            {
+                new Partial(2700f, 0.25f, 0.2f), new Partial(2794f, 1.3f, 0.35f), new Partial(2794f, 0.3f, 0.8f),
+                new Partial(5588f, 3f, 0.08f), new Partial(8200f, 2f, 0.05f),
+            },
+            RingLevel = 0.3f,
+        };
     }
 
     /// <summary>Synthesises the clash flash sound (interleaved stereo floats). Pure and deterministic per seed.</summary>
@@ -94,7 +171,7 @@ namespace DMCS.Core
     {
         public const string Off = "Off";
 
-        public static readonly string[] Styles = { Off, "DMCS 1" };
+        public static readonly string[] Styles = { Off, "DMCS 1", "DMCS 2", "DMCS 3", "DMCS 4" };
 
         public const string DefaultStyle = "DMCS 1";
 
@@ -104,6 +181,9 @@ namespace DMCS.Core
             switch (style)
             {
                 case "DMCS 1": return FlashSoundSpec.Version1();
+                case "DMCS 2": return FlashSoundSpec.Version2();
+                case "DMCS 3": return FlashSoundSpec.Version3();
+                case "DMCS 4": return FlashSoundSpec.Version4();
                 default: return null;
             }
         }

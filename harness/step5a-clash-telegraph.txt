@@ -62,8 +62,18 @@ mark
 wait 20
 expect-log s), game sound Focus Ready
 expect-no-log sound DMCS
-set-option DMCS "Clash Flash Sound" "DMCS 1"
 set-option DMCS "Clash Flash Game Sound" Off
+# DMCS 2-4 (2026-11-20): each plays at the next flash, with its own length
+set-option DMCS "Clash Flash Sound" "DMCS 2"
+mark
+await-log 30 s), sound DMCS 2 (1.60 s)
+set-option DMCS "Clash Flash Sound" "DMCS 3"
+mark
+await-log 30 s), sound DMCS 3 (4.50 s)
+set-option DMCS "Clash Flash Sound" "DMCS 4"
+mark
+await-log 30 s), sound DMCS 4 (3.00 s)
+set-option DMCS "Clash Flash Sound" "DMCS 1"
 
 # 1c. Flash at the swing top off: it shows as the wind-up starts
 set-option DMCS "Clash Flash At Swing Top" false

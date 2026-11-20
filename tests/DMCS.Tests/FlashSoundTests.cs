@@ -146,12 +146,70 @@ public class FlashSoundTests
     }
 
     [Fact]
-    public void Styles_ListOffThenDmcs1()
+    public void Version2_IsVersion1MadeShort()
     {
-        Assert.Equal(new[] { "Off", "DMCS 1" }, FlashSound.Styles);
+        // The same boom, strike and ring, but loud only to ~0.3 s and gone by 1.5 s (DMCS 1: loud to ~0.9 s, 3.6 s long).
+        var spec = FlashSoundSpec.Version2();
+        var m = Mono(Gen(spec));
+        var body = Rms(m, 0.05, 0.25);
+
+        Assert.InRange(spec.Duration, 1.2f, 1.8f);
+        Assert.True(Rms(m, 0.6, 0.8) < 0.5 * body, "the boom no longer holds to 0.9 s");
+        Assert.True(Rms(m, spec.Duration - 0.15, spec.Duration) < 0.03 * body, "ends in silence, no click");
+        Assert.True(Tone(m, 0.05, 0.25, 84) > 10 * Tone(m, 0.05, 0.25, 1200), "the low end carries it");
+        Assert.True(Tone(m, 0.06, 0.3, 1863) > 4 * Tone(m, 0.06, 0.3, 1500), "DMCS 1's ring");
+    }
+
+    [Fact]
+    public void Version3_IsDarkerAndLonger_ThanVersion1()
+    {
+        var spec = FlashSoundSpec.Version3();
+        var m = Mono(Gen(spec));
+        var body = Rms(m, 0.1, 0.6);
+
+        Assert.True(spec.Duration > FlashSoundSpec.Version1().Duration);
+        Assert.True(Rms(m, 0.9, 1.2) > 0.8 * body, "the boom holds longer than DMCS 1's");
+        Assert.True(Rms(m, spec.Duration - 0.25, spec.Duration) < 0.03 * body, "ends in silence");
+        Assert.True(Tone(m, 0.1, 0.6, 24) > 10 * Tone(m, 0.1, 0.6, 1200), "a sub boom down to 24 Hz");
+        Assert.True(Tone(m, 0.06, 0.5, 932) > 4 * Tone(m, 0.06, 0.5, 1150), "the ring an octave below DMCS 1's");
+        Assert.True(Tone(m, 0.06, 0.5, 932) > 2 * Tone(m, 0.06, 0.5, 1863), "the low ring, not DMCS 1's");
+    }
+
+    [Fact]
+    public void Version4_IsBright_TheRingCarriesIt()
+    {
+        var spec = FlashSoundSpec.Version4();
+        var m = Mono(Gen(spec));
+        var body = Rms(m, 0.05, 0.4);
+
+        Assert.True(Tone(m, 0.06, 0.4, 2794) > 4 * Tone(m, 0.06, 0.4, 2400), "a ring at 2794 Hz");
+        Assert.True(Tone(m, 0.06, 0.4, 2794) > Tone(m, 0.06, 0.4, 90), "the ring is louder than the boom");
+        Assert.True(Tone(m, 0.0, 0.04, 4500) > 5 * Tone(m, 0.5, 0.54, 4500), "a sharp high strike");
+        Assert.True(Rms(m, spec.Duration - 0.2, spec.Duration) < 0.03 * body, "ends in silence");
+    }
+
+    [Theory]
+    [InlineData("DMCS 1")]
+    [InlineData("DMCS 2")]
+    [InlineData("DMCS 3")]
+    [InlineData("DMCS 4")]
+    public void EveryStyle_IsStereo_PeakNormalised_AndDeterministic(string style)
+    {
+        var spec = FlashSound.Spec(style)!;
+        var s = Gen(spec, 3);
+
+        Assert.Equal((int)(spec.Duration * Rate) * 2, s.Length);
+        Assert.Equal(spec.Peak, s.Max(Math.Abs), 3);
+        Assert.Equal(s, Gen(FlashSound.Spec(style)!, 3));
+    }
+
+    [Fact]
+    public void Styles_ListOffThenDmcs1To4()
+    {
+        Assert.Equal(new[] { "Off", "DMCS 1", "DMCS 2", "DMCS 3", "DMCS 4" }, FlashSound.Styles);
+        Assert.Equal(new[] { "DMCS 1", "DMCS 2", "DMCS 3", "DMCS 4" }, FlashSound.Sounding);
         Assert.Null(FlashSound.Spec("Off"));
-        Assert.NotNull(FlashSound.Spec("DMCS 1"));
-        Assert.Null(FlashSound.Spec("DMCS 2"));
+        Assert.Null(FlashSound.Spec("DMCS 5"));
         Assert.Null(FlashSound.Spec("whatever"));
     }
 }
