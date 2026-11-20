@@ -144,6 +144,10 @@ Not yet verified in game: that `HumanDummy` never picks anything up, and how the
   `DisarmStrike.DisarmAlong` (fling along the hit, no-regrab lock, stand still, Disarm adrenaline, catch bonus).
 - Log: `blade on HumanMale0's SwordShortCommon: no twist disarm, TooSlow (roll 0°/s (min 400), hit 2.52 m/s)` and
   `twist disarm on HumanMale0's SwordShortCommon (roll 904°/s (min 400), hit 2.31 m/s)` (harness 2026-11-18).
+- Film (2026-11-20): `harness/films/twist-disarm-film.txt` (not in the suite) films section 2's strike with BasHarness
+  `record-start`/`record-stop` (fab59c4) from the side and from the player's eyes, 60 fps; before (31f38bd, same steps
+  minus the Twist chance option, which that build lacks) the NPC keeps its sword, after (65a542a) it drops it
+  (`roll 910°/s, hit 2.10 m/s`).
 - Not verified: how fast a real wrist twist is in the headset (400°/s is a guess), and whether real swings in a fight give
   contacts the game reports (CollisionHandler drops slow contacts; the harness strike was 2.2–2.5 m/s).
 
