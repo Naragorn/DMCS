@@ -36,4 +36,20 @@ public class DmcsStatusTests
     {
         Assert.Equal("Settings: Debug Logging=off", DmcsStatus.Describe(false, null));
     }
+
+    [Fact]
+    public void Describe_ShowsTheSkillGate_WhenOn()
+    {
+        var notBought = new FeatureToggle("Parry", initial: true);
+        notBought.SetNeedsSkill(true);
+        var bought = new FeatureToggle("Adrenaline", initial: true);
+        bought.SetNeedsSkill(true);
+        bought.SetHasSkill(true);
+        var menuOff = new FeatureToggle("Charge Stagger", initial: false);
+        menuOff.SetNeedsSkill(true);
+
+        Assert.Equal(
+            "Settings: Debug Logging=off | Parry=Enabled, needs its skill (not bought) | Adrenaline=Enabled, needs its skill (bought) | Charge Stagger=Disabled",
+            DmcsStatus.Describe(false, new[] { notBought, bought, menuOff }));
+    }
 }

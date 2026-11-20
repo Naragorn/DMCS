@@ -13,7 +13,7 @@ Every mechanic can be switched on and off and tuned in the in-game Mod Menu, and
 ## Requirements and installation
 
 - Blade & Sorcery **1.3.2** (PC VR). Built and tested against build 1.3.2.261012003; other versions are untested.
-- Copy the `DMCS` folder (`DMCS.dll` + `manifest.json`) into
+- Copy the `DMCS` folder (`DMCS.dll`, `manifest.json` and the `Skills` folder) into
   `Blade & Sorcery/BladeAndSorcery_Data/StreamingAssets/Mods/`.
 - The settings are on the mods page of the in-game menu book.
 
@@ -115,6 +115,26 @@ How you parry an enemy's attack now matters.
 DMCS reads how fast your hand moved just before the parry: from 1 m/s it is a counter, from 3 m/s a power parry.
 Both values are guesses until tested in VR. A hard parry at the Clash of Might star is a power parry, not a clash.
 
+### Skill tree (optional)
+
+Each mechanic can be made a skill you have to buy first. DMCS adds five skills to the **Body** tree of the game's skill
+tree, priced like the game's own skills of the same tier:
+
+| Skill | Tier | Unlocks |
+|---|---|---|
+| Charge Stagger | 1 | Charge Stagger |
+| Counter Parry | 1 | Counter Parry and Power Parry |
+| Disarm Strike | 2 | Disarm Strike |
+| Clash of Might | 2 | Clash of Might |
+| Adrenaline | 3 | Adrenaline |
+
+By default nothing changes: every mechanic works without its skill. Switch on *… Needs Skill* under **Skill Tree** in
+the Mod Menu, and that mechanic works only once you have bought its skill. As with the game's own skills, you first
+need the core skill of that tier.
+
+The orbs use icons of the game's own skills for now, so two orbs may look alike; the name tells them apart. How the
+skills look in the tree has not been checked in VR yet.
+
 ## Dark Messiah's own sounds and vignette (optional)
 
 DMCS ships only its own sounds and graphics, made to sound and look close to Dark Messiah's. Under *Ready Sound Style*,
@@ -157,7 +177,7 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Clash Flash At Swing Top | on | | The flash comes when the blade is raised all the way, just before the strike; off: as soon as the wind-up starts (more warning) |
 | Clash Point Tolerance | 0.25 m | 0.05–0.6 m | How close to the flash your block must hit |
 | Clash Weapon Weight | 20× | 1–50× | How much heavier your weapon gets while the blades are locked |
-| Clash Flash Sound | DMCS 1 | Off, DMCS 1 | The warning sound: a deep boom with a metallic ring, after Sekiro's perilous-attack cue |
+| Clash Flash Sound | DMCS 1 | Off, DMCS 1–4 | The warning sound. DMCS 1: a deep boom with a metallic ring, after Sekiro's perilous-attack cue. DMCS 2: the same, short. DMCS 3: darker and longer. DMCS 4: bright, cuts through the fight |
 | Clash Flash Game Sound | Off | Off, Metal Hit, Focus Ready, Gravity Pulse | One of the game's own sounds on top (Metal Hit also sparks) |
 | Clash Flash Sound Volume | 0.8 | 0–1 | Volume of the DMCS sound |
 | Clash Difficulty | 50 | 0–200 | How hard enemies push back in a lock: 0 barely, 100 twice as hard as 50, 200 you hardly have a chance |
@@ -295,6 +315,16 @@ Picking a DMCS vignette style sets *Streaks*, *Streak Length* and *Hue* to how t
 | Power Parry Min Speed | 3 m/s | 1–10 m/s | How fast your hand must swing for a power parry |
 | Power Parry Chance | 100 % | 0–100 % | Chance a power parry disarms |
 | Parry Speed Window | 0.2 s | 0.05–0.5 s | How long before the parry your hand's speed counts |
+
+**Skill Tree**
+
+| Option | Default | What it does |
+|---|---|---|
+| Clash of Might Needs Skill | off | Clash of Might works only once you have bought its skill (Body tree) |
+| Disarm Strike Needs Skill | off | The same for Disarm Strike |
+| Charge Stagger Needs Skill | off | The same for Charge Stagger |
+| Adrenaline Needs Skill | off | The same for Adrenaline |
+| Parry Needs Skill | off | The same for Counter Parry and Power Parry (skill "Counter Parry") |
 
 ## Reporting bugs
 

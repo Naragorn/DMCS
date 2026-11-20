@@ -35,6 +35,7 @@ namespace DMCS
             ClashOfMight.Start();
             // After Clash of Might: its parry handler must run first (Parry.cs).
             Parry.Start();
+            SkillGate.Start();
             Dmcs.Log.Debug("Script", "ScriptEnable");
         }
 
@@ -47,6 +48,7 @@ namespace DMCS
             Adrenaline.Stop();
             ClashOfMight.Stop();
             Parry.Stop();
+            SkillGate.Stop();
             Dmcs.Log.Debug("Script", "ScriptDisable");
         }
 
@@ -59,6 +61,7 @@ namespace DMCS
             Adrenaline.Stop();
             ClashOfMight.Stop();
             Parry.Stop();
+            SkillGate.Stop();
             Dmcs.Log.Debug("Script", "ScriptUnload");
             LoadedMod = null;
         }
@@ -97,6 +100,7 @@ namespace DMCS
             {
                 return;
             }
+            SkillGate.OnLevelLoaded();
             Dmcs.Log.Info(DmcsStatus.Describe(Dmcs.Log.DebugEnabled, Features.All));
             AdrenalineSignals.Prewarm();
             ClashOfMight.Prewarm();

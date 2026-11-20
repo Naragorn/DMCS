@@ -30,12 +30,16 @@
 
   <ItemGroup>
     <None Include="manifest.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The skill tree gate's skills (catalog JSON, read by the game from the mod folder and its subfolders). -->
+    <None Include="Skills/*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <!-- dotnet build -p:DeployToGame=true copies DLL + manifest into the game's Mods/DMCS folder. -->
+  <!-- dotnet build -p:DeployToGame=true copies DLL, manifest and the skill JSON into the game's Mods/DMCS folder. -->
   <Target Name="DeployToGame" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true'">
     <Error Condition="!Exists('$(BasModsDir)')" Text="Mods folder not found: $(BasModsDir)" />
     <Copy SourceFiles="$(TargetPath);$(MSBuildProjectDirectory)/manifest.json" DestinationFolder="$(BasModsDir)/DMCS" />
+    <ItemGroup><DmcsSkillJson Include="$(MSBuildProjectDirectory)/Skills/*.json" /></ItemGroup>
+    <Copy SourceFiles="@(DmcsSkillJson)" DestinationFolder="$(BasModsDir)/DMCS/Skills" />
     <Message Importance="high" Text="DMCS deployed to $(BasModsDir)/DMCS" />
   </Target>
 

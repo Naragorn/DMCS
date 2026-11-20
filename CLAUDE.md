@@ -51,7 +51,7 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 7. **Win:** `clashWinDisarms` (default on; later a buyable Body-tree power) disarms through the Disarm Strike path (fling, no-regrab lock, catch bonus); the NPC is staggered; +25 Adrenaline (clash win); with `clashWinKneelChance` (default 25 %) it also kneels and the execution window of 4c opens.
 8. **Lose:** `clashLoseOutcome` dropdown `Disarm + Hit` (default), `Disarm`, `Hit`, `None`; the hit is `clashLoseDamage` (default 20; the player has 100 health, `Creature_PlayerDefault*.json`).
 - Feedback during the clash: haptics, sparks and a grinding sound at the contact.
-- Flash sound (user 2026-11-17, built): *Clash Flash Sound* (Off, DMCS 1; DMCS 1 modelled on Sekiro's perilous-attack cue, measured in a recording, Sekiro's files are encrypted and never read or shipped) and *Clash Flash Game Sound* (Off or one of three B&S catalog effects), any combination, plus a volume slider. User 2026-11-17: DMCS 1 is usable, the other three were dropped; make three new ones at the end of step 5.
+- Flash sound (user 2026-11-17, built): *Clash Flash Sound* (Off, DMCS 1; DMCS 1 modelled on Sekiro's perilous-attack cue, measured in a recording, Sekiro's files are encrypted and never read or shipped) and *Clash Flash Game Sound* (Off or one of three B&S catalog effects), any combination, plus a volume slider. User 2026-11-17: DMCS 1 is usable, the other three were dropped; make three new ones at the end of step 5. **Built 2026-11-20** (user: "bau drei weitere flash sounds"): DMCS 2 = DMCS 1 made short (1.6 s), DMCS 3 = darker and longer (24 Hz boom, ring an octave lower at 932 Hz, 4.5 s), DMCS 4 = bright (the ring at 2794 Hz carries it, light boom, 3 s); the ear decides.
 
 **Decisions for 5c (user 2026-11-18):**
 - **Feature mode** `clashMode` dropdown `Off` / `On` / `Simple` (replaces the plain `Enabled` toggle of this group; default `Simple`, user 2026-11-18).
@@ -246,9 +246,9 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 2. ~~4e dodge and catch bonus~~ built 2026-11-17 (see above and docs/IMPLEMENTATION.md); the dodge speed needs the headset.
 3. Step 5: Clash of Might (redesigned 2026-11-17, see section 1) + Twist Disarm (blade-on-blade contact). Cost: large; first a harness probe (wind-up times, freezing an NPC mid-swing, swing plane, controller offset), then build; push strength, weight and timings are tuned in the headset.
 4. DMCS 4 vignette fine-tuning: Dark Messiah's streaks are a bit more brownish and blurrier. Cost: small (colour and blur in the generator plus a statistics test); only when the headset shows it matters.
-5. End of step 5: three more clash flash sounds besides DMCS 1 (user 2026-11-17). Cost: small (the synth exists), the ear decides.
+5. ~~End of step 5: three more clash flash sounds besides DMCS 1~~ built 2026-11-20 (DMCS 2–4, section 1); the ear decides.
 6. Perfect Block (section 5, user idea 2026-11-20): design with the user first (what a short swing is, how the block shows, the guard-down exceptions). Cost: medium; the threshold needs the headset.
-7. Later, not scheduled: `Gamey` / `Realistic` presets for the disarm values (Realistic needs headset values), and features as skill-tree powers (below). Cost: medium to large; whether a mod can add a skill to the Body tree is not checked yet.
+7. Later, not scheduled: `Gamey` / `Realistic` presets for the disarm values (Realistic needs headset values); ~~features as skill-tree powers~~ built 2026-11-20 as the skill tree gate (below).
 
 **Deploy (rule, user 2026-11-18): always both installs.** Every committed, tested build goes into the Linux Steam copy **and** the Windows Steam copy of Blade & Sorcery (`…/BladeAndSorcery_Data/StreamingAssets/Mods/DMCS`; on Windows Vortex manages the Mods folder, DMCS lies next to the others), never only one. Use `tools/deploy.sh`: it refuses uncommitted `src` changes and builds with probe code, and checks the md5 of all three copies. Tell the Achilles session the deployed commit (it runs its compat check against DMCS).
 
@@ -383,9 +383,31 @@ enemy.
 **Config (proposal):** `perfectBlock` (on/off), `perfectBlockChance`, `minSwingTravel` (m), `minWindUp`, `blockDeflect`
 (sparks, sound, push-back), guard-down exceptions as toggles.
 
-## Later: features as skill-tree powers (not scheduled)
+## Skill tree gate (built 2026-11-20)
 
-Instead of an on/off toggle, each feature's main setting becomes **Off / On / Power**:
+**Built (user 2026-11-20: "skill baum statt schalter (default off)"):** every feature has one skill in the game's
+**Body** tree, and a Mod Menu group `Skill Tree` holds one toggle per feature, *<Feature> Needs Skill* (default off). On,
+the feature works only while the player has that skill; off, it works as before. Deviation from the first idea below
+(one dropdown Off / On / Power replacing each Enabled): a separate toggle per feature does the same (Enabled × Needs
+Skill), but keeps every saved Enabled value and every harness scenario as it is.
+- Skills (catalog JSON `src/DMCS/Skills/Skill_<id>.json`, `$type` `ThunderRoad.Skill.CustomSkillData`, shipped next to
+  DMCS.dll; the game reads every `*.json` of a mod folder and its subfolders): Charge Stagger tier 1, Counter Parry
+  (the Parry group) tier 1, Disarm Strike tier 2, Clash of Might tier 2, Adrenaline tier 3 (catalog tiers 0/0/1/1/2).
+  The game adds each tier's core skill as a requirement and prices them like its own skills of that tier
+  (`SkillData.OnCatalogRefresh`, `SkillData.Cost`, read in the game code 1.3.2).
+- Icons: game icons as stand-ins (Juggernaut, TemporalRiposte, WeaponTheft, BruteForce, HyperFocus); an empty address
+  would fall back to `Icons[<id>]`, which the game's sprite sheet does not have. Own icons need a Unity asset bundle.
+- Bought or not: the game's own events. Buying at the tree adds the skill to the player's container
+  (`SkillTreeOrb`: `container.AddDataContent`), refunding removes it; the game's `Mana` answers with
+  `Creature.ForceLoadSkill` / `ForceUnloadSkill`, which raise `SkillData.OnSkillLoadedEvent` / `OnSkillUnloadedEvent`.
+  At possession and level load DMCS reads `Creature.HasSkill` itself.
+- `FeatureToggle.Enabled` = menu Enabled and (no gate or skill bought); the menu shows and saves `MenuEnabled`.
+- Not checked: how the five orbs look in the tree, buying them with crystals, a skill without a video in the orb's
+  popup (headset). Sandbox's skill menu should list them too (not checked).
+- Note: the game's own Juggernaut skill (`SkillCharger`, Body tier 3) is a charge skill too; how it and Charge Stagger
+  add up is not compared.
+
+**First idea (2026-11-17, kept for reference):** instead of an on/off toggle, each feature's main setting becomes **Off / On / Power**:
 - **Off** — feature disabled.
 - **On** — always active (today's behaviour).
 - **Power** — the feature becomes a power the player has to **buy in the Body crystal skill tree**; it only works once bought.

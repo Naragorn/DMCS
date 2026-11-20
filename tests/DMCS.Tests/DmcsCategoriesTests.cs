@@ -12,6 +12,7 @@ public class DmcsCategoriesTests
     [InlineData(DmcsCategories.ChargeStagger, 3)]
     [InlineData(DmcsCategories.Adrenaline, 4)]
     [InlineData(DmcsCategories.Parry, 5)]
+    [InlineData(DmcsCategories.SkillTree, 6)]
     [InlineData("Unknown", -1)]
     public void OrderOf(string category, int expected)
     {

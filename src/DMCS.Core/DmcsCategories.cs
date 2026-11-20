@@ -10,12 +10,16 @@ namespace DMCS.Core
         public const string Adrenaline = "Adrenaline";
         public const string Parry = "Parry";
 
+        /// <summary>Not a feature: one "Needs Skill" toggle per feature (the skill tree gate, 2026-11-20).</summary>
+        public const string SkillTree = "Skill Tree";
+
         public const int GeneralOrder = 0;
         public const int ClashOfMightOrder = 1;
         public const int DisarmStrikeOrder = 2;
         public const int ChargeStaggerOrder = 3;
         public const int AdrenalineOrder = 4;
         public const int ParryOrder = 5;
+        public const int SkillTreeOrder = 6;
 
         /// <summary>
         /// The game's own "Enabled" text (Texts/Text_*.json, group "Default", id "Enabled").
@@ -39,6 +43,7 @@ namespace DMCS.Core
                 case ChargeStagger: return ChargeStaggerOrder;
                 case Adrenaline: return AdrenalineOrder;
                 case Parry: return ParryOrder;
+                case SkillTree: return SkillTreeOrder;
                 default: return -1;
             }
         }

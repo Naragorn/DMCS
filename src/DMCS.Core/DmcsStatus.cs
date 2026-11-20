@@ -17,7 +17,11 @@ namespace DMCS.Core
                     {
                         continue;
                     }
-                    text.Append(" | ").Append(toggle.Name).Append('=').Append(toggle.Enabled ? "Enabled" : "Disabled");
+                    text.Append(" | ").Append(toggle.Name).Append('=').Append(toggle.MenuEnabled ? "Enabled" : "Disabled");
+                    if (toggle.MenuEnabled && toggle.NeedsSkill)
+                    {
+                        text.Append(toggle.HasSkill ? ", needs its skill (bought)" : ", needs its skill (not bought)");
+                    }
                 }
             }
             return text.ToString();

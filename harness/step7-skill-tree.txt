@@ -1,0 +1,79 @@
+# Step 7: the skill tree gate (user 2026-11-20). Every feature has a skill in the game's Body tree (Skills/*.json) and a
+# "Needs Skill" toggle (default off). On, the feature works only once the player has its skill. The harness gives and
+# takes the skill through the player's container (player-skill, BasHarness), the path buying and refunding at the
+# tree take; the tree itself (orbs, icons, prices, buying with crystals) is not shown here: headset. Checked with
+# Parry (player-parry, as step6); the other four use the same toggle code (unit tests).
+
+wait-level
+frame-rate 90
+# The catalog has all five skills, each in the Body tree at its tier (logged at level load)
+expect-log Skill tree: DMCS_ClashOfMight in Body tier 2 (cost
+expect-log DMCS_DisarmStrike in Body tier 2 (cost
+expect-log DMCS_ChargeStagger in Body tier 1 (cost
+expect-log DMCS_Adrenaline in Body tier 3 (cost
+expect-log DMCS_Parry in Body tier 1 (cost
+expect-no-log NOT in the game's catalog
+press DMCS "Reset To Defaults"
+option-exists DMCS "Clash of Might Needs Skill" category="Skill Tree" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Disarm Strike Needs Skill" category="Skill Tree" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Charge Stagger Needs Skill" category="Skill Tree" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Adrenaline Needs Skill" category="Skill Tree" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Parry Needs Skill" category="Skill Tree" type=Boolean interaction=ArrowList save=true
+expect-option DMCS "Clash of Might Needs Skill" false
+expect-option DMCS "Disarm Strike Needs Skill" false
+expect-option DMCS "Charge Stagger Needs Skill" false
+expect-option DMCS "Adrenaline Needs Skill" false
+expect-option DMCS "Parry Needs Skill" false
+set-option DMCS "Debug Logging" true
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Adrenaline Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+player-invincible true
+spawn-npc HumanMale distance=1.5 angle=0 brain=HumanDummy
+npc-grab SwordShortCommon
+player-grab SwordShortCommon
+wait 1
+
+# 1. Gate off (default): Parry works without the skill
+mark
+player-parry swing=1.5
+expect-log counter parry on HumanMale
+
+# 2. Gate on, skill not bought: Parry is off, while the menu still shows (and saves) Enabled
+wait 2
+mark
+set-option DMCS "Parry Needs Skill" true
+expect-log [DMCS][Parry] Disabled (needs its skill, not bought)
+expect-option DMCS "Parry Enabled" true
+player-parry swing=1.5
+expect-no-log counter parry on
+expect-no-log parry of
+
+# 3. The skill bought: Parry works again
+wait 1
+mark
+player-skill DMCS_Parry true
+expect-log [DMCS][Skill Tree] Counter Parry: skill loaded, Parry works
+expect-log [DMCS][Parry] Enabled (skill bought)
+player-parry swing=1.5
+expect-log counter parry on HumanMale
+
+# 4. Refunded: off again
+wait 2
+mark
+player-skill DMCS_Parry false
+expect-log [DMCS][Skill Tree] Counter Parry: skill unloaded, Parry is off
+expect-log [DMCS][Parry] Disabled (needs its skill, not bought)
+player-parry swing=1.5
+expect-no-log counter parry on
+
+# 5. Bought while the gate is off, then the gate switched on: works at once
+set-option DMCS "Parry Needs Skill" false
+player-skill DMCS_Parry true
+wait 2
+mark
+set-option DMCS "Parry Needs Skill" true
+expect-no-log [DMCS][Parry] Disabled
+player-parry swing=1.5
+expect-log counter parry on HumanMale
+quit

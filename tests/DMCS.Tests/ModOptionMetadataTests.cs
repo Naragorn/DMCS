@@ -336,10 +336,10 @@ public class ModOptionMetadataTests
     }
 
     [Fact]
-    public void Categories_AreExactlyGeneralPlusTheFourFeatures()
+    public void Categories_AreExactlyGeneral_TheFeatures_AndSkillTree()
     {
         var categories = Options.Value.Select(o => o.Category).Distinct().OrderBy(c => c).ToArray();
-        var expected = new[] { DmcsCategories.General }.Concat(DmcsCategories.Features).OrderBy(c => c).ToArray();
+        var expected = new[] { DmcsCategories.General, DmcsCategories.SkillTree }.Concat(DmcsCategories.Features).OrderBy(c => c).ToArray();
 
         Assert.Equal(expected, categories);
     }
@@ -383,6 +383,19 @@ public class ModOptionMetadataTests
         Assert.Equal(inGroup.Min(o => o.Order), toggle.Order);
         Assert.Equal("ArrowList", toggle.InteractionType);
         Assert.True(toggle.SaveValue);
+    }
+
+    [Fact]
+    public void SkillTree_HasOneNeedsSkillToggle_PerFeature_DefaultOff()
+    {
+        var group = Options.Value.Where(o => o.Category == DmcsCategories.SkillTree).OrderBy(o => o.Order).ToList();
+
+        Assert.Equal(DmcsSkills.All.Select(s => s.OptionName), group.Select(o => o.Name));
+        Assert.All(group, o => Assert.Equal("System.Boolean", o.DataType));
+        Assert.All(group, o => Assert.Equal(DmcsCategories.SkillTreeOrder, o.CategoryOrder));
+        Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));
+        Assert.All(group, o => Assert.Contains("Body tree", o.Tooltip));
+        Assert.False(DmcsSkills.DefaultNeedsSkill);
     }
 
     [Fact]

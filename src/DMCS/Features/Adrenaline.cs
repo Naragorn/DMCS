@@ -42,7 +42,7 @@ namespace DMCS
             order = 0)]
         public static bool Enabled
         {
-            get => Toggle.Enabled;
+            get => Toggle.MenuEnabled;
             set => Toggle.Set(value);
         }
 
