@@ -256,6 +256,48 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 
 ---
 
+## Dark Messiah combat features: what DMCS has, what is missing (listed 2026-11-20)
+
+Sources for Dark Messiah: the game's manual (https://www.mocagh.org/nwc/darkmessiah-manual.pdf), the GameSpot walkthrough
+(https://www.gamespot.com/articles/dark-messiah-of-might-and-magic-walkthrough/1100-6160412/), the GameSpy guide
+(http://pc.gamespy.com/pc/might-and-magic/guide/page_2.html) and the HeroesWorld skill list
+(https://heroesworld.net/wiki/might-and-magic/dark-messiah/dark-messiah-skills/).
+
+**In DMCS already:**
+
+| Dark Messiah | DMCS |
+|---|---|
+| Charge: sprint + power strike stuns | Charge Stagger (section 3); a second charge hit knocks the enemy down |
+| Disarming (melee level 2): power strike at a stunned enemy's weapon or hand | Disarm Strike hand hit, Body Hit Drop (extra), Twist Disarm on the weapon (section 2) |
+| Locked blades: both power-strike at once | Clash of Might, Simple or On mode (section 1) |
+| A won locked-blades contest disarms (with Disarming) | `clashWinDisarms` |
+| Adrenaline bar; full: the next power strike is a fatality | Adrenaline meter; a hard hit is the critical: kill, the hit part cut off, slow-motion, battle cry (section 4) |
+| Fatality depends on the aim (head: beheading) | the hit part is cut off; chest stab with head-off or kick finish |
+| DM's signals (ready sound, red vignette) | DMCS's own rebuilds, or DM's original files from the player's install |
+
+DMCS's own additions (not in DM): kneel and execution, catch bonus, dodge bonus, Clash of Might's star warning.
+
+**Missing (read in the sources above):**
+
+| Dark Messiah | What it does | Cost for DMCS |
+|---|---|---|
+| Counter parry | Parrying right before the enemy's strike destabilizes it and opens it to a counter (manual: "Counter") | small to medium: DMCS already listens to the game's parry event; new is "just before the strike" and the stagger. Leads into Twist Disarm. |
+| Kick | DM's trademark: enemies fly far, into spikes, fire, water or off ledges | medium: B&S has kicks and a "Mighty Kick" skill (`SkillMightyKick` in the game code), weaker; DMCS could boost the kick (sprinting, or with a full meter). Feel: headset. |
+| Double fatality (Adrenaline skill) | Store more adrenaline, two fatalities in a row | small: an option on the existing meter |
+| Whirlwind at full adrenaline | Crouch + power strike: a spin hitting everyone in reach | medium: VR needs a gesture (e.g. a fast turn with the weapon drawn), to be designed |
+| Leap attack | Jump + power strike | small to medium; GameSpot: "not extremely useful" |
+| Adrenaline-enhanced magic | With a full meter: Telekinesis grabs and throws enemies, Weaken shrinks them for good | medium to large: an effect per spell; whether B&S spells can be extended this way is not checked |
+| Finisher on a downed enemy | Stab a knocked-down enemy in the chest, without adrenaline | small: in DMCS only inside the adrenaline window so far |
+| Stealth backstab | A dagger power strike on an unaware enemy kills at once | medium: whether B&S tells that an NPC has not noticed the player is not checked |
+| Skill-tree odds and ends | Flurry of Blows, Strength +2 damage, Critical Hit +2 % double damage | hardly useful in VR; B&S's damage comes from physics |
+
+B&S itself already has throwing daggers, bow headshots, shields and weapon blocks; how close they are to DM's was not
+compared.
+
+**Recommendation (2026-11-20):** the counter parry first (small, reuses the parry event, closes DM's chain: parry in
+time → the enemy staggers → Twist Disarm or a hard hit), together with Perfect Block (section 5); then the kick (DM's
+signature; its values need the headset).
+
 ## 5. Perfect Block (idea, user 2026-11-20; not designed, not built)
 
 **Idea (user):** enemies block 100 % of the player's attacks while the player only makes short swings. Waggling the
