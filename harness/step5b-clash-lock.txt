@@ -38,10 +38,14 @@ expect-log blades unlocked (Decided
 expect-log moves again
 screenshot clash-lock-after of=npc
 
-# 1b. The same block with a tight angle tolerance: at the flash, but not across the swing, an ordinary parry
+# 1b. The same block with a tight angle tolerance: at the flash, but not across the swing, an ordinary parry.
+# The block waits for the strike to start: the swing plane (and so the angle) is read in the strike's first frames, and
+# a block before that (the blade still at the swing top) has no angle to check and locks (seen 2026-11-20: "angle n/a").
 set-option DMCS "Clash Block Angle Tolerance" 10
 mark
 await-log 30 blade flashes
+mark
+await-log 5 's swing
 player-parry
 expect-log : WrongAngle (contact
 set-option DMCS "Clash Block Angle Tolerance" 90
