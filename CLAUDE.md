@@ -294,9 +294,34 @@ DMCS's own additions (not in DM): kneel and execution, catch bonus, dodge bonus,
 B&S itself already has throwing daggers, bow headshots, shields and weapon blocks; how close they are to DM's was not
 compared.
 
-**Recommendation (2026-11-20):** the counter parry first (small, reuses the parry event, closes DM's chain: parry in
+**Recommendation (2026-11-20):** the counter parry first (with the Power Parry, section 6) (small, reuses the parry event, closes DM's chain: parry in
 time → the enemy staggers → Twist Disarm or a hard hit), together with Perfect Block (section 5); then the kick (DM's
 signature; its values need the headset).
+
+## 6. Counter Parry and Power Parry (idea, user 2026-11-20; not built)
+
+**Counter Parry (Dark Messiah's "Counter", manual):** parrying right before the enemy's strike lands destabilizes it
+and opens it to a counter. In DMCS: a parry in time (the game's `onCreatureAttackParry`, timing from the attack's own
+stages) staggers the enemy, which opens the Disarm Strike hand hit and Twist Disarm.
+
+**Power Parry (user 2026-11-20):** parrying an enemy attack with a lot of force, swinging hard into it (a power strike
+as a parry) knocks the enemy's weapon out of its hand, without a twist.
+- **Vanilla does not have this (read in the game code 1.3.2, 2026-11-20):** when an NPC's attack hits the player's
+  weapon, `BrainModuleMelee` raises the parry event (impact > ~1.4 m/s) and pushes the NPC with `PushType.Parry`
+  (impact > `recoilMinWeaponSpeed`, 1 m/s): the NPC recoils, or by chance ripostes (`recoilNothingRiposteChance`).
+  How hard the player parried does not matter, and nothing disarms. The game's only block disarm is the other way
+  round: an NPC blocking a player's heavy weapon (`ItemModuleAI.transferPushToBlocker`) that gets destabilized drops
+  its own weapon (`BrainModuleDefense.disarmOnBlockDestabilize`).
+- **Proposal:** on the game's parry event, the player's weapon speed at the contact (and/or the hand's swing, as Perfect
+  Block measures it) at or above `powerParryMinSpeed` (guess: the hard-swing 3 m/s of the critical) → the enemy drops
+  the attacking weapon (`DisarmAlong`, flung along the parry), with `powerParryChance` (default 100 %?); slower: the
+  game's own recoil as now.
+- **Apart from Clash of Might:** the clash is a held block at the star (slow blade); a power parry is a hard swing into
+  the attack. So a parry at or above `powerParryMinSpeed` is never a clash; below it, the clash rules apply as now.
+- Open: whether a power parry needs the stagger gate too (as Twist Disarm, user 2026-11-20) or is its own skill move
+  without one; Adrenaline gain (Disarm +15 as every disarm path, plus parry +10).
+
+**Config (proposal):** `counterParry`, `counterParryWindow`, `powerParry`, `powerParryMinSpeed`, `powerParryChance`.
 
 ## 5. Perfect Block (idea, user 2026-11-20; not designed, not built)
 
