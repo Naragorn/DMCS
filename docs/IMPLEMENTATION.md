@@ -14,6 +14,7 @@ the player-facing description and the full Mod Menu list are in `README.md`.
 | 3b. Body Hit Drop, chances per NPC type, shields, fling | **Built, unit tests + in-game harness PASS (2026-11-16, chance-per-type version).** Not checked in the headset; Twist Disarm not built (with step 5). |
 | 4. Adrenaline | **4a (meter), 4b (critical / fatality, chest-stab finish), 4c (kneel and execution) and 4d (signals: ready sound, heartbeat, haptics, hand glow, Dark Messiah-style vignette) built, unit tests + in-game harness PASS (2026-11-16/17).** Block/parry and damage taken are unit-tested only. Nothing checked in the headset (sound, haptics and the vignette's look need it). 4e (dodge and catch bonus) built 2026-11-17, unit tests + harness PASS; the harness raises the game's attack event but no NPC really swings, so a real dodge is a headset check. |
 | 5. Clash of Might | **5a (telegraph: big swing, flash, slow-motion) built 2026-11-17, 5b (block at the flash, lock) 2026-11-17, 5c (mode Off/Simple/On, rounds, push measure, outcomes) 2026-11-18; unit tests + harness PASS.** The slow-motion's "go" path, the flash's look, the timing and every push value are unit-tested / headset only. A real press against the frozen blade was never measured (see 5c). Twist Disarm and the three more flash sounds not built. |
+| 6. Counter Parry and Power Parry | **Built 2026-11-20, unit tests + harness: see the test log.** Speeds are guesses; a real parry against a real NPC swing is a headset check. |
 
 ## Versions (checked 2026-11-16)
 
@@ -450,6 +451,38 @@ Decided with the user 2026-11-18 (spec, CLAUDE.md section 1).
   before the hit. Harness: all scenarios with hand hits PASS; `step3b` checks `swing=0` (no strike) and threshold 0 (counts);
   `step5a` now runs with Disarm Strike on and expects no disarm from the NPC's own swings.
 
+## Parry, step 6: Counter Parry and Power Parry (2026-11-20)
+
+Spec section 6. Own Mod Menu group `Parry` (category order 5), feature class `Features/Parry.cs`, rule `ParryRule` (Core).
+- **Event:** the game's `EventManager.onCreatureAttackParry` (raised by `BrainModuleMelee.OnWeaponCollision` when an NPC
+  attack hits a held weapon with impact² > 2; read 1.3.2). Only NPC (parried) vs player (parrying, item held by a player
+  hand).
+- **Measure:** `HandSpeeds.Peak(side of the parrying item's main hand, Parry Speed Window 0.2 s)`, the real controller's
+  rig-local speed. Below *Counter Guard Speed* (1 m/s): `TooSlow`, the game's own parry. From it: counter. From *Power
+  Parry Min Speed* (3 m/s): power parry. Both speeds are guesses. Not the weapon's speed: at the event the collision has
+  already slowed the blade, and `impactVelocity` contains the NPC's swing.
+- **Rule order** (`ParryRule.Decide`, unit-tested): Disabled (group off, or both parts off) → NotPlayerParry → TakenByClash
+  → power (KeepsShield, NoWeapon, chance) → Counter / TooSlow. A power parry also staggers while Counter Parry is on; one
+  that cannot disarm (shield kept, weapon gone, chance failed) still counters.
+- **Counter stagger:** DMCS's own window (*Counter Stagger Duration* 1.5 s, `StaggerWindows`; `HitInfo.IsStaggered` counts
+  it, so the hand hit and Twist Disarm work) plus `Creature.ForceStagger(away from the player, StaggerMedium)` in the next
+  `ScriptUpdate`. Why the next frame: right after raising the event, `BrainModuleMelee` pushes the NPC itself
+  (`TryPush(PushType.Parry)`: `BrainModuleHitReaction.StaggerCoroutine` with the Parry recoil or, by chance, a Riposte that
+  attacks back at once). That push never sets `brain.currentStagger` (no `SetStagger` on the Parry path), so before step
+  6 a parry never opened Disarm Strike. A stagger set before the push would be overridden by a riposte.
+- **Power parry:** `DisarmStrike.DisarmAlong(npc, its hand, away from the player and up)`, at once in the event (fling,
+  no-regrab lock, stand still, Disarm +15 adrenaline, catch bonus).
+- **Clash of Might:** `Parry.Start` runs after `ClashOfMight.Start`, so the clash's handler sees the event first. The clash
+  returns early on a parry at or above the power speed (`a power parry, not a clash`); a parry the clash took (lock with
+  that NPC, or its Simple disarm) is `TakenByClash`.
+- **Log:** `parry of HumanMale0's SwordShortCommon: an ordinary parry, TooSlow (hand 0.00 m/s (counter from 1.00, power
+  from 3.00))`, `counter parry on HumanMale0: staggered for 1.50 s (…)`, `power parry on HumanMale0's SwordShortCommon:
+  knocked away (…)`.
+- **Harness** `step6-parry`: BasHarness `player-parry swing=<m/s>` sweeps the right controller sideways for 0.12 s before
+  the event. It raises only the event, so the game's own parry push does not happen there.
+- **Not verified:** real guard and hard-parry speeds in the headset; whether a player who waggles the sword gets counters
+  all the time; how the counter's stagger meets the game's own parry push and riposte in a real fight.
+
 ## API verification
 
 Legend: **V** = verified in the decompiled `ThunderRoad.dll` of game 1.3.2. **V+T** = verified and covered by a test. **A** = assumed / behaviour only provable in game. Line refs point into the decompiled source.
@@ -526,6 +559,7 @@ Results land in `artifacts/harness/<time>/<scenario>/summary.md` (with Player.lo
 | `step4e-adrenaline-dodge-catch` | 4e settings and defaults; a disarmed dagger grabbed at once → `+10 Catch`; grabbed after it landed → none; the game's attack event (Attack → End) while running → `+10 Dodge`; standing → TooSlow; Attack → Cancel → none; Adrenaline off → nothing |
 | `step5a-clash-telegraph` | Clash settings and defaults; a real sword NPC: big swings flash, plain ones and thrusts do not, no slow-motion without a blade in hand (`BladeTooFar`); Min Wind Up 0.8 → no flash; feature off → nothing |
 | `step3b-body-hit-drop` | Settings and defaults; body hit without stagger → nothing even at 100 %; 0 % + 100 % per extra hit → first body hit fails (sparks, haptic pulse logged), the second drops the dagger (flung 3 m/s); the count starts over with the next stagger; a buckler in the other hand stays while the dagger drops; base 0 % + female 100 % on a male NPC → 0 %, on a female NPC → drops; smaller 100 % with Smaller By 50 cm on an adult NPC → 0 %; Body Hit Drop off / Disarm Strike off → nothing drops (live) |
+| `step6-parry` | Parry settings and defaults; a held guard → `TooSlow`, nothing; the controller swept at 1.5 m/s → counter, NPC staggered, keeps its sword; Power Parry off + 5 m/s → only a counter; Parry off → nothing; 5 m/s → power parry, sword knocked away, staggered; Clash On: a slow block at the star locks (`TakenByClash`), a 5 m/s block at the star is a power parry, no lock |
 
 The harness hits the NPC through `Creature.Damage` with the player's hand as damager and `pushLevel = -1`, so the
 game's own hit reaction does not push and any stagger comes from DMCS.

@@ -1,0 +1,107 @@
+# Step 6: Counter Parry and Power Parry (spec section 6, built 2026-11-20). The game's own block event, raised with
+# player-parry (the harness cannot swing a real arm into a real NPC swing), after the player's right controller swept
+# sideways at a set speed (player-parry swing=, BasHarness). A held guard: an ordinary parry. A guard brought up in time
+# (1.5 m/s): the enemy staggers (counter). A hard swing into the attack (5 m/s): its sword flies away (power parry). At
+# the Clash of Might star a slow block is the clash's, a hard one a power parry. Note: player-parry raises only the
+# event, so the game's own recoil push (BrainModuleMelee.TryPush Parry, after the event) does not happen here; how the
+# counter's stagger and that push meet: headset. How fast a real guard and a real hard parry are: headset (the defaults
+# 1 and 3 m/s are guesses).
+
+wait-level
+# headset pace (BasHarness's own frame limiter)
+frame-rate 90
+press DMCS "Reset To Defaults"
+option-exists DMCS "Counter Parry" category=Parry type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Counter Guard Speed" category=Parry type=Single interaction=Slider save=true
+option-exists DMCS "Counter Stagger Duration" category=Parry type=Single interaction=Slider save=true
+option-exists DMCS "Power Parry" category=Parry type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Power Parry Min Speed" category=Parry type=Single interaction=Slider save=true
+option-exists DMCS "Power Parry Chance" category=Parry type=Single interaction=Slider save=true
+option-exists DMCS "Parry Speed Window" category=Parry type=Single interaction=Slider save=true
+expect-option DMCS "Parry Enabled" true
+expect-option DMCS "Counter Parry" true
+expect-option DMCS "Counter Guard Speed" 1
+expect-option DMCS "Counter Stagger Duration" 1.5
+expect-option DMCS "Power Parry" true
+expect-option DMCS "Power Parry Min Speed" 3
+expect-option DMCS "Power Parry Chance" 100
+expect-option DMCS "Parry Speed Window" 0.2
+set-option DMCS "Debug Logging" true
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Adrenaline Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+player-invincible true
+spawn-npc HumanMale distance=1.5 angle=0 brain=HumanDummy
+npc-grab SwordShortCommon
+player-grab SwordShortCommon
+wait 1
+
+# 1. A held guard: an ordinary parry, nothing happens
+mark
+player-parry
+expect-log an ordinary parry, TooSlow (hand 0.
+expect-no-log counter parry on
+expect-npc holding true
+
+# 2. The guard brought up in time (1.5 m/s): a counter, the enemy staggers and keeps its sword
+wait 1
+mark
+player-parry swing=1.5
+expect-log counter parry on HumanMale
+expect-npc staggered true within=0.5
+expect-npc holding true
+
+# 3. Power Parry off: a hard swing is only a counter
+wait 2
+set-option DMCS "Power Parry" false
+mark
+player-parry swing=5
+expect-log counter parry on HumanMale
+expect-no-log power parry on
+expect-npc holding true
+set-option DMCS "Power Parry" true
+
+# 4. Parry off: nothing at all
+wait 2
+set-option DMCS "Parry Enabled" false
+mark
+player-parry swing=5
+expect-no-log parry on
+expect-no-log parry of
+expect-npc holding true
+set-option DMCS "Parry Enabled" true
+
+# 5. A hard swing into the attack (5 m/s): a power parry, its sword flies away, and it staggers too
+wait 2
+mark
+player-parry swing=5
+expect-log power parry on HumanMale
+expect-log : knocked away (hand
+expect-log counter parry on HumanMale
+expect-npc holding false
+
+# 6. Clash of Might (mode On): a slow block at the star locks the blades and is the clash's; a hard one at the star is
+# a power parry, never a clash. A fighting NPC, as step5b; its real swings at the player's sword raise real block
+# events too, so each part checks its own lines. The harness sword's angle to the swing cannot be set: tolerance 90.
+set-option DMCS "Clash of Might Mode" On
+set-option DMCS "Clash Min Wind Up" 0.2
+set-option DMCS "Clash Lose Outcome" Hit
+set-option DMCS "Clash Block Angle Tolerance" 90
+turn-player 90
+spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
+player-grab SwordShortCommon
+mark
+await-log 30 blade flashes
+player-parry
+expect-log blades locked with HumanMale
+expect-log : TakenByClash (hand 0.
+expect-log blades unlocked (Decided
+expect-log moves again
+mark
+await-log 30 blade flashes
+player-parry swing=5
+expect-log a power parry, not a clash
+expect-log power parry on HumanMale
+expect-no-log blades locked
+expect-npc holding false
+quit

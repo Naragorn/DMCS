@@ -8,12 +8,14 @@ namespace DMCS.Core
         public const string DisarmStrike = "Disarm Strike";
         public const string ChargeStagger = "Charge Stagger";
         public const string Adrenaline = "Adrenaline";
+        public const string Parry = "Parry";
 
         public const int GeneralOrder = 0;
         public const int ClashOfMightOrder = 1;
         public const int DisarmStrikeOrder = 2;
         public const int ChargeStaggerOrder = 3;
         public const int AdrenalineOrder = 4;
+        public const int ParryOrder = 5;
 
         /// <summary>
         /// The game's own "Enabled" text (Texts/Text_*.json, group "Default", id "Enabled").
@@ -25,7 +27,7 @@ namespace DMCS.Core
         public const string DebugLoggingName = "Debug Logging";
         public const string ResetToDefaultsName = "Reset To Defaults";
 
-        public static readonly string[] Features = { ClashOfMight, DisarmStrike, ChargeStagger, Adrenaline };
+        public static readonly string[] Features = { ClashOfMight, DisarmStrike, ChargeStagger, Adrenaline, Parry };
 
         public static int OrderOf(string category)
         {
@@ -36,6 +38,7 @@ namespace DMCS.Core
                 case DisarmStrike: return DisarmStrikeOrder;
                 case ChargeStagger: return ChargeStaggerOrder;
                 case Adrenaline: return AdrenalineOrder;
+                case Parry: return ParryOrder;
                 default: return -1;
             }
         }

@@ -281,7 +281,7 @@ DMCS's own additions (not in DM): kneel and execution, catch bonus, dodge bonus,
 
 | Dark Messiah | What it does | Cost for DMCS |
 |---|---|---|
-| Counter parry | Parrying right before the enemy's strike destabilizes it and opens it to a counter (manual: "Counter") | small to medium: DMCS already listens to the game's parry event; new is "just before the strike" and the stagger. Leads into Twist Disarm. |
+| Counter parry | Parrying right before the enemy's strike destabilizes it and opens it to a counter (manual: "Counter") | built 2026-11-20 with the Power Parry (section 6) |
 | Kick | DM's trademark: enemies fly far, into spikes, fire, water or off ledges | medium: B&S has kicks and a "Mighty Kick" skill (`SkillMightyKick` in the game code), weaker; DMCS could boost the kick (sprinting, or with a full meter). Feel: headset. |
 | Double fatality (Adrenaline skill) | Store more adrenaline, two fatalities in a row | small: an option on the existing meter |
 | Whirlwind at full adrenaline | Crouch + power strike: a spin hitting everyone in reach | medium: VR needs a gesture (e.g. a fast turn with the weapon drawn), to be designed |
@@ -298,7 +298,33 @@ compared.
 time → the enemy staggers → Twist Disarm or a hard hit), together with Perfect Block (section 5); then the kick (DM's
 signature; its values need the headset).
 
-## 6. Counter Parry and Power Parry (idea, user 2026-11-20; not built)
+## 6. Counter Parry and Power Parry (user 2026-11-20; built 2026-11-20)
+
+**Built (user go 2026-11-20: "bau beide"; power parry without a stagger gate, chance 100 %):** own Mod Menu group
+`Parry` (Enabled, Counter Parry, Counter Guard Speed 1 m/s, Counter Stagger Duration 1.5 s, Power Parry, Power Parry Min
+Speed 3 m/s, Power Parry Chance 100 %, Parry Speed Window 0.2 s; speeds are guesses for the headset). Rule
+`DMCS.Core.ParryRule`, feature `Features/Parry.cs`, harness `step6-parry`, docs/IMPLEMENTATION.md step 6.
+- One measure decides both: the parrying hand's real controller speed, fastest value in the window before the parry
+  event (`HandSpeeds`). Held guard (below the counter speed) = the game's own parry; counter speed = stagger; power speed
+  = disarm (`DisarmAlong`, flung away from the player) plus the stagger while Counter Parry is on.
+- Deviation from the idea below ("timing from the attack's own stages"): in VR the contact time follows from where the
+  guard is held, so attack timing would reward a guard held close to the body, not timing. Dark Messiah's counter is
+  pressing block just before the hit; the VR equivalent is bringing the weapon into the swing just in time, which the
+  hand speed shows. A player who waggles the sword constantly also gets counters (headset check; Perfect Block's
+  short-swing measure may help later).
+- Not the weapon's speed: at the event the collision has already slowed the blade, and the impact speed contains the
+  enemy's swing.
+- The counter's stagger is DMCS's own window (`HitInfo.IsStaggered` counts it, as a Charge Stagger window) plus the
+  game's `ForceStagger` (StaggerMedium) one frame later, because right after the event `BrainModuleMelee` pushes the NPC
+  itself (`TryPush(Parry)`: recoil or a riposte, read in the code 1.3.2) and would override an earlier stagger. The
+  vanilla parry push leaves `brain.currentStagger` at None (StaggerCoroutine without SetStagger), so before this a parry
+  never opened Disarm Strike.
+- Clash of Might: `Parry.Start` subscribes after `ClashOfMight.Start`, so Clash decides first; Clash skips a parry at
+  or above the power speed ("a power parry, not a clash"); a parry Clash took (lock or Simple disarm) is left alone
+  (`TakenByClash`).
+- Adrenaline: parry +10 as before (Adrenaline's own handler); a power parry is a disarm (+15). No extra gain for a
+  counter.
+
 
 **Counter Parry (Dark Messiah's "Counter", manual):** parrying right before the enemy's strike lands destabilizes it
 and opens it to a counter. In DMCS: a parry in time (the game's `onCreatureAttackParry`, timing from the attack's own

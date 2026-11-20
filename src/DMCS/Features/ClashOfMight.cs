@@ -41,6 +41,9 @@ namespace DMCS
         /// <summary>Whether the blades are locked now, and where (for diagnostics and probes).</summary>
         internal static bool IsLocked => Lock.IsLocked;
 
+        /// <summary>The blades are locked with this NPC right now.</summary>
+        internal static bool IsLockedWith(Creature npc) => npc != null && Lock.IsLocked && _lockNpc == npc.GetInstanceID();
+
         internal static Vector3? LockPoint => Lock.IsLocked && _lockFlash != null && _lockFlash.Weapon != null ? _lockFlash.Point : (Vector3?)null;
         private static int _lockNpc;
         private static Flash _lockFlash;
@@ -674,6 +677,12 @@ namespace DMCS
                     Dmcs.Log.Debug(Channel, "you blocked " + flash.NpcName + "'s other weapon (" + parriedItem.data?.id + "), not the flashing one: an ordinary parry");
                     return;
                 }
+                if (Parry.TakesOverFromClash(parryingItem, out var handSpeed))
+                {
+                    // Spec section 6: a hard swing into the attack is a power parry, never a clash.
+                    Dmcs.Log.Debug(Channel, "you parried " + flash.NpcName + "'s swing hard (hand " + F(handSpeed) + " m/s): a power parry, not a clash");
+                    return;
+                }
                 var point = flash.Point;
                 var contactToFlash = Vector3.Distance(hit.contactPoint, point);
                 var hand = parryingItem.mainHandler;
@@ -933,7 +942,7 @@ namespace DMCS
             Dmcs.Log.Debug(Channel, "you lost the clash against " + name + ": " + why + (parts.Count > 0 ? "; " + string.Join(", ", parts) : "; no penalty (" + LoseOutcome + ")"));
         }
 
-        private static Vector3 AwayFromPlayer(Creature npc)
+        internal static Vector3 AwayFromPlayer(Creature npc)
         {
             var player = Player.currentCreature;
             if (npc == null || player == null)

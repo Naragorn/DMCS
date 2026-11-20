@@ -1,0 +1,26 @@
+# Film of Counter Parry and Power Parry (not part of the suite: tools/harness.sh harness/films/parry-film.txt). A
+# standing NPC holds a sword; the game's block event is raised twice (player-parry), each time right after the player's
+# right controller swept sideways: first at 1.5 m/s (a guard brought up in time: counter, the NPC staggers), then at
+# 5 m/s (a hard swing: power parry, its sword flies). Three views: beside the two of them, the player's own eyes, and a
+# close-up of the player's hand. Sets no Parry option (defaults), so it runs on an older build too, for the "before" film.
+wait-level
+frame-rate 90
+press DMCS "Reset To Defaults"
+set-option DMCS "Debug Logging" true
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Adrenaline Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+player-invincible true
+spawn-npc HumanMale distance=1.5 angle=0 brain=HumanDummy
+npc-grab SwordShortCommon
+player-grab SwordShortCommon
+wait 1
+mark
+record-start parry fps=60 width=640 height=360 views=side,first,hand
+wait 0.3
+player-parry swing=1.5
+wait 1.2
+player-parry swing=5
+wait 1.5
+record-stop
+quit

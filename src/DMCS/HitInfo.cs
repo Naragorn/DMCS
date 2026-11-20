@@ -148,10 +148,11 @@ namespace DMCS
             }
         }
 
-        /// <summary>Inside a Charge Stagger window, staggered by the game itself (Brain.currentStagger), or lying down.</summary>
+        /// <summary>Inside a Charge Stagger or counter parry window, staggered by the game itself (Brain.currentStagger), or lying down.</summary>
         public static bool IsStaggered(Creature creature)
         {
             return ChargeStagger.IsStaggered(creature)
+                || Parry.IsStaggered(creature)
                 || (creature.brain != null && creature.brain.currentStagger != Brain.Stagger.None)
                 || creature.state == Creature.State.Destabilized;
         }

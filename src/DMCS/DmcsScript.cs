@@ -33,6 +33,8 @@ namespace DMCS
             DisarmStrike.Start();
             Adrenaline.Start();
             ClashOfMight.Start();
+            // After Clash of Might: its parry handler must run first (Parry.cs).
+            Parry.Start();
             Dmcs.Log.Debug("Script", "ScriptEnable");
         }
 
@@ -44,6 +46,7 @@ namespace DMCS
             DisarmStrike.Stop();
             Adrenaline.Stop();
             ClashOfMight.Stop();
+            Parry.Stop();
             Dmcs.Log.Debug("Script", "ScriptDisable");
         }
 
@@ -55,6 +58,7 @@ namespace DMCS
             DisarmStrike.Stop();
             Adrenaline.Stop();
             ClashOfMight.Stop();
+            Parry.Stop();
             Dmcs.Log.Debug("Script", "ScriptUnload");
             LoadedMod = null;
         }
@@ -66,6 +70,7 @@ namespace DMCS
             DisarmStrike.Update();
             Adrenaline.Update();
             ClashOfMight.Update();
+            Parry.Update();
             HitInfo.EndFrame();
         }
 
@@ -82,6 +87,7 @@ namespace DMCS
                 DisarmStrike.RestoreAll();
                 Adrenaline.ResetAll();
                 ClashOfMight.ResetAll();
+                Parry.ResetAll();
             }
         }
 

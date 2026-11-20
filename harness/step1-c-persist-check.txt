@@ -2,7 +2,7 @@
 # The game applies saved values after the scripts load (Options.ApplyModOptions), so the check is the
 # Settings line DMCS logs once the level has loaded.
 wait-level
-expect-log [DMCS] Settings: Debug Logging=on | Clash of Might=Enabled | Disarm Strike=Disabled | Charge Stagger=Enabled | Adrenaline=Enabled
+expect-log [DMCS] Settings: Debug Logging=on | Clash of Might=Enabled | Disarm Strike=Disabled | Charge Stagger=Enabled | Adrenaline=Enabled | Parry=Enabled
 expect-option DMCS "Debug Logging" true
 expect-option DMCS "Disarm Strike Enabled" false
 expect-option DMCS "Clash of Might Mode" On

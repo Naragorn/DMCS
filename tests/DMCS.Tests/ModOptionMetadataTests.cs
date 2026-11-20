@@ -233,6 +233,28 @@ public class ModOptionMetadataTests
     }
 
     [Fact]
+    public void Parry_ExposesItsSettings_InOrder()
+    {
+        var group = Options.Value.Where(o => o.Category == DmcsCategories.Parry).OrderBy(o => o.Order).ToList();
+
+        Assert.Equal(
+            new[]
+            {
+                (ParrySettings.EnabledName, "System.Boolean", "ArrowList"),
+                (ParrySettings.CounterName, "System.Boolean", "ArrowList"),
+                (ParrySettings.CounterSpeedName, "System.Single", "Slider"),
+                (ParrySettings.StaggerDurationName, "System.Single", "Slider"),
+                (ParrySettings.PowerName, "System.Boolean", "ArrowList"),
+                (ParrySettings.PowerSpeedName, "System.Single", "Slider"),
+                (ParrySettings.PowerChanceName, "System.Single", "Slider"),
+                (ParrySettings.SpeedWindowName, "System.Single", "Slider"),
+            },
+            group.Select(o => (o.Name, o.DataType, o.InteractionType)));
+        Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));
+        Assert.All(group.Where(o => o.DataType != "System.Boolean"), o => Assert.False(string.IsNullOrEmpty(o.ValueSource), o.Name + " needs a value list"));
+    }
+
+    [Fact]
     public void Adrenaline_ExposesItsSettings_InOrder()
     {
         var group = Options.Value.Where(o => o.Category == DmcsCategories.Adrenaline).OrderBy(o => o.Order).ToList();
@@ -350,6 +372,7 @@ public class ModOptionMetadataTests
     [InlineData(DmcsCategories.DisarmStrike)]
     [InlineData(DmcsCategories.ChargeStagger)]
     [InlineData(DmcsCategories.Adrenaline)]
+    [InlineData(DmcsCategories.Parry)]
     public void EveryFeatureGroup_StartsWithItsEnabledToggle(string category)
     {
         var inGroup = Options.Value.Where(o => o.Category == category).ToList();

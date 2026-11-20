@@ -104,6 +104,17 @@ Then it is strength against strength, over a few rounds (3 to 5 by default):
 
 How hard the push should be is not tuned in the headset yet; the values may change.
 
+### Parry (testing)
+
+How you parry an enemy's attack now matters.
+- **Held guard:** your weapon is already in the way. An ordinary parry, as in the base game.
+- **Counter:** you bring your weapon into the swing just in time. The enemy staggers, so a hand hit or a twist can
+  now disarm it.
+- **Power parry:** you swing hard into the attack. The enemy's weapon flies out of its hand, and it staggers too.
+
+DMCS reads how fast your hand moved just before the parry: from 1 m/s it is a counter, from 3 m/s a power parry.
+Both values are guesses until tested in VR. A hard parry at the Clash of Might star is a power parry, not a clash.
+
 ## Dark Messiah's own sounds and vignette (optional)
 
 DMCS ships only its own sounds and graphics, made to sound and look close to Dark Messiah's. Under *Ready Sound Style*,
@@ -271,6 +282,19 @@ on body hits.
 | Adrenaline Vignette Flare | on | | The streaks flare up on the critical |
 
 Picking a DMCS vignette style sets *Streaks*, *Streak Length* and *Hue* to how that version was made.
+
+**Parry**
+
+| Option | Default | Range | What it does |
+|---|---|---|---|
+| Enabled | on | | Counter Parry and Power Parry |
+| Counter Parry | on | | A guard brought up just in time staggers the enemy |
+| Counter Guard Speed | 1 m/s | 0.25–4 m/s | How fast your hand must move just before the parry for a counter |
+| Counter Stagger Duration | 1.5 s | 0.5–5 s | How long a countered enemy counts as staggered (time to disarm it) |
+| Power Parry | on | | A hard swing into the attack knocks the enemy's weapon away |
+| Power Parry Min Speed | 3 m/s | 1–10 m/s | How fast your hand must swing for a power parry |
+| Power Parry Chance | 100 % | 0–100 % | Chance a power parry disarms |
+| Parry Speed Window | 0.2 s | 0.05–0.5 s | How long before the parry your hand's speed counts |
 
 ## Reporting bugs
 

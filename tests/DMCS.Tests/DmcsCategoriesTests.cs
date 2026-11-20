@@ -11,6 +11,7 @@ public class DmcsCategoriesTests
     [InlineData(DmcsCategories.DisarmStrike, 2)]
     [InlineData(DmcsCategories.ChargeStagger, 3)]
     [InlineData(DmcsCategories.Adrenaline, 4)]
+    [InlineData(DmcsCategories.Parry, 5)]
     [InlineData("Unknown", -1)]
     public void OrderOf(string category, int expected)
     {
@@ -21,7 +22,7 @@ public class DmcsCategoriesTests
     public void Features_FollowSpecOrder()
     {
         Assert.Equal(
-            new[] { "Clash of Might", "Disarm Strike", "Charge Stagger", "Adrenaline" },
+            new[] { "Clash of Might", "Disarm Strike", "Charge Stagger", "Adrenaline", "Parry" },
             DmcsCategories.Features);
     }
 }

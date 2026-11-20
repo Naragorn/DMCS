@@ -11,6 +11,7 @@ namespace DMCS
             DisarmStrike.Toggle,
             ChargeStagger.Toggle,
             Adrenaline.Toggle,
+            Parry.Toggle,
         };
     }
 }
