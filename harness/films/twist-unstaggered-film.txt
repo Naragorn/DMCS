@@ -1,0 +1,26 @@
+# Film of a twist on an enemy that is NOT staggered (not part of the suite). Since 2026-11-20 nothing happens; on
+# builds before that (65a542a) it disarmed. Same strike as twist-disarm-film.txt, without the staggering hit. Three views: beside the two of them, the player's own
+# eyes, and a close-up of the player's hand and blade. Run it on an older build for the "before" film.
+wait-level
+frame-rate 90
+press DMCS "Reset To Defaults"
+set-option DMCS "Debug Logging" true
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Adrenaline Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+set-option DMCS "Body Hit Drop" false
+set-option DMCS "Twist Disarm Chance" 100
+player-invincible true
+turn-player 180
+spawn-npc HumanMale distance=0.9 angle=0 brain=HumanDummy
+npc-grab SwordShortCommon
+player-grab SwordShortCommon
+wait 1
+mark
+record-start twist-unstaggered fps=60 width=640 height=360 views=side,first,hand
+wait 0.3
+player-strike-weapon phase=ready
+player-strike-weapon phase=strike twist=900 seconds=0.5 depth=0.4
+wait 1.5
+record-stop
+quit

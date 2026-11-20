@@ -11,8 +11,8 @@ namespace DMCS
     /// <summary>
     /// Twist Disarm (spec 2b, part of Disarm Strike): the player's held weapon hits an enemy's held weapon while the
     /// player's wrist rolls the blade around its own long axis faster than *Twist Min Roll Speed*: the enemy drops it
-    /// with *Twist Disarm Chance*, no stagger needed. Blade contacts come from the player's weapons' own collision
-    /// handlers (CollisionHandler.OnCollisionStartEvent, subscribed while the player holds them, as the game's own
+    /// with *Twist Disarm Chance*, only while it is staggered (when Disarm Requires Stagger is on, as the hand hit).
+    /// Blade contacts come from the player's weapons' own collision handlers (CollisionHandler.OnCollisionStartEvent, subscribed while the player holds them, as the game's own
     /// BladeDancer does); the roll from the controller's rig-local rotation (HandSpeeds.PeakRoll).
     /// </summary>
     internal static class TwistDisarm
@@ -21,6 +21,7 @@ namespace DMCS
 
         private static readonly System.Random Dice = new System.Random();
         private static readonly ContactCooldown<int> Cooldown = new ContactCooldown<int>();
+        private static readonly ContactCooldown<int> SlowLogged = new ContactCooldown<int>();
         private static readonly HashSet<Item> Watched = new HashSet<Item>();
         private static bool _hooked;
 
@@ -54,6 +55,7 @@ namespace DMCS
                 Unwatch(item);
             }
             Cooldown.Clear();
+            SlowLogged.Clear();
             _hooked = false;
         }
 
@@ -137,13 +139,27 @@ namespace DMCS
                 enemy != null && Cooldown.IsCoolingDown(id, now),
                 rate,
                 DisarmStrike.TwistMinRollSpeed,
+                DisarmStrike.RequireStagger,
+                enemy != null && HitInfo.IsStaggered(enemy),
                 (float)Dice.NextDouble(),
                 DisarmStrike.TwistChance / 100f));
             if (TwistRule.IsQuiet(decision))
             {
                 return;
             }
-            Cooldown.Mark(id, now, TwistSettings.ContactCooldown);
+            if (decision == TwistDecision.TooSlow)
+            {
+                // Logged once per enemy per cooldown, so a long blade bind does not flood the log; it starts no cooldown.
+                if (SlowLogged.IsCoolingDown(id, now))
+                {
+                    return;
+                }
+                SlowLogged.Mark(id, now, TwistSettings.ContactCooldown);
+            }
+            else
+            {
+                Cooldown.Mark(id, now, TwistSettings.ContactCooldown);
+            }
             var facts = "roll " + rate.ToString("0", CultureInfo.InvariantCulture) + "°/s (min "
                 + DisarmStrike.TwistMinRollSpeed.ToString("0", CultureInfo.InvariantCulture) + "), hit "
                 + hit.impactVelocity.magnitude.ToString("0.00", CultureInfo.InvariantCulture) + " m/s";

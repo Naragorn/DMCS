@@ -1,55 +1,66 @@
-# Step 3c: Twist Disarm. The player's sword sweeps through the standing NPC's sword (real physics: the game's own
-# collision events between the two held weapons), the player's right controller rolling around the blade while it does
-# (BasHarness player-strike-weapon). Too slow a roll: no disarm; a fast one: the NPC drops its sword. How fast a real
-# wrist twist is: headset (the 400°/s default is a guess).
+# Step 3c: Twist Disarm, only against a staggered enemy (user 2026-11-20, as Dark Messiah). The player's sword
+# sweeps through the standing NPC's sword (real physics: the game's own collision events between the two held
+# weapons), the player's right controller rolling around the blade while it does (BasHarness player-strike-weapon).
+# Not staggered: a fast twist does nothing; staggered but too slow a roll: nothing; Twist Disarm off: nothing. The
+# disarm itself (staggered and a fast twist) is step3d, in a fresh game: after the hits and NPCs here it missed too
+# often (2026-11-20). How fast a real wrist twist is: headset (the 400°/s default is a guess).
 
 wait-level
+# headset pace: uncapped (330-500 fps headless) the staggered NPC's blade got away from the strike in every run, at
+# a filming run's lower frame rate it did not (2026-11-20)
+frame-rate 90
 press DMCS "Reset To Defaults"
 option-exists DMCS "Twist Disarm" category="Disarm Strike" type=Boolean interaction=ArrowList save=true
 option-exists DMCS "Twist Disarm Chance" category="Disarm Strike" type=Single interaction=Slider save=true
 option-exists DMCS "Twist Min Roll Speed" category="Disarm Strike" type=Single interaction=Slider save=true
 expect-option DMCS "Twist Disarm" true
-expect-option DMCS "Twist Disarm Chance" 50
+expect-option DMCS "Twist Disarm Chance" 100
 expect-option DMCS "Twist Min Roll Speed" 400
+expect-option DMCS "Disarm Requires Stagger" true
 set-option DMCS "Debug Logging" true
 set-option DMCS "Charge Stagger Enabled" false
 set-option DMCS "Adrenaline Enabled" false
 set-option DMCS "Clash of Might Mode" Off
-set-option DMCS "Twist Disarm Chance" 100
-# a short no-regrab time, so section 3 can hand the NPC a sword again
-set-option DMCS "Disarm No Regrab Time" 2
+# the torso hit that staggers must not knock the sword loose by itself (Body Hit Drop: step3b)
+set-option DMCS "Body Hit Drop" false
 player-invincible true
+#: with its default loadout the NPC drew an axe, a mace or a buckler into its free hand, which then
+# got in the way of the strike (2026-11-20)
+turn-player 180
 spawn-npc HumanMale distance=0.9 angle=0 brain=HumanDummy
 npc-grab SwordShortCommon
 player-grab SwordShortCommon
 wait 1
 
-# 1. The blades meet without a twist: a contact, too slow, the NPC keeps its sword
-mark
-player-strike-weapon twist=0
-expect-log no twist disarm, TooSlow
-expect-npc holding true
-screenshot twist-slow of=npc
-
-# 2. The same strike with a fast twist (900°/s): the NPC drops its sword. The sweep can knock the player's own sword
-# out of the mock hand (seen 2026-11-18), so every strike starts with a fresh one.
-wait 1
-player-grab SwordShortCommon
+# 1. Not staggered: a fast twist (900°/s) on its sword does nothing
 mark
 player-strike-weapon twist=900
-expect-log twist disarm on HumanMale
-expect-log (twist, roll
-expect-npc holding false within=1
-screenshot twist-disarm of=npc
+expect-log no twist disarm, NotStaggered
+expect-npc holding true
 
-# 3. Twist Disarm off: a fast twist does nothing
-wait 3
+# 2. Staggered, but no twist: too slow, it keeps its sword
+wait 1
+player-grab SwordShortCommon
+player-strike-weapon phase=ready
+hit-npc Torso push=1
+expect-npc staggered true within=0.2
+mark
+player-strike-weapon phase=strike twist=0
+expect-log no twist disarm, TooSlow
+expect-npc holding true
+
+# 3. Twist Disarm off: staggered and a fast twist do nothing (a fresh NPC, the player turned 70° away from the first)
+turn-player 70
+spawn-npc HumanMale distance=0.9 angle=0 brain=HumanDummy
 npc-grab SwordShortCommon
 player-grab SwordShortCommon
 set-option DMCS "Twist Disarm" false
 wait 1
+player-strike-weapon phase=ready
+hit-npc Torso push=1
+expect-npc staggered true within=0.2
 mark
-player-strike-weapon twist=900
+player-strike-weapon phase=strike twist=900 seconds=0.5 depth=0.4
+# only "no twist disarm": a hard enough blow can knock a sword out through the game's own physics (seen 2026-11-20)
 expect-no-log twist disarm
-expect-npc holding true
 quit

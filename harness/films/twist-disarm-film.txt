@@ -1,24 +1,28 @@
-# Film of Twist Disarm (not part of the suite: tools/harness.sh harness/films/twist-disarm-film.txt). The player's
-# sword comes at the standing NPC's sword from outside its body and strikes through it while the wrist rolls at
-# 900°/s (step3c section 2). Two views: beside the two of them, and the player's own eyes. Run it on an older build
-# for the "before" film.
+# Film of Twist Disarm (not part of the suite: tools/harness.sh harness/films/twist-disarm-film.txt). A pushing
+# torso hit staggers the standing NPC; then the player's sword comes at its sword from outside its body and strikes
+# through it while the wrist rolls at 900°/s (step3c section 3). Three views: beside the two of them, the player's own
+# eyes, and a close-up of the player's hand and blade. Run it on an older build for the "before" film.
 wait-level
+frame-rate 90
 press DMCS "Reset To Defaults"
 set-option DMCS "Debug Logging" true
 set-option DMCS "Charge Stagger Enabled" false
 set-option DMCS "Adrenaline Enabled" false
 set-option DMCS "Clash of Might Mode" Off
-set-option DMCS "Twist Disarm Chance" 100
+set-option DMCS "Body Hit Drop" false
 player-invincible true
+turn-player 180
 spawn-npc HumanMale distance=0.9 angle=0 brain=HumanDummy
 npc-grab SwordShortCommon
 player-grab SwordShortCommon
 wait 1
 mark
-record-start twist fps=60 width=640 height=360 views=side,first
-wait 0.5
-player-strike-weapon twist=900
+record-start twist fps=60 width=640 height=360 views=side,first,hand
+wait 0.3
+player-strike-weapon phase=ready
+hit-npc Torso push=1
+player-strike-weapon phase=strike twist=900 seconds=0.5 depth=0.4
 wait 1.5
 record-stop
-expect-npc holding false within=1
+expect-log twist disarm on HumanMale
 quit

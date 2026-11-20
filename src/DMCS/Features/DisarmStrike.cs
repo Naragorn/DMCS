@@ -218,7 +218,7 @@ namespace DMCS
 
         [ModOption(
             name = TwistSettings.EnabledName,
-            tooltip = "Hit an enemy's weapon with yours while twisting your wrist (the blade rolls around itself) and it may drop it. No stagger needed.",
+            tooltip = "Hit a staggered enemy's weapon with yours while you twist your wrist (the blade rolls around itself), and it drops it.",
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
             order = 18)]
@@ -226,7 +226,7 @@ namespace DMCS
 
         [ModOption(
             name = TwistSettings.ChanceName,
-            tooltip = "Chance (percent) that a fast enough twist knocks the enemy's weapon out.",
+            tooltip = "Chance (percent) that a fast enough twist on a staggered enemy's weapon knocks it out.",
             valueSourceName = nameof(TwistChanceValues),
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,

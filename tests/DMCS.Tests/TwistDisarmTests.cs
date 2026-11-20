@@ -92,8 +92,9 @@ public class TwistRuleTests
 {
     private static TwistContact C(
         bool enabled = true, bool playerWeapon = true, bool enemyWeapon = true, bool dead = false, bool shield = false,
-        bool inLock = false, bool cooling = false, float rate = 500f, float min = 400f, float roll = 0.1f, float chance = 0.5f) =>
-        new TwistContact(enabled, playerWeapon, enemyWeapon, dead, shield, inLock, cooling, rate, min, roll, chance);
+        bool inLock = false, bool cooling = false, float rate = 500f, float min = 400f, bool require = true, bool staggered = true,
+        float roll = 0.1f, float chance = 0.5f) =>
+        new TwistContact(enabled, playerWeapon, enemyWeapon, dead, shield, inLock, cooling, rate, min, require, staggered, roll, chance);
 
     [Fact]
     public void FastTwist_OnAnEnemyWeapon_Disarms() => Assert.Equal(TwistDecision.Disarm, TwistRule.Decide(C()));
@@ -107,6 +108,7 @@ public class TwistRuleTests
     [InlineData(TwistDecision.InLock)]
     [InlineData(TwistDecision.Cooldown)]
     [InlineData(TwistDecision.TooSlow)]
+    [InlineData(TwistDecision.NotStaggered)]
     [InlineData(TwistDecision.ChanceFailed)]
     public void EachRefusal_HasItsReason(TwistDecision expected)
     {
@@ -120,10 +122,33 @@ public class TwistRuleTests
             TwistDecision.InLock => C(inLock: true),
             TwistDecision.Cooldown => C(cooling: true),
             TwistDecision.TooSlow => C(rate: 399f),
+            TwistDecision.NotStaggered => C(staggered: false),
             _ => C(roll: 0.5f),
         };
 
         Assert.Equal(expected, TwistRule.Decide(c));
+    }
+
+    [Fact]
+    public void Stagger_IsNeededOnlyWhileRequired()
+    {
+        Assert.Equal(TwistDecision.Disarm, TwistRule.Decide(C(require: false, staggered: false)));
+        Assert.Equal(TwistDecision.NotStaggered, TwistRule.Decide(C(require: true, staggered: false)));
+        Assert.Equal(TwistDecision.Disarm, TwistRule.Decide(C(require: true, staggered: true)));
+    }
+
+    [Fact]
+    public void ASlowTouch_IsTooSlow_EvenWhileCoolingDown_SoItNeverBlocksATwist()
+    {
+        Assert.Equal(TwistDecision.TooSlow, TwistRule.Decide(C(rate: 100f, cooling: true)));
+        Assert.Equal(TwistDecision.Cooldown, TwistRule.Decide(C(rate: 500f, cooling: true)));
+    }
+
+    [Fact]
+    public void ASlowTwist_IsTooSlow_EvenUnstaggered()
+    {
+        // The roll is checked first: an unstaggered enemy is only named when the twist itself was fast enough.
+        Assert.Equal(TwistDecision.TooSlow, TwistRule.Decide(C(rate: 100f, staggered: false)));
     }
 
     [Fact]
@@ -143,6 +168,7 @@ public class TwistRuleTests
         Assert.True(TwistRule.IsQuiet(TwistDecision.EnemyDeadOrPlayer));
         Assert.True(TwistRule.IsQuiet(TwistDecision.Cooldown));
         Assert.False(TwistRule.IsQuiet(TwistDecision.TooSlow));
+        Assert.False(TwistRule.IsQuiet(TwistDecision.NotStaggered));
         Assert.False(TwistRule.IsQuiet(TwistDecision.ChanceFailed));
         Assert.False(TwistRule.IsQuiet(TwistDecision.KeepsShield));
         Assert.False(TwistRule.IsQuiet(TwistDecision.InLock));
@@ -166,7 +192,7 @@ public class TwistRuleTests
     public void Settings_AsSpecified()
     {
         Assert.True(TwistSettings.DefaultEnabled);
-        Assert.Equal(50f, TwistSettings.Chance.Default);
+        Assert.Equal(100f, TwistSettings.Chance.Default);
         Assert.Equal(400f, TwistSettings.MinRollSpeed.Default);
         foreach (var s in TwistSettings.Sliders)
         {

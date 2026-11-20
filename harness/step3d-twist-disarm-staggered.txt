@@ -1,0 +1,30 @@
+# Step 3d: Twist Disarm on a staggered enemy (user 2026-11-20, as Dark Messiah). The player's blade waits beside the
+# standing NPC's sword (player-strike-weapon phase=ready), a pushing torso hit staggers the NPC (the game's light
+# stagger lasts only 0.5-0.9 s, measured 2026-11-20), then the player strikes through its sword while the wrist rolls
+# at 900°/s: the NPC drops its sword. Real physics; a fresh game, so no earlier hits or NPCs get in the way.
+
+wait-level
+# headset pace (uncapped the game runs at 330-500 fps headless)
+frame-rate 90
+press DMCS "Reset To Defaults"
+set-option DMCS "Debug Logging" true
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Adrenaline Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+set-option DMCS "Body Hit Drop" false
+player-invincible true
+turn-player 180
+spawn-npc HumanMale distance=0.9 angle=0 brain=HumanDummy
+npc-grab SwordShortCommon
+player-grab SwordShortCommon
+wait 1
+player-strike-weapon phase=ready
+mark
+# straight on to the strike: the stagger is short, and the log names a missing stagger anyway (NotStaggered)
+hit-npc Torso push=1
+player-strike-weapon phase=strike twist=900 seconds=0.5 depth=0.4
+expect-log twist disarm on HumanMale
+expect-log (twist, roll
+expect-npc holding false within=1
+screenshot twist-disarm of=npc
+quit

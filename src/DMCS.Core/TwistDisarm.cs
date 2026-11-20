@@ -10,10 +10,11 @@ namespace DMCS.Core
         public const string ChanceName = "Twist Disarm Chance";
         public const string MinRollSpeedName = "Twist Min Roll Speed";
 
-        /// <summary>Spec: default on, chance 50 %, no stagger needed.</summary>
+        /// <summary>Spec: default on. Only against a staggered enemy while Disarm Requires Stagger is on (user 2026-11-20, as Dark Messiah).</summary>
         public const bool DefaultEnabled = true;
 
-        public static readonly SliderSpec Chance = new SliderSpec(ChanceName, 0f, 100f, 5f, 50f);
+        /// <summary>100 % (user 2026-11-20): against a staggered enemy it is the aimed disarm, as the hand hit (100 %).</summary>
+        public static readonly SliderSpec Chance = new SliderSpec(ChanceName, 0f, 100f, 5f, 100f);
 
         /// <summary>
         /// Degrees per second the blade must roll around its own long axis (a wrist twist) when it meets the enemy's
@@ -28,7 +29,8 @@ namespace DMCS.Core
         public const float MeterWindow = 0.03f;
 
         /// <summary>
-        /// Seconds one blade contact counts once per enemy: a single clash of the blades raises several collision events.
+        /// Seconds a decided fast twist counts once per enemy: a single clash of the blades raises several collision events.
+        /// Slow touches do not start it.
         /// </summary>
         public const float ContactCooldown = 0.5f;
 
@@ -147,6 +149,7 @@ namespace DMCS.Core
         InLock,
         Cooldown,
         TooSlow,
+        NotStaggered,
         ChanceFailed,
     }
 
@@ -155,8 +158,10 @@ namespace DMCS.Core
     {
         public TwistContact(
             bool enabled, bool playerWeapon, bool enemyWeapon, bool enemyDeadOrPlayer, bool keepsShield, bool inLock,
-            bool coolingDown, float rollRate, float minRollRate, float roll, float chance)
+            bool coolingDown, float rollRate, float minRollRate, bool requireStagger, bool staggered, float roll, float chance)
         {
+            RequireStagger = requireStagger;
+            Staggered = staggered;
             Enabled = enabled;
             PlayerWeapon = playerWeapon;
             EnemyWeapon = enemyWeapon;
@@ -186,13 +191,23 @@ namespace DMCS.Core
         /// <summary>A Clash of Might lock is running with that enemy: the lock decides.</summary>
         public bool InLock { get; }
 
-        /// <summary>This enemy's blade contact already counted moments ago.</summary>
+        /// <summary>
+        /// A fast twist on this enemy's weapon was decided moments ago. A slow touch never starts the cooldown: blades that
+        /// touch and are then twisted (bind, then twist) must still count (harness 2026-11-20: a touch on the way in
+        /// blocked the twist 0.3 s later).
+        /// </summary>
         public bool CoolingDown { get; }
 
         /// <summary>The fastest roll of the player's hand (°/s) just before the contact.</summary>
         public float RollRate { get; }
 
         public float MinRollRate { get; }
+
+        /// <summary>Disarm Strike's "Disarm Requires Stagger" (shared with the hand hit).</summary>
+        public bool RequireStagger { get; }
+
+        /// <summary>Charge Stagger window, the game's own stagger, or knocked off balance (HitInfo.IsStaggered).</summary>
+        public bool Staggered { get; }
 
         /// <summary>0..1 dice.</summary>
         public float Roll { get; }
@@ -203,7 +218,10 @@ namespace DMCS.Core
 
     /// <summary>
     /// Twist Disarm (spec 2b): the player's weapon hits an enemy's weapon while the blade rolls around its own long axis
-    /// faster than the minimum: the enemy drops it with the chance. No stagger needed. Total angular speed does not count,
+    /// faster than the minimum: the enemy drops it with the chance. Since 2026-11-20 only a staggered enemy, while Disarm
+    /// Requires Stagger is on (as Dark Messiah: a stunned enemy, a power strike at its weapon). The stagger is checked after
+    /// the roll, so the log names a fast twist that met an unstaggered enemy. This keeps it apart from Clash of Might, whose
+    /// enemy is swinging, not staggered. The cooldown is checked after the roll too, so a slow touch never blocks a twist. Total angular speed does not count,
     /// as every swing turns around shoulder and elbow; only the roll around the blade does.
     /// </summary>
     public static class TwistRule
@@ -234,13 +252,17 @@ namespace DMCS.Core
             {
                 return TwistDecision.InLock;
             }
+            if (c.RollRate < c.MinRollRate)
+            {
+                return TwistDecision.TooSlow;
+            }
             if (c.CoolingDown)
             {
                 return TwistDecision.Cooldown;
             }
-            if (c.RollRate < c.MinRollRate)
+            if (c.RequireStagger && !c.Staggered)
             {
-                return TwistDecision.TooSlow;
+                return TwistDecision.NotStaggered;
             }
             return c.Roll < c.Chance ? TwistDecision.Disarm : TwistDecision.ChanceFailed;
         }

@@ -138,13 +138,27 @@ Not yet verified in game: that `HumanDummy` never picks anything up, and how the
   `RollMeter` turns it into an angular velocity over 0.03 s; at the contact the fastest component along the held blade's
   long axis (grip → furthest damager, turned into the rig's space) in the last 0.15 s is the roll. A swing turns the blade
   around shoulder and elbow, not around itself, so it adds next to nothing; only the wrist's roll counts (spec).
+- **Rework 2026-11-20 (user): only a staggered enemy** while *Disarm Requires Stagger* is on (`HitInfo.IsStaggered`:
+  Charge Stagger window, the game's own stagger, off balance), chance default 100 %. Order in the rule: … InLock,
+  TooSlow, Cooldown, NotStaggered, chance; so the log names a fast twist on an unstaggered enemy, and a slow touch starts
+  no cooldown (a touch on the way in had blocked the twist 0.3 s later; slow touches are only logged once per 0.5 s).
+  Measured: the game's light stagger (`push=1`) lasts 0.5–0.9 s, push 2 knocks the NPC off balance for 0.9–1.3 s.
 - **Rule** (`TwistRule`, Core, unit-tested): Disarm Strike and *Twist Disarm* on, an enemy weapon, not a kept shield,
   not during a Clash lock, one decision per enemy per 0.5 s (a single clash raises several collision events), roll ≥
   *Twist Min Roll Speed* (400°/s, guess), then *Twist Disarm Chance* (50 %). No stagger needed. The disarm goes through
   `DisarmStrike.DisarmAlong` (fling along the hit, no-regrab lock, stand still, Disarm adrenaline, catch bonus).
 - Log: `blade on HumanMale0's SwordShortCommon: no twist disarm, TooSlow (roll 0°/s (min 400), hit 2.52 m/s)` and
   `twist disarm on HumanMale0's SwordShortCommon (roll 904°/s (min 400), hit 2.31 m/s)` (harness 2026-11-18).
-- Film (2026-11-20): `harness/films/twist-disarm-film.txt` (not in the suite) films section 2's strike with BasHarness
+- Harness after the rework: `step3c` (not staggered → `NotStaggered`; staggered but slow → `TooSlow`; Twist off →
+  nothing) and `step3d-twist-disarm-staggered` (blade ready beside the NPC's with `player-strike-weapon phase=ready`, a
+  `push=1` torso hit, then the 900°/s strike → disarm), both at `frame-rate 90`. The disarm needed its own fresh game:
+  after the hits and NPCs of step3c it missed in most runs (the NPC drew an axe, mace or buckler from its loadout into
+  the free hand, the first NPC was knocked off balance, the mock hand lost its sword); uncapped (330–500 fps) the
+  staggered blade got away from the strike every time.
+- Films after the rework (`harness/films/twist-unstaggered-film.txt` and `twist-disarm-film.txt`, views side, first, hand):
+  before (65a542a) an unstaggered twist disarmed (`roll 981°/s`), after it does not (`NotStaggered, roll 993°/s`); a
+  staggered twist disarms (`roll 1116°/s, hit 4.68 m/s`).
+- First film (2026-11-20): `harness/films/twist-disarm-film.txt` (not in the suite) films section 2's strike with BasHarness
   `record-start`/`record-stop` (fab59c4) from the side and from the player's eyes, 60 fps; before (31f38bd, same steps
   minus the Twist chance option, which that build lacks) the NPC keeps its sword, after (65a542a) it drops it
   (`roll 910°/s, hit 2.10 m/s`).
@@ -520,6 +534,7 @@ a real physical weapon hit (held-weapon attribution) and how the stagger *feels*
 
 | Date | Step | Result |
 |---|---|---|
+| 2026-11-20 | 3c | Twist Disarm reworked: only a staggered enemy (Disarm Requires Stagger), chance 100 %, a slow touch starts no cooldown. Unit tests 615 **PASS**, BasHarness 149 **PASS**. Harness: full suite 17/17 **PASS** (new `step3d-twist-disarm-staggered`, 4 of 4 before that). Before (red, 65a542a): an unstaggered 981°/s twist disarmed; after: `NotStaggered`. Films with side, eye and hand views. BasHarness gained `frame-rate`, `player-strike-weapon phase=ready/strike` and `depth`, a gentle return after a strike, and the hand view. |
 | 2026-11-18 | 3c | Twist Disarm. Unit tests 611 **PASS**, BasHarness 127 **PASS**. Harness `step3c-twist-disarm` (new BasHarness verb `player-strike-weapon [twist=]`: real blade-on-blade physics against a standing `HumanDummy` with a sword) **PASS** three times in a row and in the full suite (16/16): no twist → `TooSlow (roll 0°/s, hit 2.49–2.52 m/s)`, NPC keeps its sword; 900°/s → measured `roll 904–926°/s`, disarmed; Twist off → nothing. Before (red): the same 900°/s strike on 31f38bd leaves the sword in the NPC's hand (whether the blades touched there cannot be read: that build logs no contacts). First runs found: a straight sweep from the player's blade to the NPC's often hit its body first → the verb now comes at the blade from outside the body; the sweep can knock the player's own sword out of the mock hand → each strike grabs a fresh one. |
 | 2026-11-18 | 5c | Clash modes (Off/Simple/On, default Simple), rounds, push measure, win/lose, sounds. Unit tests 591 **PASS**, BasHarness 125 **PASS**. Harness: full suite 14/15 **PASS**; the 15th, step5c, failed there in its first section 4 (controller left 0.8 m out, see 5c), which was then replaced by `player-release`; step5c then **PASS** three times in a row (DMCS code unchanged since the suite run). Before (red): the same step5c on ff931db fails at its first check (no `Clash of Might Mode`); the old lock just ended (`TimeUp`) with the enemy still armed. Found on the way: in the harness nothing holds the heavy weapon back (the blades never touch), so the hand catches up with a moved controller within ~0.4 s; a controller beyond arm's length is read differently by DMCS and BasHarness (open). |
 | 2026-11-17 | 5a | Clash telegraph (big swing, flash, slow-motion). Harness: all thirteen scenarios **PASS** (`step3` on a rerun: the known "may re-arm" timeout, passed twice after). Unit tests 499 **PASS**. Before: a probe measured all 68 attacks' wind-ups and found that the wind-up moves in another plane than the strike (so the angle is read at the strike start) and that an NPC can be frozen mid-swing (`animator.speed = 0`). First 5a runs found: the NPC's random loadout (a mace) and the player dying after a minute made the scenario flaky → BasHarness `container=` and `player-invincible`; Disarm Strike disarmed the NPC on its own swings (open finding). |
