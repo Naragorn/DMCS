@@ -6,8 +6,7 @@
 # often (2026-11-20). How fast a real wrist twist is: headset (the 400°/s default is a guess).
 
 wait-level
-# headset pace: uncapped (330-500 fps headless) the staggered NPC's blade got away from the strike in every run, at
-# a filming run's lower frame rate it did not (2026-11-20)
+# headset pace (headless the game runs at 330-1000 fps; BasHarness's own frame limiter, measured 90 fps)
 frame-rate 90
 press DMCS "Reset To Defaults"
 option-exists DMCS "Twist Disarm" category="Disarm Strike" type=Boolean interaction=ArrowList save=true

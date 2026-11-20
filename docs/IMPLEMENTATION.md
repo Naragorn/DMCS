@@ -151,10 +151,13 @@ Not yet verified in game: that `HumanDummy` never picks anything up, and how the
   `twist disarm on HumanMale0's SwordShortCommon (roll 904°/s (min 400), hit 2.31 m/s)` (harness 2026-11-18).
 - Harness after the rework: `step3c` (not staggered → `NotStaggered`; staggered but slow → `TooSlow`; Twist off →
   nothing) and `step3d-twist-disarm-staggered` (blade ready beside the NPC's with `player-strike-weapon phase=ready`, a
-  `push=1` torso hit, then the 900°/s strike → disarm), both at `frame-rate 90`. The disarm needed its own fresh game:
-  after the hits and NPCs of step3c it missed in most runs (the NPC drew an axe, mace or buckler from its loadout into
-  the free hand, the first NPC was knocked off balance, the mock hand lost its sword); uncapped (330–500 fps) the
-  staggered blade got away from the strike every time.
+  `push=1` torso hit, then a longer, deeper strike: 0.5 s, 0.4 m past the blade → disarm), both at `frame-rate 90`. The
+  disarm needed its own fresh game: after the hits and NPCs of step3c it missed in most runs (the NPC drew an axe, mace
+  or buckler from its loadout into the free hand, the first NPC was knocked off balance, the mock hand lost its sword).
+  Correction: the first `frame-rate` (Application.targetFrameRate) capped nothing, as XR platforms ignore it (Unity
+  scripting reference; found by the Achilles session: deltaTime stayed 0.001–0.003 s). So the 4/4 and the 17/17 suite
+  of c706503 ran uncapped; what made step3d pass was its fresh game and the longer, deeper strike. BasHarness now has
+  its own frame limiter (measured 90 fps); step3d 3/3 and step3c pass with it (2026-11-20).
 - Films after the rework (`harness/films/twist-unstaggered-film.txt` and `twist-disarm-film.txt`, views side, first, hand):
   before (65a542a) an unstaggered twist disarmed (`roll 981°/s`), after it does not (`NotStaggered, roll 993°/s`); a
   staggered twist disarms (`roll 1116°/s, hit 4.68 m/s`).

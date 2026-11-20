@@ -4,7 +4,7 @@
 # at 900°/s: the NPC drops its sword. Real physics; a fresh game, so no earlier hits or NPCs get in the way.
 
 wait-level
-# headset pace (uncapped the game runs at 330-500 fps headless)
+# headset pace (headless the game runs at 330-1000 fps; BasHarness's own frame limiter, measured 90 fps)
 frame-rate 90
 press DMCS "Reset To Defaults"
 set-option DMCS "Debug Logging" true
