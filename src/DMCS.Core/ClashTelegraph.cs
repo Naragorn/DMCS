@@ -87,7 +87,7 @@ namespace DMCS.Core
 
         /// <summary>
         /// The player's blade stays where the blades met for the whole lock (user 2026-11-21: a swing carried it past the
-        /// lock point; Player.log 2026-11-20: 0.27–0.76 m off within 0.1–0.2 s, about 1–1.5 s to come back).
+        /// lock point; Player.log 2026-11-20, seven locks: up to 0.27–1.14 m off, mostly 0.2 s after the lock start, and 0.2–2.2 s to come back).
         /// </summary>
         public const bool DefaultHoldBlade = true;
 

@@ -541,9 +541,19 @@ counts playing audio sources yet. Check in the headset: flash with Metal Hit, a 
 it had to be brought back. Expected: the blade stays there.
 
 **Measured** (Player.log 2026-11-20, the lock diagnostic "blades … m apart" = flash point to the player's blade, every
-0.1 s): at the lock start 0.04 / 0.16 / 0.05 / 0.04 m; 0.1–0.2 s later 0.27 / 0.58 / 0.49 / 0.76 m (four locks); back
-under 0.1 m only after about 1–1.5 s. In the same frames the controller led the hand by 0.26–0.39 m: the real hand swung
-on.
+0.1 s, first second of each lock):
+
+| Lock | At the start | Furthest off | When | Back under 0.1 m |
+|---|---|---|---|---|
+| 21:03:53 | 0.04 m | 0.27 m | 0.11 s | 0.22 s |
+| 21:05:27 | 0.16 m | 0.59 m | 0.90 s | 1.57 s |
+| 21:07:28 | 0.05 m | 0.49 m | 0.22 s | 1.22 s |
+| 21:09:12 | 0.04 m | 0.76 m | 0.22 s | 1.34 s |
+| 21:10:40 | 0.06 m | 0.76 m | 0.23 s | 1.45 s |
+| 21:11:10 | 0.04 m | 1.14 m | 0.23 s | 2.23 s |
+| 21:12:14 | 0.19 m | 1.00 m | 0.23 s | 1.68 s |
+
+0.1 s into the first four locks the controller led the hand by 0.26–0.39 m (the other three not read): the real hand swung on.
 
 **Cause:** nothing held the blade at the lock point. The lock only multiplied the weapon's mass (×20), which slows a
 weapon at rest but does not stop a moving one: Unity keeps the velocity when the mass changes, so the swinging blade

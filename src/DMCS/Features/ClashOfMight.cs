@@ -991,7 +991,7 @@ namespace DMCS
 
         /// <summary>
         /// Hold Blade (user 2026-11-21): the player's blade stays where the blades met. A swing into the block used to carry it
-        /// past the lock point (Player.log 2026-11-20: 0.27–0.76 m off within 0.1–0.2 s), more so as the weight multiplies the
+        /// past the lock point (Player.log 2026-11-20, seven locks: up to 0.27–1.14 m off, mostly 0.2 s after the lock start), more so as the weight multiplies the
         /// moving blade's momentum. The swing's speed is taken out, then a joint keeps the touching point of the player's
         /// blade at the same point of the enemy's blade, within Hold Slack. The blade can still turn around that point, and the
         /// real controller can lead the held hand (the push measure). Returns the log detail.
