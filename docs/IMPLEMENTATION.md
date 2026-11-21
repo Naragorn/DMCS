@@ -572,6 +572,27 @@ new log detail "held at the lock point (slack 0.02 m)". **Not run in game** (bui
 Risks for the headset: how the held blade feels against the player's hand pull, whether the following anchor and the
 blade contact push each other (slow drift), and whether the slack is right.
 
+## Clash Max Block Speed (2026-11-21)
+
+**User:** blocking the star with too much swing should trigger nothing: the swing goes on, the blade bounces off the enemy's
+sword. With less swing the duel triggers.
+
+**Rule** (`ClashRules.JudgeBlock`, Core, unit-tested): point, then angle, then speed. Hand at or above *Clash Max Block
+Speed* → `TooFast`, an ordinary parry; below → clash. The hand speed is the one the Parry group reads
+(`HandSpeeds.Peak(side, Parry Speed Window)`, the real controller, fastest in 0.2 s before the event), so both groups see
+the same number. It applies to Simple and On. The flash stays, as after `OffPoint`: a slower touch later in the same swing
+can still lock (within 0.2 s the fast value is still in the window). The Parry group still handles the parry as any other
+(counter stagger from 1 m/s, power parry from 3 m/s); the existing "power parry, not a clash" check stays.
+
+**Default 1.5 m/s, a guess.** Player.log 2026-11-20: the seven locks came at 1.02, 1.77, 2.19, 1.87, 1.34, 1.32, 2.61 m/s,
+held guards (TooSlow parries) at 0.02–0.99 m/s. 1.5 lets the three slower locks through.
+
+**Does not replace Clash Hold Blade:** in the same log the hand speed at the block did not predict how far the blade flew
+off. The three locks under 1.5 m/s overshot 0.59, 0.76 and 1.14 m (the worst of all seven); 1.77 m/s overshot 0.27 m. The real hand
+swings on after the block whatever its speed at the contact, so the hold stays on.
+
+**Harness:** `step5c` section 5 (`player-parry swing=2` → `TooFast`, no lock); not run (built on Windows).
+
 ## API verification
 
 Legend: **V** = verified in the decompiled `ThunderRoad.dll` of game 1.3.2. **V+T** = verified and covered by a test. **A** = assumed / behaviour only provable in game. Line refs point into the decompiled source.

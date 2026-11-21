@@ -112,4 +112,14 @@ player-release
 await-log 3 you let go of your weapon; you take 20 damage
 expect-no-log flies away
 screenshot clash-lost of=npc
+
+# 5. Too much swing at the star (user 2026-11-21): a block faster than Clash Max Block Speed (1.5 m/s) locks nothing;
+# the swing goes on and the blades bounce off as in any parry. 2 m/s stays under the power parry (3 m/s). Not run yet.
+player-grab SwordShortCommon
+spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
+mark
+await-log 30 blade flashes
+player-parry swing=2
+expect-log TooFast (contact
+expect-no-log blades locked
 quit

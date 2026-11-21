@@ -169,6 +169,7 @@ public class ModOptionMetadataTests
                 (ClashSettings.BlockReachName, "System.Single", "Slider"),
                 (ClashSettings.BlockAngleToleranceName, "System.Single", "Slider"),
                 (ClashSettings.PointToleranceName, "System.Single", "Slider"),
+                (ClashSettings.MaxBlockSpeedName, "System.Single", "Slider"),
                 (ClashSettings.WeaponWeightName, "System.Single", "Slider"),
                 (ClashSettings.HoldBladeName, "System.Boolean", "ArrowList"),
                 (ClashSettings.HoldSlackName, "System.Single", "Slider"),

@@ -176,6 +176,7 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Clash Block Angle Tolerance | 45° | 10–90° | How far your blade may be off a right angle to the swing (90°: any angle) |
 | Clash Flash At Swing Top | on | | The flash comes when the blade is raised all the way, just before the strike; off: as soon as the wind-up starts (more warning) |
 | Clash Point Tolerance | 0.25 m | 0.05–0.6 m | How close to the flash your block must hit |
+| Clash Max Block Speed | 1.5 m/s | 0.5–4 m/s | Block the star slower than this and the blades lock. Faster, and your blade just bounces off |
 | Clash Weapon Weight | 20× | 1–50× | How much heavier your weapon gets while the blades are locked |
 | Clash Hold Blade | on | | Your blade stays where the blades met, even if you swung hard into the block |
 | Clash Hold Slack | 0.02 m | 0–0.1 m | How far your held blade may move off that point (0: not at all) |

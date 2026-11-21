@@ -82,6 +82,15 @@ namespace DMCS.Core
         /// <summary>The player's weapon's mass factor during the lock (harness probe: ×20 sags the tip 5 cm held still; a guess).</summary>
         public static readonly SliderSpec WeaponWeight = new SliderSpec(WeaponWeightName, 1f, 50f, 1f, 20f);
 
+        public const string MaxBlockSpeedName = "Clash Max Block Speed";
+
+        /// <summary>
+        /// The parrying hand's real controller speed (m/s, fastest in the Parry group's speed window) from which a block at
+        /// the star is too hard for a clash (user 2026-11-21). A guess: the seven locks in the Player.log of 2026-11-20 came
+        /// at 1.02–2.61 m/s, held guards at 0.02–0.99 m/s; stays under the power parry (3 m/s).
+        /// </summary>
+        public static readonly SliderSpec MaxBlockSpeed = new SliderSpec(MaxBlockSpeedName, 0.5f, 4f, 0.25f, 1.5f);
+
         public const string HoldBladeName = "Clash Hold Blade";
         public const string HoldSlackName = "Clash Hold Slack";
 
@@ -97,7 +106,7 @@ namespace DMCS.Core
         /// <summary>No slack: the lock point is fixed, not just limited.</summary>
         public static bool HoldIsRigid(float slack) => slack <= 0f;
 
-        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, BlockReach, BlockAngleTolerance, FlashSoundVolume, PointTolerance, WeaponWeight, HoldSlack };
+        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, BlockReach, BlockAngleTolerance, FlashSoundVolume, PointTolerance, MaxBlockSpeed, WeaponWeight, HoldSlack };
     }
 
     public enum BlockVerdict
@@ -110,6 +119,12 @@ namespace DMCS.Core
 
         /// <summary>At the flash, but the player's blade was not across the swing: an ordinary parry.</summary>
         WrongAngle,
+
+        /// <summary>
+        /// At the flash and across the swing, but swung in too hard (user 2026-11-21): no clash, the blades bounce off each
+        /// other as in any parry.
+        /// </summary>
+        TooFast,
     }
 
     public enum LockEnd
@@ -239,14 +254,22 @@ namespace DMCS.Core
         public static bool StillOurSlowMotion(bool starting, float timeScale, float ourScale) =>
             starting || Math.Abs(timeScale - ourScale) <= 0.01f;
 
-        /// <summary>A block (the NPC's swing hit the player's weapon) at the flash point and across the swing locks the blades; a block whose swing plane is unknown is decided by the contact point alone.</summary>
-        public static BlockVerdict JudgeBlock(float contactToFlash, float pointTolerance, float? angleToNormal, float angleTolerance)
+        /// <summary>
+        /// A block (the NPC's swing hit the player's weapon) at the flash point, across the swing and with the hand slower
+        /// than <paramref name="maxBlockSpeed"/> locks the blades; a block whose swing plane is unknown is decided by the
+        /// contact point and the speed. Checked in that order: point, angle, speed.
+        /// </summary>
+        public static BlockVerdict JudgeBlock(float contactToFlash, float pointTolerance, float? angleToNormal, float angleTolerance, float handSpeed, float maxBlockSpeed)
         {
             if (contactToFlash > pointTolerance)
             {
                 return BlockVerdict.OffPoint;
             }
-            return !angleToNormal.HasValue || angleToNormal.Value <= angleTolerance ? BlockVerdict.Clash : BlockVerdict.WrongAngle;
+            if (angleToNormal.HasValue && angleToNormal.Value > angleTolerance)
+            {
+                return BlockVerdict.WrongAngle;
+            }
+            return handSpeed < maxBlockSpeed ? BlockVerdict.Clash : BlockVerdict.TooFast;
         }
 
         public static bool CanFlash(bool onlySwords, bool isSword, bool hasSlashBlade) => hasSlashBlade && (!onlySwords || isSword);
