@@ -82,7 +82,22 @@ namespace DMCS.Core
         /// <summary>The player's weapon's mass factor during the lock (harness probe: ×20 sags the tip 5 cm held still; a guess).</summary>
         public static readonly SliderSpec WeaponWeight = new SliderSpec(WeaponWeightName, 1f, 50f, 1f, 20f);
 
-        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, BlockReach, BlockAngleTolerance, FlashSoundVolume, PointTolerance, WeaponWeight };
+        public const string HoldBladeName = "Clash Hold Blade";
+        public const string HoldSlackName = "Clash Hold Slack";
+
+        /// <summary>
+        /// The player's blade stays where the blades met for the whole lock (user 2026-11-21: a swing carried it past the
+        /// lock point; Player.log 2026-11-20: 0.27–0.76 m off within 0.1–0.2 s, about 1–1.5 s to come back).
+        /// </summary>
+        public const bool DefaultHoldBlade = true;
+
+        /// <summary>Metres the held blade may move off the lock point; 0 = rigid (a guess, headset).</summary>
+        public static readonly SliderSpec HoldSlack = new SliderSpec(HoldSlackName, 0f, 0.1f, 0.01f, 0.02f);
+
+        /// <summary>No slack: the lock point is fixed, not just limited.</summary>
+        public static bool HoldIsRigid(float slack) => slack <= 0f;
+
+        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, BlockReach, BlockAngleTolerance, FlashSoundVolume, PointTolerance, WeaponWeight, HoldSlack };
     }
 
     public enum BlockVerdict

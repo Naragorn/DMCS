@@ -104,6 +104,24 @@ public class ClashLockSettingsTests
         Assert.Equal(0.25f, ClashSettings.PointTolerance.Default);
         Assert.Equal(20f, ClashSettings.WeaponWeight.Default);
     }
+
+    [Fact]
+    public void BladeHold_IsOnByDefault_WithTwoCentimetresSlack()
+    {
+        Assert.True(ClashSettings.DefaultHoldBlade);
+        Assert.Equal(0.02f, ClashSettings.HoldSlack.Default);
+        Assert.Equal(0f, ClashSettings.HoldSlack.Min);
+        Assert.Contains(ClashSettings.HoldSlack, ClashSettings.Sliders);
+    }
+
+    [Theory]
+    [InlineData(0f, true)]
+    [InlineData(0.01f, false)]
+    [InlineData(0.02f, false)]
+    public void BladeHold_IsRigid_OnlyWithoutSlack(float slack, bool rigid)
+    {
+        Assert.Equal(rigid, ClashSettings.HoldIsRigid(slack));
+    }
 }
 
 public class SwingTopTests

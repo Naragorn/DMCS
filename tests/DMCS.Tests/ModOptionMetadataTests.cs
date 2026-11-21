@@ -170,6 +170,8 @@ public class ModOptionMetadataTests
                 (ClashSettings.BlockAngleToleranceName, "System.Single", "Slider"),
                 (ClashSettings.PointToleranceName, "System.Single", "Slider"),
                 (ClashSettings.WeaponWeightName, "System.Single", "Slider"),
+                (ClashSettings.HoldBladeName, "System.Boolean", "ArrowList"),
+                (ClashSettings.HoldSlackName, "System.Single", "Slider"),
                 (ClashSettings.FlashSoundName, "System.String", "ArrowList"),
                 (ClashSettings.FlashGameSoundName, "System.String", "ArrowList"),
                 (ClashSettings.FlashSoundVolumeName, "System.Single", "Slider"),

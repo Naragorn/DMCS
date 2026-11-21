@@ -177,6 +177,8 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Clash Flash At Swing Top | on | | The flash comes when the blade is raised all the way, just before the strike; off: as soon as the wind-up starts (more warning) |
 | Clash Point Tolerance | 0.25 m | 0.05–0.6 m | How close to the flash your block must hit |
 | Clash Weapon Weight | 20× | 1–50× | How much heavier your weapon gets while the blades are locked |
+| Clash Hold Blade | on | | Your blade stays where the blades met, even if you swung hard into the block |
+| Clash Hold Slack | 0.02 m | 0–0.1 m | How far your held blade may move off that point (0: not at all) |
 | Clash Flash Sound | DMCS 1 | Off, DMCS 1–4 | The warning sound. DMCS 1: a deep boom with a metallic ring, after Sekiro's perilous-attack cue. DMCS 2: the same, short. DMCS 3: darker and longer. DMCS 4: bright, cuts through the fight |
 | Clash Flash Game Sound | Off | Off, Metal Hit, Focus Ready, Gravity Pulse | One of the game's own sounds on top (Metal Hit also sparks) |
 | Clash Flash Sound Volume | 0.8 | 0–1 | Volume of the DMCS sound |

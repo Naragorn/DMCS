@@ -535,6 +535,33 @@ loop (`RubbingMetalSound`, the same rubbing sound, correctly ended at the lock's
 **Not verified in game:** the harness runs only on Linux (Proton) and this was built on Windows; no BasHarness command
 counts playing audio sources yet. Check in the headset: flash with Metal Hit, a lock, a loosened-grip spark, then silence.
 
+## Clash Hold Blade (2026-11-21)
+
+**Report (user, headset 2026-11-20):** the lock started, but the swing carried the player's blade past the lock point, so
+it had to be brought back. Expected: the blade stays there.
+
+**Measured** (Player.log 2026-11-20, the lock diagnostic "blades … m apart" = flash point to the player's blade, every
+0.1 s): at the lock start 0.04 / 0.16 / 0.05 / 0.04 m; 0.1–0.2 s later 0.27 / 0.58 / 0.49 / 0.76 m (four locks); back
+under 0.1 m only after about 1–1.5 s. In the same frames the controller led the hand by 0.26–0.39 m: the real hand swung
+on.
+
+**Cause:** nothing held the blade at the lock point. The lock only multiplied the weapon's mass (×20), which slows a
+weapon at rest but does not stop a moving one: Unity keeps the velocity when the mass changes, so the swinging blade
+carried 20 times the momentum against the same hand pull (derived, not measured apart from the above).
+
+**Fix:** *Clash Hold Blade* (default on) and *Clash Hold Slack* (0–0.1 m, default 0.02 m, a guess). At the lock start
+DMCS sets the weapon's velocity and spin to zero, then adds a `ConfigurableJoint` to its rigidbody: anchor = the contact
+point of the block event on the player's blade, connected anchor = the same point on the enemy's blade in world space
+(no connected body, so the enemy is not pulled), linear motion `Limited` to the slack (`Locked` at 0), rotation free. The
+connected anchor follows the enemy's blade every frame (the frozen blade still settles, harness probe 2026-11-17: 4–28 cm
+in 0.25 s). The joint goes at the lock's end (`EndLock`, also on reset, feature off and level unload). The push measure
+(controller ahead of the hand towards the enemy) is unchanged; with the blade held, the hand stays back and the lead lasts.
+
+**Tests:** settings and menu order unit-tested (`ClashLockSettingsTests`, `ModOptionMetadataTests`); `step5c` expects the
+new log detail "held at the lock point (slack 0.02 m)". **Not run in game** (built on Windows, the harness needs Linux).
+Risks for the headset: how the held blade feels against the player's hand pull, whether the following anchor and the
+blade contact push each other (slow drift), and whether the slack is right.
+
 ## API verification
 
 Legend: **V** = verified in the decompiled `ThunderRoad.dll` of game 1.3.2. **V+T** = verified and covered by a test. **A** = assumed / behaviour only provable in game. Line refs point into the decompiled source.

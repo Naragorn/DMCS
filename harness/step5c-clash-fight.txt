@@ -70,6 +70,7 @@ await-log 30 blade flashes
 player-invincible false
 player-parry
 expect-log blades locked with HumanMale
+expect-log held at the lock point (slack 0.02 m)
 expect-log 2 rounds
 screenshot clash-locked of=npc
 await-log 5 the enemy pushed harder in round 1/2
@@ -79,9 +80,10 @@ expect-log blades unlocked (Decided: you lost)
 player-invincible true
 
 # 3. On, holding and coming back each round: won after 2 rounds, its sword flies away. The harness player's sword
-# does not touch the frozen enemy blade (player-parry is a raised event, the blades stay apart), so nothing holds the
-# heavy weapon back: the hand catches up with the moved controller within ~0.4 s (measured 2026-11-18) and no lead
-# lasts. Difficulty 0 (no enemy push) lets the rounds run anyway; how far a real press leads: headset.
+# does not touch the frozen enemy blade (player-parry is a raised event, the blades stay apart). Before Clash Hold
+# Blade (2026-11-21) nothing held the heavy weapon back: the hand caught up with the moved controller within ~0.4 s
+# (measured 2026-11-18) and no lead lasted. Now the hold keeps the weapon at the lock point, so the lead should last
+# (not run yet). Difficulty 0 (no enemy push) lets the rounds run either way; how far a real press leads: headset.
 set-option DMCS "Clash Difficulty" 0
 mark
 await-log 30 blade flashes
