@@ -116,11 +116,11 @@ namespace DMCS.Core
     /// <summary>Blade &amp; Sorcery's own effects for the lock (read in the catalog, Effects/*.json, game 1.3.2).</summary>
     public static class ClashFightSounds
     {
-        /// <summary>Metal sparks and clang (Bas.AudioGroup.Collision.Metal); also Disarm Strike's grip spark.</summary>
+        /// <summary>
+        /// Metal sparks and clang (Bas.AudioGroup.Collision.Metal); also Disarm Strike's grip spark. Played without its
+        /// rubbing loop (OneShotEffect). The lock has no grinding sound (removed by the user 2026-11-21).
+        /// </summary>
         public const string SparkEffectId = "HitMaterialMetal";
-
-        /// <summary>The metal rubbing loop (Bas.AudioGroup.Collision.Rubbing.Metal), loudness by intensity.</summary>
-        public const string GrindEffectId = "RubbingMetalSound";
     }
 
     /// <summary>How hard an enemy pushes and how many rounds it lasts (pure values; the caller reads them from the game).</summary>

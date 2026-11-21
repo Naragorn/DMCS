@@ -411,8 +411,8 @@ Decided with the user 2026-11-18 (spec, CLAUDE.md section 1).
   a `CollisionInstance` and raises `onCreatureHit`, so DMCS counts it as damage taken too). Letting go of the weapon during the
   lock = lost, hit only. The enemy's animator runs on: its swing finishes.
 - **Feedback:** `HapticTick` in the weapon hand every 0.05 s following the enemy's wave (× *Clash Haptics Strength*), a full
-  tick when a round is held; sparks + clang `HitMaterialMetal` at the lock and each held round; the game's metal rubbing loop
-  `RubbingMetalSound` (`Bas.AudioGroup.Collision.Rubbing.Metal`, intensity-driven) for the whole lock. *Clash Dark Messiah Sounds*:
+  tick when a round is held; sparks + clang `HitMaterialMetal` at the lock and each held round. The metal rubbing loop for the
+  whole lock (`RubbingMetalSound`) was removed by the user 2026-11-21 (see "Metal rubbing loop" below). *Clash Dark Messiah Sounds*:
   DM's `Sword_Versus_Sword` (three takes, volume 0.5–0.7, pitch 95–105 %) at the lock and each held round, `Sword_Disarm` (0.6) at
   a disarm, read through `DarkMessiahAssets` from the player's install (16-bit PCM 22050 Hz mono, read 2026-11-18), on its own
   AudioSource (a source's pitch bends everything it plays).
@@ -513,6 +513,27 @@ versions were a blade "shing", a gong and a ping (`fa187a2`), so the new ones st
 DMCS 2 = DMCS 1 short (1.6 s, boom loud to ~0.3 s), DMCS 3 = darker and longer (24 Hz boom holding ~1.2 s, ring at
 932 Hz, 4.5 s), DMCS 4 = bright (ring at 2794 Hz louder than the boom, sharp 4.5 kHz strike, 3 s). Unit tests check each
 one's character (Goertzel tones, RMS per stretch, silence at the end); `step5a` plays each in game.
+
+## Metal rubbing loop fixed, lock grind removed (2026-11-21)
+
+**Report (user, headset 2026-11-20):** a blade scraping sound started with each clash, stayed in the level until the next
+level and stacked with every further one. User: remove it.
+
+**Cause (read in the game files 1.3.2):** `Effect_HitMaterialMetal.json` has three parts: the metal clang (step `Start`),
+sparks (`Start`) and the metal rubbing `Bas.AudioGroup.Collision.Rubbing.Metal` (step `Loop`, volume by speed; a spawn's
+default speed is 1 = full volume). The game's collision handling ends that loop when a contact ends. DMCS spawned the effect
+and called only `Play()`: `EffectAudio.Play` despawns `Start`/`End` parts after their clip, but a `Loop` part sets
+`audioSource.loop = true` and runs until `End()`/`Despawn()`, which never came. It is parented to `Level.current`, so it
+died only with the level. Every spawn added one more: the flash with *Clash Flash Game Sound* = Metal Hit, the lock start,
+each held round, the Simple disarm and Disarm Strike's loosened-grip spark. Counted in the user's Player.log 2026-11-20 per
+level load: 2, 5, 13, 23, 2, 4 loops left running. `FocusReady` and `ImpactPulse` have only `Start` parts.
+
+**Fix:** `OneShotEffect.Play` (DMCS) spawns the effect, despawns every part that is not `Start`, then plays it; used by
+Clash of Might's sparks, its flash game sound and Disarm Strike's grip spark. Clang and sparks stay. The lock's own grinding
+loop (`RubbingMetalSound`, the same rubbing sound, correctly ended at the lock's end) was removed as asked.
+
+**Not verified in game:** the harness runs only on Linux (Proton) and this was built on Windows; no BasHarness command
+counts playing audio sources yet. Check in the headset: flash with Metal Hit, a lock, a loosened-grip spark, then silence.
 
 ## API verification
 

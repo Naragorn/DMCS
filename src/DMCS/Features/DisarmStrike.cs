@@ -509,14 +509,7 @@ namespace DMCS
             {
                 return 0;
             }
-            var data = Catalog.GetData<EffectData>(DisarmStrikeSettings.SparkEffectId, false);
-            var instance = data?.Spawn(hand.grabbedHandle.transform.position, Quaternion.identity);
-            if (instance == null)
-            {
-                return 0;
-            }
-            instance.Play();
-            return 1;
+            return OneShotEffect.Play(DisarmStrikeSettings.SparkEffectId, hand.grabbedHandle.transform.position) ? 1 : 0;
         }
 
         /// <summary>The player's hand behind a hit: the hand holding (or last holding) the item, or the punching hand.</summary>

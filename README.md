@@ -99,8 +99,8 @@ Then it is strength against strength, over a few rounds (3 to 5 by default):
 - How hard enemies push is the **Difficulty** (0–200, default 50). Taller enemies push harder and smaller ones weaker;
   female enemies push 50 % weaker (women have about 40–60 % of men's upper-body strength). Smaller and female enemies
   also last one round fewer. Each of these can be switched off or changed.
-- You feel the enemy's push in the controller, sparks fly at the blades, and the blades grind (Blade & Sorcery's own
-  sounds; or, with *Clash Dark Messiah Sounds*, Dark Messiah's blade lock and disarm sounds from your own install).
+- You feel the enemy's push in the controller, and sparks fly at the blades with Blade & Sorcery's metal clang (with
+  *Clash Dark Messiah Sounds* also Dark Messiah's blade lock and disarm sounds from your own install).
 
 How hard the push should be is not tuned in the headset yet; the values may change.
 

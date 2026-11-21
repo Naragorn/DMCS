@@ -31,7 +31,6 @@ namespace DMCS
         private static float _lastTick;
         private static float _nextHaptic;
         private static float _enemyPeak;
-        private static EffectInstance _grind;
         private static readonly Dictionary<WavData, AudioClip> DarkMessiahClips = new Dictionary<WavData, AudioClip>();
 
         private static readonly ClashTelegraph<int> Telegraph = new ClashTelegraph<int>(ClashSettings.JudgeWindow);
@@ -771,7 +770,6 @@ namespace DMCS
             Lock.Start(Time.unscaledTime);
             Spark(contact);
             PlayDarkMessiahVersus();
-            StartGrind(contact);
             Dmcs.Log.Debug(Channel, "blades locked with " + flash.NpcName + " (" + detail + "): enemy frozen, your " + item.data?.id + " "
                 + WeaponWeight.ToString("0", CultureInfo.InvariantCulture) + "x heavier; " + rounds + " round" + (rounds == 1 ? "" : "s")
                 + " (difficulty " + Difficulty.ToString("0", CultureInfo.InvariantCulture) + ", enemy " + F(npcHeight) + " m vs you " + F(playerHeight) + " m"
@@ -804,7 +802,7 @@ namespace DMCS
             _lastTick = now;
             Measure(out var lead, out var gap);
             var step = _rounds.Tick(dt, lead, gap);
-            Feel(now, lead);
+            Feel(now);
             if (Lock.DiagnosticDue(now))
             {
                 LogDiagnostic(now, lead, gap);
@@ -852,15 +850,10 @@ namespace DMCS
             gap = ahead.magnitude;
         }
 
-        /// <summary>The enemy's push in the weapon hand (haptics) and in the grinding sound, every 0.05 s.</summary>
-        private static void Feel(float now, float lead)
+        /// <summary>The enemy's push in the weapon hand (haptics), every 0.05 s.</summary>
+        private static void Feel(float now)
         {
             var enemy = _enemyPeak > 0.0001f ? _rounds.EnemyPush / _enemyPeak : 0f;
-            var mine = _enemyPeak > 0.0001f ? Mathf.Clamp01(_rounds.PlayerPush(lead) / _enemyPeak) : 0f;
-            if (_grind != null)
-            {
-                _grind.SetIntensity(Mathf.Clamp01(0.3f + (0.5f * enemy) + (0.2f * mine)));
-            }
             if (now >= _nextHaptic)
             {
                 _nextHaptic = now + 0.05f;
@@ -969,7 +962,6 @@ namespace DMCS
             {
                 _lockItem.physicBody.mass = _lockMass;
             }
-            StopGrind();
             Telegraph.Ended(_lockNpc);
             RemoveFlash(_lockNpc);
             Dmcs.Log.Debug(Channel, "blades unlocked (" + end + ": " + why + ")" + (npc != null ? ": " + npc.name + " moves again" : string.Empty));
@@ -979,32 +971,10 @@ namespace DMCS
             _rounds = null;
         }
 
-        /// <summary>Sparks (and the game's metal clang) at a point: Blade &amp; Sorcery's HitMaterialMetal effect.</summary>
+        /// <summary>Sparks (and the game's metal clang) at a point: Blade &amp; Sorcery's HitMaterialMetal effect, without its rubbing loop.</summary>
         private static void Spark(Vector3 point)
         {
-            var effect = Catalog.GetData<EffectData>(ClashFightSounds.SparkEffectId, false)?.Spawn(point, Quaternion.identity);
-            effect?.Play();
-        }
-
-        /// <summary>The game's metal rubbing loop at the blades for the whole lock; its intensity follows the push.</summary>
-        private static void StartGrind(Vector3 point)
-        {
-            StopGrind();
-            _grind = Catalog.GetData<EffectData>(ClashFightSounds.GrindEffectId, false)?.Spawn(point, Quaternion.identity);
-            if (_grind != null)
-            {
-                _grind.SetIntensity(0.3f);
-                _grind.Play();
-            }
-        }
-
-        private static void StopGrind()
-        {
-            if (_grind != null)
-            {
-                _grind.End();
-                _grind = null;
-            }
+            OneShotEffect.Play(ClashFightSounds.SparkEffectId, point);
         }
 
         /// <summary>Dark Messiah's "Sword_Versus_Sword" (a random take, volume 0.5–0.7, pitch 95–105 %) when switched on and found.</summary>
@@ -1102,16 +1072,9 @@ namespace DMCS
                 var effectId = ClashSettings.GameSoundEffect(FlashGameSound);
                 if (effectId != null)
                 {
-                    var effect = Catalog.GetData<EffectData>(effectId, false)?.Spawn(point, Quaternion.identity);
-                    if (effect != null)
-                    {
-                        effect.Play();
-                        played += ", game sound " + FlashGameSound;
-                    }
-                    else
-                    {
-                        played += ", game sound " + FlashGameSound + " missing (" + effectId + ")";
-                    }
+                    played += OneShotEffect.Play(effectId, point)
+                        ? ", game sound " + FlashGameSound
+                        : ", game sound " + FlashGameSound + " missing (" + effectId + ")";
                 }
             }
             catch (Exception ex)
