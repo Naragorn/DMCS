@@ -124,8 +124,8 @@ set-option DMCS "Disarm Strike Enabled" true
 
 # 7. The other two reactions (user 2026-11-22): backing off walks the NPC away from the player with its own brain's
 #    move module (its tree paused), cowering is the game's own BrainModuleFear panic. Both end with the own brain.
-#    Not run yet (built on Windows); how they look: headset.
-expect-log may re-arm
+#    First run on Linux 2026-11-22; how they look: headset. (No reaction runs after section 6, which disarms nothing,
+#    so this section does not wait for one.)
 set-option DMCS "Disarmed Shock Chance" 0
 set-option DMCS "Disarmed Back Off Chance" 100
 npc-grab DaggerCommon hand=right
