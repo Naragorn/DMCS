@@ -588,10 +588,33 @@ can still lock (within 0.2 s the fast value is still in the window). The Parry g
 held guards (TooSlow parries) at 0.02–0.99 m/s. 1.5 lets the three slower locks through.
 
 **Does not replace Clash Hold Blade:** in the same log the hand speed at the block did not predict how far the blade flew
-off. The three locks under 1.5 m/s overshot 0.59, 0.76 and 1.14 m (the worst of all seven); 1.77 m/s overshot 0.27 m. The real hand
-swings on after the block whatever its speed at the contact, so the hold stays on.
+off. The three locks under 1.5 m/s overshot 0.59, 0.76 and 1.14 m (1.14 m is the worst of all seven); 1.77 m/s overshot
+0.27 m. The real hand swings on after the block whatever its speed at the contact, so the hold stays on.
 
 **Harness:** `step5c` section 5 (`player-parry swing=2` → `TooFast`, no lock); not run (built on Windows).
+
+## Clash Hold Style, Rotation and Briefly (2026-11-22)
+
+**User:** build the spring too, with a menu switch between it and the hard hold, and switches for the other two ideas
+(hold the rotation too; hold only the first moment).
+
+**Options** (rules in `ClashHold`, Core, unit-tested; menu right after *Clash Hold Blade*):
+- *Clash Hold Style* `Spring` (default, the user's pick) / `Hard`. Both keep the blade free within *Clash Hold Slack*.
+  Hard: the edge of the slack is a hard stop (`Locked` at slack 0). Spring: `Limited` with a `linearLimitSpring` (Unity:
+  a limit spring above zero makes the limit elastic; docs.unity.com, `SoftJointLimitSpring.spring`), so past the slack the
+  blade gives and is pulled back. Spring style never locks, also at slack 0.
+- *Clash Hold Spring Strength* (1–10, default 3) is the spring's natural frequency in Hz, *Clash Hold Spring Damping*
+  (0–1, default 0.5) its damping ratio. DMCS sizes the spring on the blade's mass during the lock (after *Clash Weapon
+  Weight*): k = m·ω², d = 2·ζ·m·ω, so it springs back alike whatever the weapon weighs. How far a real hand pulls the blade
+  against it (x = F/k) depends on the game's hand force, which is not measured: headset.
+- *Clash Hold Rotation* (default off): the blade also cannot turn around the lock point (angular motion `Locked`, firm in
+  both styles).
+- *Clash Hold Briefly* (default off) and *Clash Hold Time* (0.1–1 s, default 0.3 s; the overshoot peaked about 0.2 s
+  in): the hold ends after that time (lock real time); then only the weight holds the blade, as before Hold Blade. Read
+  every frame, so switching it during a lock acts at once. The other hold options apply from the next lock.
+
+**Log:** the lock start says `held at the lock point (Spring 3.00/0.50, slack 0.02 m[, no turning][, for 0.30 s])`; the
+release says `hold released after … s (Clash Hold Briefly)`. `step5c` expects the default line; not run (Windows).
 
 ## API verification
 

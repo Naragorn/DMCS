@@ -179,7 +179,13 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Clash Max Block Speed | 1.5 m/s | 0.5–4 m/s | Block the star slower than this and the blades lock. Faster, and your blade just bounces off |
 | Clash Weapon Weight | 20× | 1–50× | How much heavier your weapon gets while the blades are locked |
 | Clash Hold Blade | on | | Your blade stays where the blades met, even if you swung hard into the block |
-| Clash Hold Slack | 0.02 m | 0–0.1 m | How far your held blade may move off that point (0: not at all) |
+| Clash Hold Style | Spring | Spring, Hard | Spring: your blade gives a little and springs back to that point. Hard: it stops dead |
+| Clash Hold Slack | 0.02 m | 0–0.1 m | How far your held blade moves freely around that point before the hold catches it |
+| Clash Hold Spring Strength | 3 | 1–10 | Spring only: how firmly it pulls your blade back (higher is firmer) |
+| Clash Hold Spring Damping | 0.5 | 0–1 | Spring only: 0 bounces a while, 1 settles without a bounce |
+| Clash Hold Rotation | off | | Your held blade also cannot turn around that point |
+| Clash Hold Briefly | off | | Hold your blade only for the first moment, to catch your swing; then only its weight holds it |
+| Clash Hold Time | 0.3 s | 0.1–1 s | How long the hold lasts with Clash Hold Briefly |
 | Clash Flash Sound | DMCS 1 | Off, DMCS 1–4 | The warning sound. DMCS 1: a deep boom with a metallic ring, after Sekiro's perilous-attack cue. DMCS 2: the same, short. DMCS 3: darker and longer. DMCS 4: bright, cuts through the fight |
 | Clash Flash Game Sound | Off | Off, Metal Hit, Focus Ready, Gravity Pulse | One of the game's own sounds on top (Metal Hit also sparks) |
 | Clash Flash Sound Volume | 0.8 | 0–1 | Volume of the DMCS sound |

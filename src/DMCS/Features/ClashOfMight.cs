@@ -95,71 +95,71 @@ namespace DMCS
 
         public static ModOptionString[] ModeValues() => ClashModes.All.Select(v => new ModOptionString(v, v)).ToArray();
 
-        [ModOption(name = ClashFightSettings.DifficultyName, tooltip = "How hard enemies push back in a blade lock. 0: barely; 50: some; 100: twice as hard; 200: you hardly have a chance.", valueSourceName = nameof(DifficultyValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 17)]
+        [ModOption(name = ClashFightSettings.DifficultyName, tooltip = "How hard enemies push back in a blade lock. 0: barely; 50: some; 100: twice as hard; 200: you hardly have a chance.", valueSourceName = nameof(DifficultyValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 23)]
         [ModOptionSlider]
         public static float Difficulty { get; set; } = ClashFightSettings.Difficulty.Default;
 
-        [ModOption(name = ClashFightSettings.ScalesWithHeightName, tooltip = "Taller enemies than you push harder, smaller ones weaker (in proportion to their height), and smaller ones last fewer rounds.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 18)]
+        [ModOption(name = ClashFightSettings.ScalesWithHeightName, tooltip = "Taller enemies than you push harder, smaller ones weaker (in proportion to their height), and smaller ones last fewer rounds.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 24)]
         public static bool ScalesWithHeight { get; set; } = ClashFightSettings.DefaultScalesWithHeight;
 
-        [ModOption(name = ClashFightSettings.ScalesWithGenderName, tooltip = "Female enemies push weaker (by the reduction below) and last fewer rounds.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 19)]
+        [ModOption(name = ClashFightSettings.ScalesWithGenderName, tooltip = "Female enemies push weaker (by the reduction below) and last fewer rounds.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 25)]
         public static bool ScalesWithGender { get; set; } = ClashFightSettings.DefaultScalesWithGender;
 
-        [ModOption(name = ClashFightSettings.FemaleStrengthName, tooltip = "How much weaker (percent) a female enemy pushes. Women have about 40-60 % of men's upper-body strength.", valueSourceName = nameof(FemaleStrengthValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 20)]
+        [ModOption(name = ClashFightSettings.FemaleStrengthName, tooltip = "How much weaker (percent) a female enemy pushes. Women have about 40-60 % of men's upper-body strength.", valueSourceName = nameof(FemaleStrengthValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 26)]
         [ModOptionSlider]
         public static float FemaleStrength { get; set; } = ClashFightSettings.FemaleStrength.Default;
 
-        [ModOption(name = ClashFightSettings.MinRoundsName, tooltip = "Fewest rounds of a blade lock (each lock picks a random number between min and max).", valueSourceName = nameof(RoundsValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 21)]
+        [ModOption(name = ClashFightSettings.MinRoundsName, tooltip = "Fewest rounds of a blade lock (each lock picks a random number between min and max).", valueSourceName = nameof(RoundsValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 27)]
         [ModOptionSlider]
         public static float MinRounds { get; set; } = ClashFightSettings.MinRounds.Default;
 
-        [ModOption(name = ClashFightSettings.MaxRoundsName, tooltip = "Most rounds of a blade lock.", valueSourceName = nameof(RoundsValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 22)]
+        [ModOption(name = ClashFightSettings.MaxRoundsName, tooltip = "Most rounds of a blade lock.", valueSourceName = nameof(RoundsValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 28)]
         [ModOptionSlider]
         public static float MaxRounds { get; set; } = ClashFightSettings.MaxRounds.Default;
 
-        [ModOption(name = ClashFightSettings.FewerRoundsName, tooltip = "Rounds fewer against a smaller or a female enemy (while the matching scaling is on); at least one round stays.", valueSourceName = nameof(FewerRoundsValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 23)]
+        [ModOption(name = ClashFightSettings.FewerRoundsName, tooltip = "Rounds fewer against a smaller or a female enemy (while the matching scaling is on); at least one round stays.", valueSourceName = nameof(FewerRoundsValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 29)]
         [ModOptionSlider]
         public static float FewerRounds { get; set; } = ClashFightSettings.FewerRounds.Default;
 
-        [ModOption(name = ClashFightSettings.EnemyPushName, tooltip = "How far (m) your real hand must lead your heavy weapon towards the enemy to match its push at its strongest, at difficulty 50.", valueSourceName = nameof(EnemyPushValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 24)]
+        [ModOption(name = ClashFightSettings.EnemyPushName, tooltip = "How far (m) your real hand must lead your heavy weapon towards the enemy to match its push at its strongest, at difficulty 50.", valueSourceName = nameof(EnemyPushValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 30)]
         [ModOptionSlider]
         public static float EnemyPush { get; set; } = ClashFightSettings.EnemyPush.Default;
 
-        [ModOption(name = ClashFightSettings.DeadZoneName, tooltip = "Lead (m) of your hand that does not count as pushing: the heavy weapon's natural lag.", valueSourceName = nameof(DeadZoneValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 25)]
+        [ModOption(name = ClashFightSettings.DeadZoneName, tooltip = "Lead (m) of your hand that does not count as pushing: the heavy weapon's natural lag.", valueSourceName = nameof(DeadZoneValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 31)]
         [ModOptionSlider]
         public static float DeadZone { get; set; } = ClashFightSettings.DeadZone.Default;
 
-        [ModOption(name = ClashFightSettings.PushPhaseName, tooltip = "Seconds of one push round; the enemy's push swells and ebbs once in it.", valueSourceName = nameof(PushPhaseValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 26)]
+        [ModOption(name = ClashFightSettings.PushPhaseName, tooltip = "Seconds of one push round; the enemy's push swells and ebbs once in it.", valueSourceName = nameof(PushPhaseValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 32)]
         [ModOptionSlider]
         public static float PushPhase { get; set; } = ClashFightSettings.PushPhase.Default;
 
-        [ModOption(name = ClashFightSettings.ReturnWindowName, tooltip = "Seconds to bring your hand back to the blades after a round, or you lose.", valueSourceName = nameof(ReturnWindowValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 27)]
+        [ModOption(name = ClashFightSettings.ReturnWindowName, tooltip = "Seconds to bring your hand back to the blades after a round, or you lose.", valueSourceName = nameof(ReturnWindowValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 33)]
         [ModOptionSlider]
         public static float ReturnWindow { get; set; } = ClashFightSettings.ReturnWindow.Default;
 
-        [ModOption(name = ClashFightSettings.ReturnToleranceName, tooltip = "How close (m) your hand must come back to your weapon to count as back at the blades.", valueSourceName = nameof(ReturnToleranceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 28)]
+        [ModOption(name = ClashFightSettings.ReturnToleranceName, tooltip = "How close (m) your hand must come back to your weapon to count as back at the blades.", valueSourceName = nameof(ReturnToleranceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 34)]
         [ModOptionSlider]
         public static float ReturnTolerance { get; set; } = ClashFightSettings.ReturnTolerance.Default;
 
-        [ModOption(name = ClashFightSettings.WinDisarmsName, tooltip = "Winning a blade lock knocks the enemy's sword away.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 29)]
+        [ModOption(name = ClashFightSettings.WinDisarmsName, tooltip = "Winning a blade lock knocks the enemy's sword away.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 35)]
         public static bool WinDisarms { get; set; } = ClashFightSettings.DefaultWinDisarms;
 
-        [ModOption(name = ClashFightSettings.WinKneelChanceName, tooltip = "Chance (percent) that a beaten enemy goes down on its knees and you can execute it. Otherwise it staggers.", valueSourceName = nameof(WinKneelChanceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 30)]
+        [ModOption(name = ClashFightSettings.WinKneelChanceName, tooltip = "Chance (percent) that a beaten enemy goes down on its knees and you can execute it. Otherwise it staggers.", valueSourceName = nameof(WinKneelChanceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 36)]
         [ModOptionSlider]
         public static float WinKneelChance { get; set; } = ClashFightSettings.WinKneelChance.Default;
 
-        [ModOption(name = ClashFightSettings.LoseOutcomeName, tooltip = "What a lost blade lock costs you: your weapon flies away, you take a hit, both, or nothing.", valueSourceName = nameof(LoseOutcomeValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 31)]
+        [ModOption(name = ClashFightSettings.LoseOutcomeName, tooltip = "What a lost blade lock costs you: your weapon flies away, you take a hit, both, or nothing.", valueSourceName = nameof(LoseOutcomeValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 37)]
         public static string LoseOutcome { get; set; } = ClashFightSettings.DefaultLoseOutcome;
 
-        [ModOption(name = ClashFightSettings.LoseDamageName, tooltip = "Health you lose with the hit of a lost blade lock (you have 100).", valueSourceName = nameof(LoseDamageValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 32)]
+        [ModOption(name = ClashFightSettings.LoseDamageName, tooltip = "Health you lose with the hit of a lost blade lock (you have 100).", valueSourceName = nameof(LoseDamageValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 38)]
         [ModOptionSlider]
         public static float LoseDamage { get; set; } = ClashFightSettings.LoseDamage.Default;
 
-        [ModOption(name = ClashFightSettings.HapticsName, tooltip = "Strength of the vibration in your weapon hand during a blade lock (it follows the enemy's push).", valueSourceName = nameof(HapticsValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 33)]
+        [ModOption(name = ClashFightSettings.HapticsName, tooltip = "Strength of the vibration in your weapon hand during a blade lock (it follows the enemy's push).", valueSourceName = nameof(HapticsValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 39)]
         [ModOptionSlider]
         public static float Haptics { get; set; } = ClashFightSettings.Haptics.Default;
 
-        [ModOption(name = ClashFightSettings.DarkMessiahSoundsName, tooltip = "Dark Messiah's own blade lock and disarm sounds, read from your Dark Messiah install (never shipped). Falls back to Blade & Sorcery's sounds when it is not found.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 34)]
+        [ModOption(name = ClashFightSettings.DarkMessiahSoundsName, tooltip = "Dark Messiah's own blade lock and disarm sounds, read from your Dark Messiah install (never shipped). Falls back to Blade & Sorcery's sounds when it is not found.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 40)]
         public static bool DarkMessiahSounds
         {
             get => _darkMessiahSounds;
@@ -227,7 +227,7 @@ namespace DMCS
         [ModOptionSlider]
         public static float BlockAngleTolerance { get; set; } = ClashSettings.BlockAngleTolerance.Default;
 
-        [ModOption(name = ClashSettings.FlashAtTopName, tooltip = "The blade flashes when the enemy has raised it all the way, just before the strike, like sunlight caught on it. Off: as soon as the wind-up starts (more warning).", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 16)]
+        [ModOption(name = ClashSettings.FlashAtTopName, tooltip = "The blade flashes when the enemy has raised it all the way, just before the strike, like sunlight caught on it. Off: as soon as the wind-up starts (more warning).", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 22)]
         public static bool FlashAtTop { get; set; } = ClashSettings.DefaultFlashAtTop;
 
         [ModOption(name = ClashSettings.PointToleranceName, tooltip = "How close (m) to the flash your block must hit the enemy's blade to lock the blades. Elsewhere it is an ordinary parry.", valueSourceName = nameof(PointToleranceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 8)]
@@ -247,23 +247,52 @@ namespace DMCS
         [ModOption(name = ClashSettings.HoldBladeName, tooltip = "Your blade stays where the blades met for the whole lock, however hard you swung into it. Off: only its weight holds it back.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 11)]
         public static bool HoldBlade { get; set; } = ClashSettings.DefaultHoldBlade;
 
-        [ModOption(name = ClashSettings.HoldSlackName, tooltip = "How far (m) your held blade may move off the point where the blades met. 0: not at all.", valueSourceName = nameof(HoldSlackValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 12)]
+        [ModOption(name = ClashSettings.HoldStyleName, tooltip = "Spring: your held blade gives a little and springs back to where the blades met. Hard: it stops dead.", valueSourceName = nameof(HoldStyleValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 12)]
+        public static string HoldStyle { get; set; } = ClashSettings.DefaultHoldStyle;
+
+        [ModOption(name = ClashSettings.HoldSlackName, tooltip = "How far (m) your held blade moves freely around the point where the blades met before the hold catches it. 0: not at all.", valueSourceName = nameof(HoldSlackValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 13)]
         [ModOptionSlider]
         public static float HoldSlack { get; set; } = ClashSettings.HoldSlack.Default;
+
+        [ModOption(name = ClashSettings.HoldSpringName, tooltip = "Spring style: how firmly the spring pulls your blade back. Higher is firmer.", valueSourceName = nameof(HoldSpringValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 14)]
+        [ModOptionSlider]
+        public static float HoldSpring { get; set; } = ClashSettings.HoldSpring.Default;
+
+        [ModOption(name = ClashSettings.HoldSpringDampingName, tooltip = "Spring style: how quickly the spring settles. 0: it bounces a while. 1: no bounce.", valueSourceName = nameof(HoldSpringDampingValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 15)]
+        [ModOptionSlider]
+        public static float HoldSpringDamping { get; set; } = ClashSettings.HoldSpringDamping.Default;
+
+        [ModOption(name = ClashSettings.HoldRotationName, tooltip = "Your held blade also cannot turn around the point where the blades met. Off: it can.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 16)]
+        public static bool HoldRotation { get; set; } = ClashSettings.DefaultHoldRotation;
+
+        [ModOption(name = ClashSettings.HoldBrieflyName, tooltip = "Hold your blade only for the first moment of the lock, to catch your swing. After that only its weight holds it back.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 17)]
+        public static bool HoldBriefly { get; set; } = ClashSettings.DefaultHoldBriefly;
+
+        [ModOption(name = ClashSettings.HoldTimeName, tooltip = "How long (s) the hold lasts with Clash Hold Briefly.", valueSourceName = nameof(HoldTimeValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 18)]
+        [ModOptionSlider]
+        public static float HoldTime { get; set; } = ClashSettings.HoldTime.Default;
 
         public static ModOptionFloat[] PointToleranceValues() => Floats(ClashSettings.PointTolerance, "0.00", " m");
 
         public static ModOptionFloat[] WeaponWeightValues() => Floats(ClashSettings.WeaponWeight, "0", "x");
 
+        public static ModOptionString[] HoldStyleValues() => ClashHold.Styles.Select(v => new ModOptionString(v, v)).ToArray();
+
         public static ModOptionFloat[] HoldSlackValues() => Floats(ClashSettings.HoldSlack, "0.00", " m");
 
-        [ModOption(name = ClashSettings.FlashSoundName, tooltip = "Sound when an enemy's blade flashes. DMCS 1 is modelled on Sekiro's perilous-attack cue; DMCS 2 is a short one, DMCS 3 a darker one, DMCS 4 a bright one. Combines with the game sound below.", valueSourceName = nameof(FlashSoundValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 13)]
+        public static ModOptionFloat[] HoldSpringValues() => Floats(ClashSettings.HoldSpring, "0.0", "");
+
+        public static ModOptionFloat[] HoldSpringDampingValues() => Floats(ClashSettings.HoldSpringDamping, "0.0", "");
+
+        public static ModOptionFloat[] HoldTimeValues() => Floats(ClashSettings.HoldTime, "0.00", " s");
+
+        [ModOption(name = ClashSettings.FlashSoundName, tooltip = "Sound when an enemy's blade flashes. DMCS 1 is modelled on Sekiro's perilous-attack cue; DMCS 2 is a short one, DMCS 3 a darker one, DMCS 4 a bright one. Combines with the game sound below.", valueSourceName = nameof(FlashSoundValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 19)]
         public static string FlashSoundStyle { get; set; } = ClashSettings.DefaultFlashSound;
 
-        [ModOption(name = ClashSettings.FlashGameSoundName, tooltip = "One of Blade & Sorcery's own sounds with the flash (Metal Hit also sparks). Plays together with the sound above.", valueSourceName = nameof(FlashGameSoundValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 14)]
+        [ModOption(name = ClashSettings.FlashGameSoundName, tooltip = "One of Blade & Sorcery's own sounds with the flash (Metal Hit also sparks). Plays together with the sound above.", valueSourceName = nameof(FlashGameSoundValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 20)]
         public static string FlashGameSound { get; set; } = ClashSettings.DefaultFlashGameSound;
 
-        [ModOption(name = ClashSettings.FlashSoundVolumeName, tooltip = "Volume of the DMCS flash sound.", valueSourceName = nameof(FlashSoundVolumeValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 15)]
+        [ModOption(name = ClashSettings.FlashSoundVolumeName, tooltip = "Volume of the DMCS flash sound.", valueSourceName = nameof(FlashSoundVolumeValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 21)]
         [ModOptionSlider]
         public static float FlashSoundVolume { get; set; } = ClashSettings.FlashSoundVolume.Default;
 
@@ -771,12 +800,13 @@ namespace DMCS
             {
                 flash.Npc.animator.speed = 0f;
             }
-            var held = Hold(item, flash.Weapon, contact);
             _lockMass = item.physicBody != null ? item.physicBody.mass : 0f;
             if (item.physicBody != null)
             {
                 item.physicBody.mass = _lockMass * WeaponWeight;
             }
+            // After the weight: the spring is sized on the mass the blade has during the lock.
+            var held = Hold(item, flash.Weapon, contact);
             var player = Player.currentCreature;
             var npcHeight = flash.Npc.GetHeight();
             var playerHeight = player != null ? player.GetHeight() : 0f;
@@ -818,12 +848,20 @@ namespace DMCS
                 Lose("you let go of your weapon", disarmPlayer: false);
                 return;
             }
+            var now = Time.unscaledTime;
             if (_hold != null)
             {
-                // The frozen enemy blade still settles a little (harness probe 2026-11-17: 4–28 cm in 0.25 s); the hold follows it.
-                _hold.connectedAnchor = _lockFlash.Weapon.transform.TransformPoint(_holdOnEnemyBlade);
+                if (!ClashHold.StillHolding(Lock.Elapsed(now), HoldBriefly, HoldTime))
+                {
+                    ReleaseHold();
+                    Dmcs.Log.Debug(Channel, "hold released after " + F(Lock.Elapsed(now)) + " s (Clash Hold Briefly): only the weight holds your blade now");
+                }
+                else
+                {
+                    // The frozen enemy blade still settles a little (harness probe 2026-11-17: 4–28 cm in 0.25 s); the hold follows it.
+                    _hold.connectedAnchor = _lockFlash.Weapon.transform.TransformPoint(_holdOnEnemyBlade);
+                }
             }
-            var now = Time.unscaledTime;
             var dt = now - _lastTick;
             _lastTick = now;
             Measure(out var lead, out var gap);
@@ -1002,8 +1040,10 @@ namespace DMCS
         /// Hold Blade (user 2026-11-21): the player's blade stays where the blades met. A swing into the block used to carry it
         /// past the lock point (Player.log 2026-11-20, seven locks: up to 0.27–1.14 m off, mostly 0.2 s after the lock start), more so as the weight multiplies the
         /// moving blade's momentum. The swing's speed is taken out, then a joint keeps the touching point of the player's
-        /// blade at the same point of the enemy's blade, within Hold Slack. The blade can still turn around that point, and the
-        /// real controller can lead the held hand (the push measure). Returns the log detail.
+        /// blade at the same point of the enemy's blade (user 2026-11-22: Hold Style Spring or Hard, Hold Rotation, Hold
+        /// Briefly; rules in ClashHold). Free within Hold Slack; past it a hard stop or a spring sized on the blade's lock
+        /// mass. The blade turns around that point unless Hold Rotation is on, and the real controller can lead the held hand
+        /// (the push measure). Returns the log detail.
         /// </summary>
         private static string Hold(Item item, Item enemyWeapon, Vector3 contact)
         {
@@ -1019,15 +1059,24 @@ namespace DMCS
             _hold.autoConfigureConnectedAnchor = false;
             _hold.anchor = body.transform.InverseTransformPoint(contact);
             _hold.connectedAnchor = contact;
-            var motion = ClashSettings.HoldIsRigid(HoldSlack) ? ConfigurableJointMotion.Locked : ConfigurableJointMotion.Limited;
+            var motion = ClashHold.IsRigid(HoldStyle, HoldSlack) ? ConfigurableJointMotion.Locked : ConfigurableJointMotion.Limited;
             _hold.xMotion = motion;
             _hold.yMotion = motion;
             _hold.zMotion = motion;
             _hold.linearLimit = new SoftJointLimit { limit = HoldSlack };
-            _hold.angularXMotion = ConfigurableJointMotion.Free;
-            _hold.angularYMotion = ConfigurableJointMotion.Free;
-            _hold.angularZMotion = ConfigurableJointMotion.Free;
-            return ", held at the lock point (slack " + F(HoldSlack) + " m)";
+            var soft = ClashHold.IsSoft(HoldStyle);
+            if (soft)
+            {
+                // Unity: a limit spring above zero makes the limit elastic (past the slack the spring pulls the blade back).
+                var (spring, damper) = ClashHold.SpringFor(body.mass, HoldSpring, HoldSpringDamping);
+                _hold.linearLimitSpring = new SoftJointLimitSpring { spring = spring, damper = damper };
+            }
+            var turning = HoldRotation ? ConfigurableJointMotion.Locked : ConfigurableJointMotion.Free;
+            _hold.angularXMotion = turning;
+            _hold.angularYMotion = turning;
+            _hold.angularZMotion = turning;
+            return ", held at the lock point (" + HoldStyle + (soft ? " " + F(HoldSpring) + "/" + F(HoldSpringDamping) : "") + ", slack " + F(HoldSlack) + " m"
+                + (HoldRotation ? ", no turning" : "") + (HoldBriefly ? ", for " + F(HoldTime) + " s" : "") + ")";
         }
 
         private static void ReleaseHold()

@@ -100,13 +100,35 @@ namespace DMCS.Core
         /// </summary>
         public const bool DefaultHoldBlade = true;
 
-        /// <summary>Metres the held blade may move off the lock point; 0 = rigid (a guess, headset).</summary>
+        /// <summary>Metres the held blade moves freely around the lock point before the hold catches it (a guess, headset).</summary>
         public static readonly SliderSpec HoldSlack = new SliderSpec(HoldSlackName, 0f, 0.1f, 0.01f, 0.02f);
 
-        /// <summary>No slack: the lock point is fixed, not just limited.</summary>
-        public static bool HoldIsRigid(float slack) => slack <= 0f;
+        public const string HoldStyleName = "Clash Hold Style";
+        public const string HoldSpringName = "Clash Hold Spring Strength";
+        public const string HoldSpringDampingName = "Clash Hold Spring Damping";
+        public const string HoldRotationName = "Clash Hold Rotation";
+        public const string HoldBrieflyName = "Clash Hold Briefly";
+        public const string HoldTimeName = "Clash Hold Time";
 
-        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, BlockReach, BlockAngleTolerance, FlashSoundVolume, PointTolerance, MaxBlockSpeed, WeaponWeight, HoldSlack };
+        /// <summary>Spring: the user expects it to feel better than Hard (2026-11-22); both stay selectable.</summary>
+        public const string DefaultHoldStyle = ClashHold.Spring;
+
+        /// <summary>The spring's natural frequency in Hz (higher = firmer), independent of the blade's mass (a guess, headset).</summary>
+        public static readonly SliderSpec HoldSpring = new SliderSpec(HoldSpringName, 1f, 10f, 0.5f, 3f);
+
+        /// <summary>The spring's damping ratio: 0 bounces on, 1 settles without a bounce (a guess, headset).</summary>
+        public static readonly SliderSpec HoldSpringDamping = new SliderSpec(HoldSpringDampingName, 0f, 1f, 0.1f, 0.5f);
+
+        /// <summary>Off: the held blade still turns around the lock point; on: it cannot (firm in both styles).</summary>
+        public const bool DefaultHoldRotation = false;
+
+        /// <summary>Off: the hold lasts the whole lock; on: only the first Hold Time, then the weapon's weight alone.</summary>
+        public const bool DefaultHoldBriefly = false;
+
+        /// <summary>Seconds the hold lasts with Hold Briefly: long enough to catch the swing (it peaked about 0.2 s in, 2026-11-20 log).</summary>
+        public static readonly SliderSpec HoldTime = new SliderSpec(HoldTimeName, 0.1f, 1f, 0.05f, 0.3f);
+
+        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, BlockReach, BlockAngleTolerance, FlashSoundVolume, PointTolerance, MaxBlockSpeed, WeaponWeight, HoldSlack, HoldSpring, HoldSpringDamping, HoldTime };
     }
 
     public enum BlockVerdict

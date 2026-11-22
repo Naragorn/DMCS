@@ -70,7 +70,7 @@ await-log 30 blade flashes
 player-invincible false
 player-parry
 expect-log blades locked with HumanMale
-expect-log held at the lock point (slack 0.02 m)
+expect-log held at the lock point (Spring 3.00/0.50, slack 0.02 m)
 expect-log 2 rounds
 screenshot clash-locked of=npc
 await-log 5 the enemy pushed harder in round 1/2

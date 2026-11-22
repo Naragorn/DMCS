@@ -149,14 +149,6 @@ public class ClashLockSettingsTests
         Assert.Contains(ClashSettings.HoldSlack, ClashSettings.Sliders);
     }
 
-    [Theory]
-    [InlineData(0f, true)]
-    [InlineData(0.01f, false)]
-    [InlineData(0.02f, false)]
-    public void BladeHold_IsRigid_OnlyWithoutSlack(float slack, bool rigid)
-    {
-        Assert.Equal(rigid, ClashSettings.HoldIsRigid(slack));
-    }
 }
 
 public class SwingTopTests
