@@ -44,8 +44,9 @@ Change any value and the preset shows *Custom*.
   the twist must be is a guess until tested in VR.
 - **Fling:** a knocked-out weapon flies off in the direction of your hit.
 - **Shields** stay in the hand, as in the base game, unless you allow disarming them.
-- **After a disarm:** the enemy cannot pick up or draw a weapon for 10 s, or never with *Disarm Stays Permanent*. With
-  *Disarmed Stand Still* it just stands there: no fleeing, no fist fighting.
+- **After a disarm** the dice decide what the enemy does: it freezes in shock (2 s), backs away from you (2 s) or
+  cowers in fear (5 s). Then it goes to pick up a weapon, as enemies in the base game do. Each reaction's chance and
+  time can be set. With *Disarm Stays Permanent* it never re-arms and stands still after its reaction.
 
 ### Adrenaline
 
@@ -84,18 +85,20 @@ Dark Messiah's blade lock, made for VR. Three modes in the Mod Menu: **Off**, **
 - If the enemy is close, your blade is near the flash and you hold it roughly across the swing when the strike
   comes, time slows down (0.3×) until the swing is over.
 
-**Simple:** block the flashing swing right at the star, with your blade roughly across it, and the enemy's sword flies
-out of its hand.
+**Simple:** block the flashing blade anywhere along it, without swinging hard into it, and the enemy's sword flies out
+of its hand. A block faster than 2.5 m/s just bounces off, as any parry.
 
 **On, the blade lock:** the same block locks the blades. The enemy freezes in its swing and your weapon turns heavy.
-Then it is strength against strength, over a few rounds (3 to 5 by default):
-- **Push:** press your weapon towards the enemy with your real hand. The enemy pushes back in a wave, swelling and
-  easing off again; you hold the round if you pushed at least as hard as it did.
-- **Come back:** after each round the enemy shoves back (a jolt in your hand). Bring your hand back to where the blades
-  meet within a second, or you lose. Only then does the next round start.
-- **Win** every round and the enemy's sword flies away; it staggers, or (25 %) drops to its knees for you to execute.
-- **Lose** a round, miss the way back or let go of your weapon, and you lose: your weapon flies away and you take a
-  hit (20 health), as set.
+Your blade stays where the blades met. Then it is strength against strength, over a few rounds (3 to 5 by default):
+- **Push:** press the crossed blades away from you with your real hand: forward, up or to the side, wherever they
+  met. The enemy pushes back in a wave, swelling and easing off again; you hold the round if you pushed at least as
+  hard as it did. The next round starts at once.
+- **The star at the blades shows who is ahead:** green and bigger while you are, red while the enemy is. Each held
+  round gives a jolt and sparks.
+- **Win** every round: sparks burst, a victory sound plays, three strong beats in your hand, and the enemy's sword
+  flies away; it staggers, or (25 %) drops to its knees for you to execute.
+- **Lose** a round or let go of your weapon: a heavy thud and a long rumble, your weapon flies away and you take a hit
+  (20 health), as set.
 - How hard enemies push is the **Difficulty** (0–200, default 50). Taller enemies push harder and smaller ones weaker;
   female enemies push 50 % weaker (women have about 40–60 % of men's upper-body strength). Smaller and female enemies
   also last one round fewer. Each of these can be switched off or changed.
@@ -166,17 +169,16 @@ All options with their defaults. Every slider shows its unit in the menu.
 
 | Option | Default | Range | What it does |
 |---|---|---|---|
-| Clash of Might Mode | Simple | Off, Simple, On | Simple: a block at the star knocks the enemy's sword away. On: the blades lock and you push over a few rounds |
+| Clash of Might Mode | Simple | Off, Simple, On | Simple: a block of the flashing blade knocks the enemy's sword away. On: the blades lock and you push over a few rounds |
 | Clash Only Swords | on | | Only enemies with a sword flash; off: any blade that cuts |
 | Clash Min Wind Up | 0.4 s | 0.2–0.8 s | How long an enemy must wind up for its swing to flash |
 | Clash Slow Motion | on | | Time slows when your blade is ready to block a flashing swing |
 | Clash Slow Motion Scale | 0.3 | 0.1–0.8 | World speed during it |
 | Clash Enemy Reach | 2.5 m | 1–4 m | How close the enemy must be |
 | Clash Block Reach | 0.6 m | 0.2–1.5 m | How close your blade must be to the flash |
-| Clash Block Angle Tolerance | 45° | 10–90° | How far your blade may be off a right angle to the swing (90°: any angle) |
+| Clash Block Angle Tolerance | 90° | 10–90° | How far your blade may be off a right angle to the swing (90°: any angle) |
 | Clash Flash At Swing Top | on | | The flash comes when the blade is raised all the way, just before the strike; off: as soon as the wind-up starts (more warning) |
-| Clash Point Tolerance | 0.25 m | 0.05–0.6 m | How close to the flash your block must hit |
-| Clash Max Block Speed | 1.5 m/s | 0.5–4 m/s | Block the star slower than this and the blades lock. Faster, and your blade just bounces off |
+| Clash Max Block Speed | 2.5 m/s | 0.5–4 m/s | Block the flashing blade slower than this and the blades lock. Faster, and your blade just bounces off |
 | Clash Weapon Weight | 20× | 1–50× | How much heavier your weapon gets while the blades are locked |
 | Clash Hold Blade | on | | Your blade stays where the blades met, even if you swung hard into the block |
 | Clash Hold Style | Spring | Spring, Hard | Spring: your blade gives a little and springs back to that point. Hard: it stops dead |
@@ -196,16 +198,16 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Clash Min Rounds | 3 | 1–10 | Fewest rounds of a lock (each lock picks a random number between min and max) |
 | Clash Max Rounds | 5 | 1–10 | Most rounds of a lock |
 | Clash Fewer Rounds Against Weaker | 1 | 0–5 | Rounds fewer against a smaller or female enemy (at least one stays) |
-| Clash Enemy Push | 0.06 m | 0.01–0.2 m | How far your hand must lead your heavy weapon towards the enemy to match its push at its strongest (at difficulty 50) |
+| Clash Enemy Push | 0.06 m | 0.01–0.2 m | How far your hand must push past your held weapon to match the enemy's push at its strongest (at difficulty 50) |
 | Clash Push Dead Zone | 0.03 m | 0–0.1 m | Lead that does not count as pushing (the heavy weapon's natural lag) |
 | Clash Push Phase | 2 s | 0.5–5 s | Length of one push round |
-| Clash Return Window | 1 s | 0.25–3 s | Time to bring your hand back to the blades after a round |
-| Clash Return Tolerance | 0.08 m | 0.02–0.3 m | How close your hand must come back to your weapon |
 | Clash Win Disarms | on | | Winning a lock knocks the enemy's sword away |
 | Clash Win Kneel Chance | 25 % | 0–100 % | Chance a beaten enemy kneels for an execution instead of staggering |
 | Clash Lose Outcome | Disarm + Hit | Disarm + Hit, Disarm, Hit, None | What a lost lock costs you |
 | Clash Lose Damage | 20 | 0–100 | Health the hit costs (you have 100) |
 | Clash Haptics Strength | 0.6 | 0–1 | Vibration in your weapon hand during a lock |
+| Clash Duel Star | on | | The star at the crossed blades shows who is ahead: green and bigger for you, red for the enemy |
+| Clash Outcome Cues | on | | A won lock: sparks, a victory sound, three strong beats. A lost one: a heavy thud and a long rumble |
 | Clash Dark Messiah Sounds | off | | Dark Messiah's own blade lock and disarm sounds from your install |
 
 **Disarm Strike**
@@ -217,9 +219,13 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Disarm Include Forearm | off | | Forearm hits count as hand hits |
 | Disarm Drops Both Hands | on | | Off: only the hit hand lets go |
 | Disarm Chance | 100 % | 0–100 % | Chance that a hand hit disarms |
-| Disarm No Regrab Time | 10 s | 2–60 s | How long a disarmed enemy cannot re-arm |
-| Disarm Stays Permanent | off | | A disarmed enemy never re-arms |
-| Disarmed Stand Still | on | | A disarmed enemy just stands there |
+| Disarmed Shock Chance | 50 | 0–100 | How often a disarmed enemy freezes in shock, against the other two reactions |
+| Disarmed Shock Time | 2 s | 1–15 s | How long it stays frozen |
+| Disarmed Back Off Chance | 50 | 0–100 | How often it backs away from you |
+| Disarmed Back Off Time | 2 s | 1–15 s | How long it backs away |
+| Disarmed Cower Chance | 50 | 0–100 | How often it cowers in fear (a hit ends it) |
+| Disarmed Cower Time | 5 s | 1–15 s | How long it cowers. After any reaction it goes to pick up a weapon |
+| Disarm Stays Permanent | off | | A disarmed enemy never re-arms and stands still after its reaction |
 | Body Hit Drop | on | | Body hits on staggered enemies can disarm too |
 | Body Hit Drop Chance | 25 % | 0–100 % | Chance of the first body hit in a stagger |
 | Drop Chance Per Extra Hit | 25 % | 0–100 % | Added for each further body hit |

@@ -7,9 +7,7 @@
 
 wait-level
 press DMCS "Reset To Defaults"
-option-exists DMCS "Clash Point Tolerance" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Weapon Weight" category="Clash of Might" type=Single interaction=Slider save=true
-expect-option DMCS "Clash Point Tolerance" 0.25
 expect-option DMCS "Clash Weapon Weight" 20
 set-option DMCS "Debug Logging" true
 set-option DMCS "Adrenaline Enabled" false
@@ -30,7 +28,7 @@ mark
 await-log 30 blade flashes
 player-parry
 expect-log blades locked with HumanMale
-expect-log x heavier;
+expect-log x heavier, held at the lock point
 expect-log lock t=0.0
 expect-log lock t=1.
 expect-log the enemy pushed harder in round 1/
@@ -50,12 +48,13 @@ player-parry
 expect-log : WrongAngle (contact
 set-option DMCS "Clash Block Angle Tolerance" 90
 
-# 2. Block away from the flash (0.5 m along the blade): an ordinary parry, no lock
+# 2. Block away from the flash (0.5 m along the blade): locks too since 2026-11-22 (user: the exact point was hit far
+# too rarely; where on the flashing blade the block lands no longer counts)
 mark
 await-log 30 blade flashes
 player-parry offset=0.5
-expect-log : OffPoint (contact
-expect-log an ordinary parry
+expect-log blades locked with HumanMale
+expect-log blades unlocked (Decided
 
 # 3. No flash (min wind-up above every attack): a block changes nothing
 set-option DMCS "Clash Min Wind Up" 0.8

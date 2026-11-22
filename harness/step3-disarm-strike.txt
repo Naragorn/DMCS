@@ -1,5 +1,6 @@
-# Step 3: Disarm Strike. A player hit on the hand of a staggered NPC makes it drop its weapon(s); it then
-# stands still (passive HumanDummy brain) and cannot pick up or draw a weapon for the no-regrab time.
+# Step 3: Disarm Strike. A player hit on the hand of a staggered NPC makes it drop its weapon(s); it then reacts
+# (by dice since 2026-11-22: a shock, backing off or cowering) and cannot pick up or draw a weapon meanwhile. The
+# sections up to 6 fix the dice on the shock (passive HumanDummy brain) for 4 s; section 7 covers the other two.
 # "Staggered" counts as it was before the hit: the stagger a hit causes does not let that same hit disarm.
 # Expects the defaults at the start (runs after step2, which resets).
 
@@ -10,20 +11,31 @@ option-exists DMCS "Disarm Requires Stagger" category="Disarm Strike" type=Boole
 option-exists DMCS "Disarm Include Forearm" category="Disarm Strike" type=Boolean save=true
 option-exists DMCS "Disarm Drops Both Hands" category="Disarm Strike" type=Boolean save=true
 option-exists DMCS "Disarm Chance" category="Disarm Strike" type=Int32 interaction=Slider save=true
-option-exists DMCS "Disarm No Regrab Time" category="Disarm Strike" type=Single interaction=Slider save=true
 option-exists DMCS "Disarm Stays Permanent" category="Disarm Strike" type=Boolean save=true
-option-exists DMCS "Disarmed Stand Still" category="Disarm Strike" type=Boolean save=true
+option-exists DMCS "Disarmed Shock Chance" category="Disarm Strike" type=Int32 interaction=Slider save=true
+option-exists DMCS "Disarmed Shock Time" category="Disarm Strike" type=Single interaction=Slider save=true
+option-exists DMCS "Disarmed Back Off Chance" category="Disarm Strike" type=Int32 interaction=Slider save=true
+option-exists DMCS "Disarmed Back Off Time" category="Disarm Strike" type=Single interaction=Slider save=true
+option-exists DMCS "Disarmed Cower Chance" category="Disarm Strike" type=Int32 interaction=Slider save=true
+option-exists DMCS "Disarmed Cower Time" category="Disarm Strike" type=Single interaction=Slider save=true
 expect-option DMCS "Disarm Requires Stagger" true
 expect-option DMCS "Disarm Include Forearm" false
 expect-option DMCS "Disarm Drops Both Hands" true
 expect-option DMCS "Disarm Chance" 100
-expect-option DMCS "Disarm No Regrab Time" 10
 expect-option DMCS "Disarm Stays Permanent" false
-expect-option DMCS "Disarmed Stand Still" true
+expect-option DMCS "Disarmed Shock Chance" 50
+expect-option DMCS "Disarmed Shock Time" 2
+expect-option DMCS "Disarmed Back Off Chance" 50
+expect-option DMCS "Disarmed Back Off Time" 2
+expect-option DMCS "Disarmed Cower Chance" 50
+expect-option DMCS "Disarmed Cower Time" 5
 set-option DMCS "Debug Logging" true
 # Adrenaline (step 4) would fill its meter from these hits and kill the NPC with a critical; tested in step4*.
 set-option DMCS "Adrenaline Enabled" false
-set-option DMCS "Disarm No Regrab Time" 4
+set-option DMCS "Disarmed Shock Chance" 100
+set-option DMCS "Disarmed Back Off Chance" 0
+set-option DMCS "Disarmed Cower Chance" 0
+set-option DMCS "Disarmed Shock Time" 4
 # This scenario checks the hand rule; body hits (Body Hit Drop, random) are covered by step3b.
 set-option DMCS "Body Hit Drop" false
 
@@ -56,7 +68,7 @@ hit-npc RightHand
 expect-npc holding false within=0.5
 expect-npc brain HumanDummy within=0
 expect-log [DMCS][Disarm Strike] disarmed
-expect-log stands still
+expect-log freezes in shock for 4 s, then goes for a weapon
 # a weapon put back into its hand is released again
 npc-grab DaggerCommon hand=right
 expect-npc holding false within=1
@@ -109,6 +121,31 @@ hit-npc RightHand
 expect-npc holding true within=0
 expect-no-log [DMCS][Disarm Strike] disarmed
 set-option DMCS "Disarm Strike Enabled" true
+
+# 7. The other two reactions (user 2026-11-22): backing off walks the NPC away from the player with its own brain's
+#    move module (its tree paused), cowering is the game's own BrainModuleFear panic. Both end with the own brain.
+#    Not run yet (built on Windows); how they look: headset.
+expect-log may re-arm
+set-option DMCS "Disarmed Shock Chance" 0
+set-option DMCS "Disarmed Back Off Chance" 100
+npc-grab DaggerCommon hand=right
+wait 3
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc RightHand
+expect-log backs off for 2 s, then goes for a weapon
+await-log 4 is done with its reaction (backs off)
+set-option DMCS "Disarmed Back Off Chance" 0
+set-option DMCS "Disarmed Cower Chance" 100
+npc-grab DaggerCommon hand=right
+wait 3
+hit-npc Torso push=1
+expect-npc staggered true
+mark
+hit-npc RightHand
+expect-log cowers for 5 s, then goes for a weapon
+await-log 7 is done with its reaction (cowers)
 
 press DMCS "Reset To Defaults"
 expect-no-log Exception

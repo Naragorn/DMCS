@@ -29,7 +29,11 @@ expect-option DMCS "Smaller By" 0
 set-option DMCS "Debug Logging" true
 # Adrenaline (step 4) would fill its meter from these hits and kill the NPC with a critical; tested in step4*.
 set-option DMCS "Adrenaline Enabled" false
-set-option DMCS "Disarm No Regrab Time" 4
+# the dice fixed on a 4 s shock, so "may re-arm" comes at a known time (the reactions: step3 section 7)
+set-option DMCS "Disarmed Shock Chance" 100
+set-option DMCS "Disarmed Back Off Chance" 0
+set-option DMCS "Disarmed Cower Chance" 0
+set-option DMCS "Disarmed Shock Time" 4
 
 # Passive brain: a fighting HumanMedium picks up items (a mace, seen 2026-11-16) and does not always stagger from
 # the test hit; the fighting brain is covered by step3.

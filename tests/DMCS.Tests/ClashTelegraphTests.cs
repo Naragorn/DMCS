@@ -75,6 +75,61 @@ public class ClashSlowMoVerdictTests
     public void NpcDistance_IsCheckedFirst() => Assert.Equal(SlowMoVerdict.NpcTooFar, Judge(npc: 9f, blade: 9f, angle: 80f));
 }
 
+// The push in a blade lock (user 2026-11-22: the duel was always lost; Player.log: leads of 0.12–0.24 m counted only
+// 0.01–0.04 m, or even −0.17 m, because only the level direction to the enemy's body counted). The push now counts along
+// the line from the player's head to the lock point: away from the player, wherever the blades crossed.
+public class ClashPushTests
+{
+    private static readonly Vec3 Head = new Vec3(0, 1.7f, 0);
+
+    [Fact]
+    public void PushingAwayFromYou_TowardsTheLock_Counts()
+    {
+        var lockPoint = new Vec3(0, 1.4f, 0.6f);
+        var away = new Vec3(0, -0.3f, 0.6f) * (0.1f / 0.6708204f);
+
+        Assert.Equal(0.1f, ClashGeometry.PushLead(away, Head, lockPoint), 3);
+    }
+
+    [Fact]
+    public void OverheadBind_PushingUp_Counts()
+    {
+        // An overhead strike blocked above the head: the blades cross straight above, pushing up is pushing.
+        var lockPoint = new Vec3(0, 2.2f, 0.1f);
+
+        Assert.True(ClashGeometry.PushLead(new Vec3(0, 0.1f, 0), Head, lockPoint) > 0.09f);
+    }
+
+    [Fact]
+    public void SideBind_PushingSideways_Counts()
+    {
+        // A swing from the right blocked out to the right: the blades cross beside the player.
+        var lockPoint = new Vec3(0.6f, 1.5f, 0.2f);
+
+        Assert.True(ClashGeometry.PushLead(new Vec3(0.1f, 0, 0), Head, lockPoint) > 0.08f);
+    }
+
+    [Fact]
+    public void PullingBack_CountsAgainst()
+    {
+        var lockPoint = new Vec3(0, 1.5f, 0.6f);
+
+        Assert.True(ClashGeometry.PushLead(new Vec3(0, 0, -0.1f), Head, lockPoint) < 0f);
+    }
+
+    [Fact]
+    public void LeadAcrossTheLine_CountsNothing()
+    {
+        var lockPoint = new Vec3(0, 1.7f, 0.6f);
+
+        Assert.Equal(0f, ClashGeometry.PushLead(new Vec3(0.1f, 0, 0), Head, lockPoint), 4);
+    }
+
+    [Fact]
+    public void LockAtTheHead_NoDirection_CountsNothing() =>
+        Assert.Equal(0f, ClashGeometry.PushLead(new Vec3(0, 0, 0.1f), Head, Head));
+}
+
 public class ClashGeometryTests
 {
     private static readonly Vec3 Up = new Vec3(0, 1, 0);
@@ -300,7 +355,7 @@ public class ClashSettingsTests
         Assert.True(ClashSettings.DefaultSlowMo);
         Assert.Equal(0.4f, ClashSettings.MinWindUp.Default);
         Assert.Equal(0.3f, ClashSettings.SlowMoScale.Default);
-        Assert.Equal(45f, ClashSettings.BlockAngleTolerance.Default);
+        Assert.Equal(90f, ClashSettings.BlockAngleTolerance.Default);
         Assert.Equal(0.6f, ClashSettings.BlockReach.Default);
         Assert.Equal(2.5f, ClashSettings.NpcReach.Default);
     }

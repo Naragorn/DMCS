@@ -31,6 +31,10 @@ namespace DMCS
         private static readonly StaggerHitCounts<int> BodyHits = new StaggerHitCounts<int>();
         private static readonly Dictionary<int, Creature> BodyHitCreatures = new Dictionary<int, Creature>();
         private static readonly System.Random Dice = new System.Random();
+        private static readonly Dictionary<int, Reaction> Reactions = new Dictionary<int, Reaction>();
+
+        /// <summary>The turn request handler for a backing-off enemy (BrainModuleMove keeps one request per handler).</summary>
+        private static readonly object BackOffTurn = new object();
         private static bool _hooked;
 
         /// <summary>Raised for each disarm (Adrenaline can gain from it).</summary>
@@ -86,38 +90,44 @@ namespace DMCS
         [ModOptionSlider]
         public static int Chance { get; set; } = DisarmStrikeSettings.DefaultChancePercent;
 
-        [ModOption(
-            name = DisarmStrikeSettings.NoRegrabTimeName,
-            tooltip = "Seconds a disarmed enemy cannot pick up or draw a weapon (and stands still, if set).",
-            valueSourceName = nameof(NoRegrabTimeValues),
-            category = DmcsCategories.DisarmStrike,
-            categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 5)]
+        [ModOption(name = DisarmStrikeSettings.ShockChanceName, tooltip = "How often a disarmed enemy freezes in shock, against the other two reactions. 0: never. Afterwards it goes for a weapon.", valueSourceName = nameof(ReactionChanceValues), category = DmcsCategories.DisarmStrike, categoryOrder = DmcsCategories.DisarmStrikeOrder, order = 5)]
         [ModOptionSlider]
-        public static float NoRegrabTime { get; set; } = DisarmStrikeSettings.NoRegrabTime.Default;
+        public static int ShockChance { get; set; } = DisarmStrikeSettings.DefaultShockChance;
+
+        [ModOption(name = DisarmStrikeSettings.ShockTimeName, tooltip = "Seconds a shocked enemy stands frozen.", valueSourceName = nameof(ShockTimeValues), category = DmcsCategories.DisarmStrike, categoryOrder = DmcsCategories.DisarmStrikeOrder, order = 6)]
+        [ModOptionSlider]
+        public static float ShockTime { get; set; } = DisarmStrikeSettings.ShockTime.Default;
+
+        [ModOption(name = DisarmStrikeSettings.BackOffChanceName, tooltip = "How often a disarmed enemy backs away from you, against the other two reactions. 0: never. Afterwards it goes for a weapon.", valueSourceName = nameof(ReactionChanceValues), category = DmcsCategories.DisarmStrike, categoryOrder = DmcsCategories.DisarmStrikeOrder, order = 7)]
+        [ModOptionSlider]
+        public static int BackOffChance { get; set; } = DisarmStrikeSettings.DefaultBackOffChance;
+
+        [ModOption(name = DisarmStrikeSettings.BackOffTimeName, tooltip = "Seconds a disarmed enemy keeps backing away.", valueSourceName = nameof(BackOffTimeValues), category = DmcsCategories.DisarmStrike, categoryOrder = DmcsCategories.DisarmStrikeOrder, order = 8)]
+        [ModOptionSlider]
+        public static float BackOffTime { get; set; } = DisarmStrikeSettings.BackOffTime.Default;
+
+        [ModOption(name = DisarmStrikeSettings.CowerChanceName, tooltip = "How often a disarmed enemy cowers in fear, against the other two reactions. 0: never. Hitting it ends the cowering.", valueSourceName = nameof(ReactionChanceValues), category = DmcsCategories.DisarmStrike, categoryOrder = DmcsCategories.DisarmStrikeOrder, order = 9)]
+        [ModOptionSlider]
+        public static int CowerChance { get; set; } = DisarmStrikeSettings.DefaultCowerChance;
+
+        [ModOption(name = DisarmStrikeSettings.CowerTimeName, tooltip = "Seconds a disarmed enemy cowers.", valueSourceName = nameof(CowerTimeValues), category = DmcsCategories.DisarmStrike, categoryOrder = DmcsCategories.DisarmStrikeOrder, order = 10)]
+        [ModOptionSlider]
+        public static float CowerTime { get; set; } = DisarmStrikeSettings.CowerTime.Default;
 
         [ModOption(
             name = DisarmStrikeSettings.StayDisarmedName,
-            tooltip = "A disarmed enemy never re-arms (ignores the time above).",
+            tooltip = "A disarmed enemy never re-arms: after its reaction it just stands there.",
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 6)]
+            order = 11)]
         public static bool StayDisarmed { get; set; } = DisarmStrikeSettings.DefaultStayDisarmed;
-
-        [ModOption(
-            name = DisarmStrikeSettings.StandStillName,
-            tooltip = "A disarmed enemy just stands there: no fleeing, no fist fighting. Off: it keeps its normal behaviour, only unarmed.",
-            category = DmcsCategories.DisarmStrike,
-            categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 7)]
-        public static bool StandStill { get; set; } = DisarmStrikeSettings.DefaultStandStill;
 
         [ModOption(
             name = DisarmStrikeSettings.BodyHitDropName,
             tooltip = "Hitting a staggered enemy anywhere but the hand can make them drop their weapon too.",
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 8)]
+            order = 12)]
         public static bool BodyHitDrop { get; set; } = DisarmStrikeSettings.DefaultBodyHitDrop;
 
         [ModOption(
@@ -126,7 +136,7 @@ namespace DMCS
             valueSourceName = nameof(ChanceOptionValues),
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 9)]
+            order = 13)]
         [ModOptionSlider]
         public static int BodyHitDropChance { get; set; } = DisarmStrikeSettings.DefaultBodyHitDropChance;
 
@@ -136,7 +146,7 @@ namespace DMCS
             valueSourceName = nameof(ChanceOptionValues),
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 10)]
+            order = 14)]
         [ModOptionSlider]
         public static int DropChancePerExtraHit { get; set; } = DisarmStrikeSettings.DefaultDropChancePerExtraHit;
 
@@ -145,7 +155,7 @@ namespace DMCS
             tooltip = "Sparks at the enemy's weapon when a body hit loosens their grip without making them drop it.",
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 11)]
+            order = 15)]
         public static bool LoosenedSpark { get; set; } = DisarmStrikeSettings.DefaultLoosenedSpark;
 
         [ModOption(
@@ -153,7 +163,7 @@ namespace DMCS
             tooltip = "A pulse in the hitting hand when a body hit loosens the enemy's grip without making them drop it.",
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 12)]
+            order = 16)]
         public static bool LoosenedHaptics { get; set; } = DisarmStrikeSettings.DefaultLoosenedHaptics;
 
         [ModOption(
@@ -161,7 +171,7 @@ namespace DMCS
             tooltip = "Shields can be knocked away too. Off: a hand holding a shield keeps it, as in the base game.",
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 13)]
+            order = 17)]
         public static bool ShieldsCanBeDisarmed { get; set; } = DisarmStrikeSettings.DefaultShieldsCanBeDisarmed;
 
         [ModOption(
@@ -170,7 +180,7 @@ namespace DMCS
             valueSourceName = nameof(FlingForceValues),
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 14)]
+            order = 18)]
         [ModOptionSlider]
         public static float FlingForce { get; set; } = DisarmStrikeSettings.FlingForce.Default;
 
@@ -180,7 +190,7 @@ namespace DMCS
             valueSourceName = nameof(ChanceOptionValues),
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 15)]
+            order = 19)]
         [ModOptionSlider]
         public static int FemaleChance { get; set; } = DisarmStrikeSettings.DefaultFemaleChance;
 
@@ -190,7 +200,7 @@ namespace DMCS
             valueSourceName = nameof(ChanceOptionValues),
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 16)]
+            order = 20)]
         [ModOptionSlider]
         public static int SmallerChance { get; set; } = DisarmStrikeSettings.DefaultSmallerChance;
 
@@ -200,7 +210,7 @@ namespace DMCS
             valueSourceName = nameof(SmallerMarginValues),
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 17)]
+            order = 21)]
         [ModOptionSlider]
         public static float SmallerMargin { get; set; } = DisarmStrikeSettings.SmallerMargin.Default;
 
@@ -208,9 +218,18 @@ namespace DMCS
         public static ModOptionInt[] ChanceOptionValues() =>
             DisarmStrikeSettings.ChanceValues().Select(v => new ModOptionInt(v.ToString(CultureInfo.InvariantCulture) + " %", v)).ToArray();
 
-        public static ModOptionFloat[] NoRegrabTimeValues() =>
-            DisarmStrikeSettings.NoRegrabTime.Values()
-                .Select(v => new ModOptionFloat(v.ToString("0", CultureInfo.InvariantCulture) + " s", v)).ToArray();
+        /// <summary>Relative chances (no %: they are weighed against each other).</summary>
+        public static ModOptionInt[] ReactionChanceValues() =>
+            DisarmStrikeSettings.ChanceValues().Select(v => new ModOptionInt(v.ToString(CultureInfo.InvariantCulture), v)).ToArray();
+
+        public static ModOptionFloat[] ShockTimeValues() => Seconds(DisarmStrikeSettings.ShockTime);
+
+        public static ModOptionFloat[] BackOffTimeValues() => Seconds(DisarmStrikeSettings.BackOffTime);
+
+        public static ModOptionFloat[] CowerTimeValues() => Seconds(DisarmStrikeSettings.CowerTime);
+
+        private static ModOptionFloat[] Seconds(SliderSpec spec) =>
+            spec.Values().Select(v => new ModOptionFloat(v.ToString("0", CultureInfo.InvariantCulture) + " s", v)).ToArray();
 
         public static ModOptionFloat[] SmallerMarginValues() =>
             DisarmStrikeSettings.SmallerMargin.Values()
@@ -221,7 +240,7 @@ namespace DMCS
             tooltip = "Hit a staggered enemy's weapon with yours while you twist your wrist (the blade rolls around itself), and it drops it.",
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 18)]
+            order = 22)]
         public static bool TwistEnabled { get; set; } = TwistSettings.DefaultEnabled;
 
         [ModOption(
@@ -230,7 +249,7 @@ namespace DMCS
             valueSourceName = nameof(TwistChanceValues),
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 19)]
+            order = 23)]
         [ModOptionSlider]
         public static float TwistChance { get; set; } = TwistSettings.Chance.Default;
 
@@ -240,7 +259,7 @@ namespace DMCS
             valueSourceName = nameof(TwistMinRollSpeedValues),
             category = DmcsCategories.DisarmStrike,
             categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 20)]
+            order = 24)]
         [ModOptionSlider]
         public static float TwistMinRollSpeed { get; set; } = TwistSettings.MinRollSpeed.Default;
 
@@ -304,6 +323,7 @@ namespace DMCS
             {
                 Restore(id);
             }
+            UpdateReactions();
             if (BodyHits.Count > 0)
             {
                 BodyHits.EndStaggers(StillStaggered);
@@ -415,19 +435,141 @@ namespace DMCS
             MarkDisarmed(target, hands, part.ToString(), dropped);
         }
 
-        /// <summary>After any disarm: no regrab for the set time, the hands kept empty, standing still if set.</summary>
+        /// <summary>
+        /// After any disarm (user 2026-11-22: they "just stood there"): the dice pick a reaction (a short shock, backing
+        /// off, or cowering) and its time; the hands stay empty for that time, then the enemy gets its own brain back and
+        /// goes for a weapon with the game's own behaviour (BehaviorTree_HumanUnarmed: find, walk to, pick up). With Stays
+        /// Permanent it stands still for good after the reaction.
+        /// </summary>
         private static void MarkDisarmed(Creature target, DisarmHands hands, string how, List<string> dropped)
         {
             var id = target.GetInstanceID();
-            var seconds = DisarmStrikeSettings.NoRegrabSeconds(StayDisarmed, NoRegrabTime);
-            DisarmedWindows.Mark(id, Time.time, seconds);
             Creatures[id] = target;
             EmptyHands[id] = EmptyHands.TryGetValue(id, out var earlier) ? earlier.With(hands) : hands;
-            var stands = StandStill && MakePassive(target, id);
-            Dmcs.Log.Debug(Channel, "disarmed " + target.name + " (" + how + "): dropped " + string.Join(", ", dropped)
-                + ", no regrab " + (StayDisarmed ? "permanent" : seconds.ToString("0", CultureInfo.InvariantCulture) + " s")
-                + (stands ? ", stands still" : string.Empty));
+            string reacts;
+            if (Reactions.TryGetValue(id, out var running))
+            {
+                // The other hand dropped while it still reacts: the same reaction runs on.
+                reacts = "still " + running.Kind;
+            }
+            else
+            {
+                var reaction = DisarmReactions.Pick(Dice.NextDouble(), ShockChance, BackOffChance, CowerChance);
+                var reactSeconds = DisarmReactions.Seconds(reaction, ShockTime, BackOffTime, CowerTime);
+                reaction = StartReaction(target, id, reaction, reactSeconds);
+                Reactions[id] = new Reaction(target, reaction, Time.time + reactSeconds);
+                DisarmedWindows.Mark(id, Time.time, DisarmStrikeSettings.NoRegrabSeconds(StayDisarmed, reactSeconds));
+                reacts = Describe(reaction) + (reaction == DisarmReaction.None ? "" : " for " + reactSeconds.ToString("0", CultureInfo.InvariantCulture) + " s");
+            }
+            Dmcs.Log.Debug(Channel, "disarmed " + target.name + " (" + how + "): dropped " + string.Join(", ", dropped) + ", " + reacts
+                + (StayDisarmed ? ", then stands still for good" : ", then goes for a weapon"));
             Disarmed?.Invoke(target);
+        }
+
+        private static string Describe(DisarmReaction reaction)
+        {
+            switch (reaction)
+            {
+                case DisarmReaction.Shock: return "freezes in shock";
+                case DisarmReaction.BackOff: return "backs off";
+                case DisarmReaction.Cower: return "cowers";
+                default: return "no reaction";
+            }
+        }
+
+        /// <summary>Starts the reaction with the game's own means; a reaction the brain cannot do falls back to the shock.</summary>
+        private static DisarmReaction StartReaction(Creature target, int id, DisarmReaction reaction, float seconds)
+        {
+            var instance = target.brain != null ? target.brain.instance : null;
+            switch (reaction)
+            {
+                case DisarmReaction.BackOff:
+                    var move = instance?.GetModule<BrainModuleMove>(false);
+                    if (move == null || instance.tree == null || Player.currentCreature == null)
+                    {
+                        break;
+                    }
+                    // Its behaviour tree pauses (as BrainModuleFear.Panic does) while DMCS walks it backwards, facing the player.
+                    instance.tree.Reset();
+                    instance.updateTree = false;
+                    move.TurnTo(Player.currentCreature.transform, BackOffTurn);
+                    return reaction;
+                case DisarmReaction.Cower:
+                    var fear = instance?.GetModule<BrainModuleFear>(false);
+                    if (fear == null)
+                    {
+                        break;
+                    }
+                    // The game's own panic: a scream, the HumanCower animation, ended early by a hit or a push.
+                    fear.Panic(seconds);
+                    return reaction;
+                case DisarmReaction.None:
+                    return reaction;
+            }
+            return MakePassive(target, id) ? DisarmReaction.Shock : DisarmReaction.None;
+        }
+
+        /// <summary>Every frame while a reaction runs: walks a backing-off enemy; ends a reaction whose time is up.</summary>
+        private static void UpdateReactions()
+        {
+            if (Reactions.Count == 0)
+            {
+                return;
+            }
+            foreach (var pair in Reactions.ToList())
+            {
+                var r = pair.Value;
+                if (r.Creature == null || r.Creature.isKilled)
+                {
+                    Reactions.Remove(pair.Key);
+                    continue;
+                }
+                if (Time.time >= r.EndsAt)
+                {
+                    EndReaction(pair.Key);
+                    continue;
+                }
+                if (r.Kind == DisarmReaction.BackOff)
+                {
+                    r.Creature.brain?.instance?.GetModule<BrainModuleMove>(false)?.UpdateMoveCycleDirection(Vector3.back, DisarmReactions.BackOffSpeedRatio, 0.5f);
+                }
+            }
+        }
+
+        /// <summary>The reaction is over: the enemy moves on its own again, or with Stays Permanent stands still for good.</summary>
+        private static void EndReaction(int id)
+        {
+            if (!Reactions.TryGetValue(id, out var r))
+            {
+                return;
+            }
+            Reactions.Remove(id);
+            var creature = r.Creature;
+            if (creature == null || creature.isKilled || creature.brain == null || creature.brain.instance == null)
+            {
+                return;
+            }
+            var instance = creature.brain.instance;
+            if (r.Kind == DisarmReaction.BackOff)
+            {
+                var move = instance.GetModule<BrainModuleMove>(false);
+                move?.StopTurn(BackOffTurn);
+                move?.StopMove();
+                instance.updateTree = true;
+            }
+            if (r.Kind == DisarmReaction.Cower && StayDisarmed)
+            {
+                var fear = instance.GetModule<BrainModuleFear>(false);
+                if (fear != null && fear.isCowering)
+                {
+                    fear.StopPanic();
+                }
+            }
+            if (StayDisarmed)
+            {
+                MakePassive(creature, id);
+            }
+            Dmcs.Log.Debug(Channel, creature.name + " is done with its reaction (" + Describe(r.Kind) + ")");
         }
 
         /// <summary>Body Hit Drop: a body hit on a staggered NPC drops its weapons with a chance that rises per earlier hit.</summary>
@@ -650,6 +792,7 @@ namespace DMCS
 
         private static void Restore(int id)
         {
+            EndReaction(id);
             Creatures.TryGetValue(id, out var creature);
             Creatures.Remove(id);
             EmptyHands.Remove(id);
@@ -682,8 +825,24 @@ namespace DMCS
             Creatures.Remove(id);
             EmptyHands.Remove(id);
             OriginalBrains.Remove(id);
+            Reactions.Remove(id);
             BodyHits.Forget(id);
             BodyHitCreatures.Remove(id);
+        }
+
+        /// <summary>A disarmed enemy's running reaction and when it ends (game time).</summary>
+        private readonly struct Reaction
+        {
+            public Reaction(Creature creature, DisarmReaction kind, float endsAt)
+            {
+                Creature = creature;
+                Kind = kind;
+                EndsAt = endsAt;
+            }
+
+            public Creature Creature { get; }
+            public DisarmReaction Kind { get; }
+            public float EndsAt { get; }
         }
     }
 }

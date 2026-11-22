@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 
 namespace DMCS.Core
@@ -9,16 +10,31 @@ namespace DMCS.Core
         public const string IncludeForearmName = "Disarm Include Forearm";
         public const string DropBothHandsName = "Disarm Drops Both Hands";
         public const string ChanceName = "Disarm Chance";
-        public const string NoRegrabTimeName = "Disarm No Regrab Time";
         public const string StayDisarmedName = "Disarm Stays Permanent";
-        public const string StandStillName = "Disarmed Stand Still";
+        public const string ShockChanceName = "Disarmed Shock Chance";
+        public const string ShockTimeName = "Disarmed Shock Time";
+        public const string BackOffChanceName = "Disarmed Back Off Chance";
+        public const string BackOffTimeName = "Disarmed Back Off Time";
+        public const string CowerChanceName = "Disarmed Cower Chance";
+        public const string CowerTimeName = "Disarmed Cower Time";
 
         public const bool DefaultRequireStagger = true;
         public const bool DefaultIncludeForearm = false;
         public const bool DefaultDropBothHands = true;
         public const int DefaultChancePercent = 100;
         public const bool DefaultStayDisarmed = false;
-        public const bool DefaultStandStill = true;
+
+        /// <summary>Even dice between the three reactions (user 2026-11-22: "je nach Würfeln").</summary>
+        public const int DefaultShockChance = 50;
+
+        public const int DefaultBackOffChance = 50;
+        public const int DefaultCowerChance = 50;
+
+        /// <summary>Seconds of each reaction; then the enemy goes for a weapon (guesses for the headset).</summary>
+        public static readonly SliderSpec ShockTime = new SliderSpec(ShockTimeName, 1f, 15f, 1f, 2f);
+
+        public static readonly SliderSpec BackOffTime = new SliderSpec(BackOffTimeName, 1f, 15f, 1f, 2f);
+        public static readonly SliderSpec CowerTime = new SliderSpec(CowerTimeName, 1f, 15f, 1f, 5f);
 
         public const string BodyHitDropName = "Body Hit Drop";
         public const string BodyHitDropChanceName = "Body Hit Drop Chance";
@@ -53,11 +69,8 @@ namespace DMCS.Core
         /// <summary>The game's metal collision effect (catalog Effect_HitMaterialMetal: metal sound + Bas.Particle.Collision.Metal).</summary>
         public const string SparkEffectId = "HitMaterialMetal";
 
-        /// <summary>Seconds the NPC neither picks up nor draws a weapon (and stands still).</summary>
-        public static readonly SliderSpec NoRegrabTime = new SliderSpec(NoRegrabTimeName, 2f, 60f, 2f, 10f);
-
         /// <summary>
-        /// The game's own brain the disarmed NPC gets while it stands still. Seen in BasHarness runs
+        /// The game's own brain the disarmed NPC gets while it stands in shock (and for good with Stays Permanent). Seen in BasHarness runs
         /// (2026-11-16): an NPC with it stands and does not attack, and it has BrainModuleHitReaction (staggers).
         /// Not yet seen: that it never draws or picks up a weapon (DMCS also releases any grab while disarmed).
         /// </summary>
@@ -68,6 +81,58 @@ namespace DMCS.Core
         public static float NoRegrabSeconds(bool permanent, float seconds)
         {
             return permanent ? float.PositiveInfinity : seconds;
+        }
+    }
+
+    public enum DisarmReaction
+    {
+        /// <summary>No chance set: the enemy goes for a weapon at once.</summary>
+        None,
+
+        /// <summary>It freezes for a moment (the game's passive HumanDummy brain).</summary>
+        Shock,
+
+        /// <summary>It steps back away from the player, facing the player (the game's BrainModuleMove).</summary>
+        BackOff,
+
+        /// <summary>It cowers in fear (the game's BrainModuleFear.Panic: a scream and the HumanCower animation).</summary>
+        Cower,
+    }
+
+    /// <summary>The dice for a disarmed enemy's reaction (user 2026-11-22) and how long it lasts.</summary>
+    public static class DisarmReactions
+    {
+        /// <summary>Walking speed while backing off, as a share of the enemy's forward speed (a guess for the headset).</summary>
+        public const float BackOffSpeedRatio = 0.5f;
+
+        /// <summary>One of the reactions by its chance against the others (roll 0..1); None when every chance is 0.</summary>
+        public static DisarmReaction Pick(double roll, int shock, int backOff, int cower)
+        {
+            var s = Math.Max(0, shock);
+            var b = Math.Max(0, backOff);
+            var c = Math.Max(0, cower);
+            var total = s + b + c;
+            if (total == 0)
+            {
+                return DisarmReaction.None;
+            }
+            var at = Math.Min(0.999999, Math.Max(0.0, roll)) * total;
+            if (at < s)
+            {
+                return DisarmReaction.Shock;
+            }
+            return at < s + b ? DisarmReaction.BackOff : DisarmReaction.Cower;
+        }
+
+        public static float Seconds(DisarmReaction reaction, float shock, float backOff, float cower)
+        {
+            switch (reaction)
+            {
+                case DisarmReaction.Shock: return shock;
+                case DisarmReaction.BackOff: return backOff;
+                case DisarmReaction.Cower: return cower;
+                default: return 0f;
+            }
         }
     }
 }

@@ -30,8 +30,11 @@ namespace DMCS.Core
         /// <summary>Metres from the flash point to the player's blade within which the slow-motion can start (a guess).</summary>
         public static readonly SliderSpec BlockReach = new SliderSpec(BlockReachName, 0.2f, 1.5f, 0.1f, 0.6f);
 
-        /// <summary>Degrees the player's blade may be off a right angle to the swing (user 2026-11-17: very generous); 90 = no angle check.</summary>
-        public static readonly SliderSpec BlockAngleTolerance = new SliderSpec(BlockAngleToleranceName, 10f, 90f, 5f, 45f);
+        /// <summary>
+        /// Degrees the player's blade may be off a right angle to the swing; 90 = no angle check. Default 90 (user 2026-11-22:
+        /// the trigger was far too rare; the angle refused 31 of 56 star blocks in the Player.log of that day).
+        /// </summary>
+        public static readonly SliderSpec BlockAngleTolerance = new SliderSpec(BlockAngleToleranceName, 10f, 90f, 5f, 90f);
 
         /// <summary>Seconds after the strike starts in which the swing plane is read and the slow-motion decided.</summary>
         public const float JudgeWindow = 0.1f;
@@ -73,11 +76,7 @@ namespace DMCS.Core
         /// <summary>The flash appears at the top of the wind-up (user 2026-11-17, default on); off: when the wind-up starts.</summary>
         public const bool DefaultFlashAtTop = true;
 
-        public const string PointToleranceName = "Clash Point Tolerance";
         public const string WeaponWeightName = "Clash Weapon Weight";
-
-        /// <summary>Metres between the block's contact and the flash point within which the blades lock (a guess, headset).</summary>
-        public static readonly SliderSpec PointTolerance = new SliderSpec(PointToleranceName, 0.05f, 0.6f, 0.05f, 0.25f);
 
         /// <summary>The player's weapon's mass factor during the lock (harness probe: ×20 sags the tip 5 cm held still; a guess).</summary>
         public static readonly SliderSpec WeaponWeight = new SliderSpec(WeaponWeightName, 1f, 50f, 1f, 20f);
@@ -86,10 +85,10 @@ namespace DMCS.Core
 
         /// <summary>
         /// The parrying hand's real controller speed (m/s, fastest in the Parry group's speed window) from which a block at
-        /// the star is too hard for a clash (user 2026-11-21). A guess: the seven locks in the Player.log of 2026-11-20 came
-        /// at 1.02–2.61 m/s, held guards at 0.02–0.99 m/s; stays under the power parry (3 m/s).
+        /// the star is too hard for a clash (user 2026-11-21). Default 2.5 (2026-11-22; first 1.5): star blocks came at
+        /// 0.46–6.65 m/s and 1.5 refused 34 of 56 of them; power parries came from 3.18 m/s. Stays under the power parry (3 m/s).
         /// </summary>
-        public static readonly SliderSpec MaxBlockSpeed = new SliderSpec(MaxBlockSpeedName, 0.5f, 4f, 0.25f, 1.5f);
+        public static readonly SliderSpec MaxBlockSpeed = new SliderSpec(MaxBlockSpeedName, 0.5f, 4f, 0.25f, 2.5f);
 
         public const string HoldBladeName = "Clash Hold Blade";
         public const string HoldSlackName = "Clash Hold Slack";
@@ -128,7 +127,7 @@ namespace DMCS.Core
         /// <summary>Seconds the hold lasts with Hold Briefly: long enough to catch the swing (it peaked about 0.2 s in, 2026-11-20 log).</summary>
         public static readonly SliderSpec HoldTime = new SliderSpec(HoldTimeName, 0.1f, 1f, 0.05f, 0.3f);
 
-        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, BlockReach, BlockAngleTolerance, FlashSoundVolume, PointTolerance, MaxBlockSpeed, WeaponWeight, HoldSlack, HoldSpring, HoldSpringDamping, HoldTime };
+        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, BlockReach, BlockAngleTolerance, FlashSoundVolume, MaxBlockSpeed, WeaponWeight, HoldSlack, HoldSpring, HoldSpringDamping, HoldTime };
     }
 
     public enum BlockVerdict
@@ -136,15 +135,12 @@ namespace DMCS.Core
         /// <summary>The blades lock: the clash starts.</summary>
         Clash,
 
-        /// <summary>The block hit the blade away from the flash: an ordinary parry.</summary>
-        OffPoint,
-
-        /// <summary>At the flash, but the player's blade was not across the swing: an ordinary parry.</summary>
+        /// <summary>The player's blade was not across the swing: an ordinary parry.</summary>
         WrongAngle,
 
         /// <summary>
-        /// At the flash and across the swing, but swung in too hard (user 2026-11-21): no clash, the blades bounce off each
-        /// other as in any parry.
+        /// Across the swing, but swung in too hard (user 2026-11-21): no clash, the blades bounce off each other as in any
+        /// parry.
         /// </summary>
         TooFast,
     }
@@ -277,16 +273,13 @@ namespace DMCS.Core
             starting || Math.Abs(timeScale - ourScale) <= 0.01f;
 
         /// <summary>
-        /// A block (the NPC's swing hit the player's weapon) at the flash point, across the swing and with the hand slower
+        /// A block of the flashing blade (the NPC's swing hit the player's weapon) across the swing and with the hand slower
         /// than <paramref name="maxBlockSpeed"/> locks the blades; a block whose swing plane is unknown is decided by the
-        /// contact point and the speed. Checked in that order: point, angle, speed.
+        /// speed. Checked in that order: angle, speed. Where on the blade it hit does not count (user 2026-11-22: the exact
+        /// point was hit far too rarely).
         /// </summary>
-        public static BlockVerdict JudgeBlock(float contactToFlash, float pointTolerance, float? angleToNormal, float angleTolerance, float handSpeed, float maxBlockSpeed)
+        public static BlockVerdict JudgeBlock(float? angleToNormal, float angleTolerance, float handSpeed, float maxBlockSpeed)
         {
-            if (contactToFlash > pointTolerance)
-            {
-                return BlockVerdict.OffPoint;
-            }
             if (angleToNormal.HasValue && angleToNormal.Value > angleTolerance)
             {
                 return BlockVerdict.WrongAngle;
@@ -373,6 +366,17 @@ namespace DMCS.Core
         {
             var cos = Math.Abs(Vec3.Dot(playerBladeAxis.Normalized(), normal.Normalized()));
             return (float)(Math.Acos(Math.Min(1.0, cos)) * 180.0 / Math.PI);
+        }
+
+        /// <summary>
+        /// How far the player's real hand leads the held hand along the line from the head to the lock point (m): pushing the
+        /// crossed blades away from oneself counts, wherever they crossed (above, beside or in front); pulling back counts
+        /// against. 2026-11-22: replaces "level towards the enemy's body", which missed most of the user's pushes.
+        /// </summary>
+        public static float PushLead(Vec3 handAhead, Vec3 head, Vec3 lockPoint)
+        {
+            var line = (lockPoint - head).Normalized();
+            return Vec3.Dot(handAhead, line);
         }
 
         public static float DistanceToSegment(Vec3 point, Vec3 a, Vec3 b)

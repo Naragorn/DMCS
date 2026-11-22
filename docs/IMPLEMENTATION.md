@@ -616,6 +616,65 @@ off. The three locks under 1.5 m/s overshot 0.59, 0.76 and 1.14 m (1.14 m is the
 **Log:** the lock start says `held at the lock point (Spring 3.00/0.50, slack 0.02 m[, no turning][, for 0.30 s])`; the
 release says `hold released after … s (Clash Hold Briefly)`. `step5c` expects the default line; not run (Windows).
 
+## Headset round 2026-11-22: trigger, push, duel signals, disarm reactions
+
+**User's impressions** (Player.log 2026-11-22 13:14–13:35, build `aba5a6d` on Windows): the clash works, but the exact
+block point is hit far too rarely; in the duel it is unclear whether you win or lose; disarmed enemies just stand there.
+
+**Trigger, measured.** 56 parry events of a flashing swing in 23 swings. First failing check: point 13, angle 25, speed
+12; each check alone refused: angle > 45° 31, point > 0.25 m 13, hand ≥ 1.5 m/s 34. Swings that locked (any event of
+the swing passing):
+
+| Rule | Swings that lock |
+|---|---|
+| as built (0.25 m, 45°, < 1.5 m/s) | 6 of 23 |
+| without the point check | 7 of 23 |
+| any angle | 11 of 23 |
+| without point, any angle | 12 of 23 |
+| without point, any angle, < 2.5 m/s (built) | 18 of 23 |
+| contact alone | 23 of 23 |
+
+So the point the user named mattered least; angle and speed refused most. Built: the point check and *Clash Point
+Tolerance* are gone (`ClashRules.JudgeBlock(angle, tolerance, handSpeed, maxSpeed)`), *Clash Block Angle Tolerance*
+defaults to 90° (any), *Clash Max Block Speed* to 2.5 m/s (power parries came from 3.18 m/s that day). The angle default
+also opens the clash slow-motion's angle check, which shares the slider.
+
+**Push, measured.** All four locks lost. The hold worked (blades 0.02–0.18 m apart, before 0.27–1.14 m). Three were lost
+on the push: the controller led the held hand by 0.12–0.24 m, but "towards the enemy" (level, to its body) counted only
+0.01–0.04 m, once −0.17 m; one was lost in the return phase while the player kept pushing (0.18 m). Built:
+`ClashGeometry.PushLead` counts the lead along the line from the player's head to the lock point (3D): pushing the crossed
+blades away counts wherever they crossed (above for an overhead strike, beside for a side swing); pulling back counts
+against. The lock point is stored on the enemy's blade at the lock (`_lockOnEnemyBlade`) and also drives the hold, the
+sparks of a held round and the "blades apart" diagnostic. Not measured with the new direction yet: headset.
+
+**Duel (user's pick "simpler + clear signals").** `ClashRounds(rounds, pushSeconds, enemyPeak, deadZone)`: no return
+phase; a held round starts the next at once (*Clash Return Window* and *Clash Return Tolerance* removed). `Advantage`
+= (player sum − enemy sum) / the enemy's whole-round sum, clamped to ±1, 0 at each round's start. *Clash Duel Star*
+(on): the flash's star moves to the lock point and is tinted and sized by the advantage (`ClashDuelSignal.Tint/Size`:
+warm white even, green and up to 1.4× ahead, red and 0.7× behind; full alpha). *Clash Outcome Cues* (on): win = six
+sparks around the lock point, `ArenaOnKillStingerMele` (`Bas.Audio.Stinger.OnKillMele`), three ticks at 0/0.1/0.2 s;
+lose = `Fall` (`Bas.AudioGroup.Ragdoll.FallIntensity3`), ticks every 0.04 s for 0.5 s at 0.7 (both × *Clash Haptics
+Strength*). Both catalog effects have only Start parts (read in `Effect_*.json`); how they sound there: headset.
+
+**Disarm reactions (user's pick "1, 2, 3 by dice").** `DisarmReactions.Pick(roll, shock, backOff, cower)` weighs three
+chances (50 each); each reaction has its time (2 / 2 / 5 s), the hands stay empty that long, then the own brain is back
+and the game's `BehaviorTree_HumanUnarmed` (GetItem → MoveTo → PickupItem, read in the catalog) goes for a weapon.
+- Shock: the passive `HumanDummy` brain (as the old Stand Still).
+- Back off: the own brain's tree paused (`tree.Reset`, `updateTree = false`, as `BrainModuleFear.Panic` does, but not
+  `isIncapacitated`, which stops `BrainModuleMove.Update`); every frame `BrainModuleMove.UpdateMoveCycleDirection(back,
+  0.5, 0.5 s)` with a turn request to the player's transform; at the end `StopTurn`, `StopMove`, `updateTree = true`.
+  Read in ThunderRoad.dll 1.3.2: `BrainData.Update` runs every module's `Update` whether or not the tree updates.
+  Whether it looks like stepping back: headset.
+- Cower: the game's own `BrainModuleFear.Panic(seconds)` (scream, `HumanCower`, a hit or push ends it; the module
+  resumes the tree itself). HumanHard has the module (`Brain_HumanHard.json`).
+- A reaction the brain cannot do (no move or fear module) falls back to the shock. With *Disarm Stays Permanent* the
+  enemy turns passive for good after its reaction.
+- Replaces *Disarm No Regrab Time* and *Disarmed Stand Still*.
+
+**Tests:** unit tests for every rule above (722). Harness scenarios updated (`step3` section 7 for back off and cower,
+`step5b` block away from the flash now locks, `step5c` no return phase and a 2.75 m/s block, `step3b`/`step4a` dice
+fixed on a 4 s shock); not run (Windows).
+
 ## API verification
 
 Legend: **V** = verified in the decompiled `ThunderRoad.dll` of game 1.3.2. **V+T** = verified and covered by a test. **A** = assumed / behaviour only provable in game. Line refs point into the decompiled source.

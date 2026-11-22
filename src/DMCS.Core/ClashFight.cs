@@ -52,14 +52,20 @@ namespace DMCS.Core
         public const string EnemyPushName = "Clash Enemy Push";
         public const string DeadZoneName = "Clash Push Dead Zone";
         public const string PushPhaseName = "Clash Push Phase";
-        public const string ReturnWindowName = "Clash Return Window";
-        public const string ReturnToleranceName = "Clash Return Tolerance";
         public const string WinDisarmsName = "Clash Win Disarms";
         public const string WinKneelChanceName = "Clash Win Kneel Chance";
         public const string LoseOutcomeName = "Clash Lose Outcome";
         public const string LoseDamageName = "Clash Lose Damage";
         public const string DarkMessiahSoundsName = "Clash Dark Messiah Sounds";
         public const string HapticsName = "Clash Haptics Strength";
+        public const string DuelStarName = "Clash Duel Star";
+        public const string OutcomeCuesName = "Clash Outcome Cues";
+
+        /// <summary>The star at the crossed blades shows who is ahead in the round (user 2026-11-22).</summary>
+        public const bool DefaultDuelStar = true;
+
+        /// <summary>Win and loss each get their own sparks, sound and vibration (user 2026-11-22).</summary>
+        public const bool DefaultOutcomeCues = true;
 
         public const bool DefaultScalesWithHeight = true;
         public const bool DefaultScalesWithGender = true;
@@ -90,14 +96,8 @@ namespace DMCS.Core
         /// <summary>Lead of the controller that is only the heavy weapon's natural lag, not pushing (a guess).</summary>
         public static readonly SliderSpec DeadZone = new SliderSpec(DeadZoneName, 0f, 0.1f, 0.01f, 0.03f);
 
-        /// <summary>Real seconds of one push phase; the enemy's push swells and ebbs once in it (a guess).</summary>
+        /// <summary>Real seconds of one push round; the enemy's push swells and ebbs once in it (a guess).</summary>
         public static readonly SliderSpec PushPhase = new SliderSpec(PushPhaseName, 0.5f, 5f, 0.25f, 2f);
-
-        /// <summary>Real seconds to bring the controller back to the block point after a push phase (a guess).</summary>
-        public static readonly SliderSpec ReturnWindow = new SliderSpec(ReturnWindowName, 0.25f, 3f, 0.25f, 1f);
-
-        /// <summary>Metres between controller and weapon that count as back at the block point (a guess).</summary>
-        public static readonly SliderSpec ReturnTolerance = new SliderSpec(ReturnToleranceName, 0.02f, 0.3f, 0.01f, 0.08f);
 
         public static readonly SliderSpec WinKneelChance = new SliderSpec(WinKneelChanceName, 0f, 100f, 5f, 25f);
 
@@ -108,8 +108,8 @@ namespace DMCS.Core
 
         public static IEnumerable<SliderSpec> Sliders => new[]
         {
-            Difficulty, FemaleStrength, MinRounds, MaxRounds, FewerRounds, EnemyPush, DeadZone, PushPhase, ReturnWindow,
-            ReturnTolerance, WinKneelChance, LoseDamage, Haptics,
+            Difficulty, FemaleStrength, MinRounds, MaxRounds, FewerRounds, EnemyPush, DeadZone, PushPhase, WinKneelChance,
+            LoseDamage, Haptics,
         };
     }
 
@@ -121,6 +121,73 @@ namespace DMCS.Core
         /// rubbing loop (OneShotEffect). The lock has no grinding sound (removed by the user 2026-11-21).
         /// </summary>
         public const string SparkEffectId = "HitMaterialMetal";
+
+        /// <summary>The arena's melee-kill stinger (Bas.Audio.Stinger.OnKillMele): the sound of a won duel (user 2026-11-22).</summary>
+        public const string WinEffectId = "ArenaOnKillStingerMele";
+
+        /// <summary>A heavy body fall (Bas.AudioGroup.Ragdoll.FallIntensity3): the dull thud of a lost duel (user 2026-11-22).</summary>
+        public const string LoseEffectId = "Fall";
+
+        /// <summary>Sparks thrown around the crossed blades when the duel is won.</summary>
+        public const int WinSparks = 6;
+
+        /// <summary>Metres around the lock point the win sparks are thrown.</summary>
+        public const float WinSparkSpread = 0.12f;
+    }
+
+    /// <summary>
+    /// What the player sees and feels in a blade lock (user 2026-11-22: "unclear whether you win or lose"). The star at the
+    /// crossed blades shows who is ahead in the round: warm white when even (the flash's own colour), green and bigger when
+    /// the player is ahead, red and smaller when the enemy is. Win and loss each get their own vibration.
+    /// </summary>
+    public static class ClashDuelSignal
+    {
+        private static readonly (float R, float G, float B) Even = (1f, 0.92f, 0.7f);
+        private static readonly (float R, float G, float B) Ahead = (0.3f, 1f, 0.35f);
+        private static readonly (float R, float G, float B) Behind = (1f, 0.2f, 0.15f);
+
+        /// <summary>Size factor of the star when fully ahead and fully behind.</summary>
+        private const float AheadSize = 1.4f;
+        private const float BehindSize = 0.7f;
+
+        /// <summary>The star's colour for an advantage from −1 (the enemy is ahead) to 1 (the player is).</summary>
+        public static (float R, float G, float B) Tint(float advantage)
+        {
+            var a = Clamp(advantage);
+            var to = a >= 0f ? Ahead : Behind;
+            var t = Math.Abs(a);
+            return (Lerp(Even.R, to.R, t), Lerp(Even.G, to.G, t), Lerp(Even.B, to.B, t));
+        }
+
+        /// <summary>The star's size factor (1 when even).</summary>
+        public static float Size(float advantage)
+        {
+            var a = Clamp(advantage);
+            return a >= 0f ? Lerp(1f, AheadSize, a) : Lerp(1f, BehindSize, -a);
+        }
+
+        /// <summary>Vibration ticks (seconds after the end, strength 0–1): three strong quick beats for a win, a longer weaker rumble for a loss.</summary>
+        public static IReadOnlyList<(float Time, float Strength)> Haptics(bool won)
+        {
+            var ticks = new List<(float Time, float Strength)>();
+            if (won)
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    ticks.Add((i * 0.1f, 1f));
+                }
+                return ticks;
+            }
+            for (var t = 0f; t <= 0.5f; t += 0.04f)
+            {
+                ticks.Add((t, 0.7f));
+            }
+            return ticks;
+        }
+
+        private static float Clamp(float v) => Math.Max(-1f, Math.Min(1f, v));
+
+        private static float Lerp(float a, float b, float t) => a + ((b - a) * t);
     }
 
     /// <summary>How hard an enemy pushes and how many rounds it lasts (pure values; the caller reads them from the game).</summary>
@@ -165,11 +232,8 @@ namespace DMCS.Core
 
     public enum ClashPhase
     {
-        /// <summary>The player pushes; the enemy's push swells and ebbs once.</summary>
+        /// <summary>The player pushes; the enemy's push swells and ebbs once per round.</summary>
         Push,
-
-        /// <summary>The player must bring the controller back to the block point.</summary>
-        Return,
 
         /// <summary>The lock is decided.</summary>
         Over,
@@ -179,50 +243,62 @@ namespace DMCS.Core
     {
         None,
 
-        /// <summary>A push phase ended in the player's favour: the enemy pushes back, the return phase starts.</summary>
+        /// <summary>A round ended in the player's favour: the next round starts at once (no return phase since 2026-11-22).</summary>
         PushHeld,
 
-        /// <summary>The controller came back to the block point: the next push phase starts.</summary>
-        Returned,
-
-        /// <summary>The last push phase was held: the player wins.</summary>
+        /// <summary>The last round was held: the player wins.</summary>
         Won,
 
-        /// <summary>The enemy pushed harder over a push phase: the player loses.</summary>
+        /// <summary>The enemy pushed harder over a round: the player loses.</summary>
         LostPush,
-
-        /// <summary>The controller did not come back to the block point in time: the player loses.</summary>
-        LostReturn,
     }
 
     /// <summary>
-    /// The rounds of one lock (user 2026-11-18). In each push phase the enemy's push swells and ebbs once (a half sine); the
-    /// player holds the round when the summed lead of the controller (beyond the dead zone) is at least the enemy's summed
-    /// push. Then the controller must come back to the block point within the return window, and the next push phase starts.
-    /// The last held push phase wins. No progress bar: every round counts on its own.
+    /// The rounds of one lock (user 2026-11-18; return phase dropped 2026-11-22). In each round the enemy's push swells and
+    /// ebbs once (a half sine); the player holds the round when the summed lead of the controller (beyond the dead zone) is
+    /// at least the enemy's summed push, and the next round starts at once. The last held round wins. Every round counts on
+    /// its own; <see cref="Advantage"/> says who is ahead in the current one.
     /// </summary>
     public sealed class ClashRounds
     {
         private readonly float _pushSeconds;
-        private readonly float _returnSeconds;
         private readonly float _enemyPeak;
         private readonly float _deadZone;
-        private readonly float _returnTolerance;
         private float _phaseTime;
 
-        /// <summary>Float steps never add up exactly; a phase this close to its end is over.</summary>
+        /// <summary>Float steps never add up exactly; a round this close to its end is over.</summary>
         private const float Epsilon = 0.0001f;
 
-        public ClashRounds(int rounds, float pushSeconds, float returnSeconds, float enemyPeak, float deadZone, float returnTolerance)
+        public ClashRounds(int rounds, float pushSeconds, float enemyPeak, float deadZone)
         {
             Rounds = Math.Max(1, rounds);
             _pushSeconds = Math.Max(0.01f, pushSeconds);
-            _returnSeconds = Math.Max(0.01f, returnSeconds);
             _enemyPeak = Math.Max(0f, enemyPeak);
             _deadZone = Math.Max(0f, deadZone);
-            _returnTolerance = Math.Max(0f, returnTolerance);
             Round = 1;
             Phase = ClashPhase.Push;
+        }
+
+        /// <summary>The player's and the enemy's sums of the round that ended last (for the log).</summary>
+        public float LastPlayerSum { get; private set; }
+
+        public float LastEnemySum { get; private set; }
+
+        /// <summary>
+        /// Who is ahead in the current round, from −1 (the enemy) to 1 (the player): the difference of the sums so far over
+        /// what the enemy pushes in a whole round. 0 at the start of every round; with no enemy push, any push is fully ahead.
+        /// </summary>
+        public float Advantage
+        {
+            get
+            {
+                var whole = (float)(2.0 * _enemyPeak * _pushSeconds / Math.PI);
+                if (whole <= Epsilon)
+                {
+                    return PlayerSum > 0f ? 1f : 0f;
+                }
+                return Math.Max(-1f, Math.Min(1f, (PlayerSum - EnemySum) / whole));
+            }
         }
 
         public int Rounds { get; }
@@ -232,12 +308,12 @@ namespace DMCS.Core
 
         public ClashPhase Phase { get; private set; }
 
-        /// <summary>The player's summed push (m·s) and the enemy's in the current or last push phase.</summary>
+        /// <summary>The player's summed push (m·s) and the enemy's in the current round.</summary>
         public float PlayerSum { get; private set; }
 
         public float EnemySum { get; private set; }
 
-        /// <summary>The enemy's push now (m): a half sine over the push phase; 0 outside it.</summary>
+        /// <summary>The enemy's push now (m): a half sine over the round; 0 once the lock is decided.</summary>
         public float EnemyPush => Phase == ClashPhase.Push ? EnemyPushAt(_phaseTime) : 0f;
 
         /// <summary>The enemy's push (m) at a time into a push phase.</summary>
@@ -247,58 +323,39 @@ namespace DMCS.Core
         /// <summary>The player's push from the controller's lead towards the enemy: what lies beyond the dead zone.</summary>
         public float PlayerPush(float lead) => Math.Max(0f, lead - _deadZone);
 
-        /// <summary>
-        /// One step of dt real seconds: lead = how far the controller is ahead of the weapon towards the enemy (m), gap = how
-        /// far it is from the weapon at all (m).
-        /// </summary>
-        public ClashStep Tick(float dt, float lead, float gap)
+        /// <summary>One step of dt real seconds; lead = how far the controller pushes ahead of the held weapon (m).</summary>
+        public ClashStep Tick(float dt, float lead)
         {
             if (Phase == ClashPhase.Over || dt <= 0f)
             {
                 return ClashStep.None;
             }
-            if (Phase == ClashPhase.Push)
+            var from = _phaseTime;
+            var to = Math.Min(_pushSeconds, from + dt);
+            PlayerSum += PlayerPush(lead) * (to - from);
+            EnemySum += EnemyIntegral(from, to);
+            _phaseTime = to;
+            if (_phaseTime < _pushSeconds - Epsilon)
             {
-                var from = _phaseTime;
-                var to = Math.Min(_pushSeconds, from + dt);
-                var step = to - from;
-                PlayerSum += PlayerPush(lead) * step;
-                EnemySum += EnemyIntegral(from, to);
-                _phaseTime = to;
-                if (_phaseTime < _pushSeconds - Epsilon)
-                {
-                    return ClashStep.None;
-                }
-                if (PlayerSum < EnemySum)
-                {
-                    Phase = ClashPhase.Over;
-                    return ClashStep.LostPush;
-                }
-                if (Round >= Rounds)
-                {
-                    Phase = ClashPhase.Over;
-                    return ClashStep.Won;
-                }
-                Phase = ClashPhase.Return;
-                _phaseTime = 0f;
-                return ClashStep.PushHeld;
+                return ClashStep.None;
             }
-            _phaseTime += dt;
-            if (gap <= _returnTolerance)
-            {
-                Round++;
-                Phase = ClashPhase.Push;
-                _phaseTime = 0f;
-                PlayerSum = 0f;
-                EnemySum = 0f;
-                return ClashStep.Returned;
-            }
-            if (_phaseTime >= _returnSeconds)
+            LastPlayerSum = PlayerSum;
+            LastEnemySum = EnemySum;
+            if (PlayerSum < EnemySum)
             {
                 Phase = ClashPhase.Over;
-                return ClashStep.LostReturn;
+                return ClashStep.LostPush;
             }
-            return ClashStep.None;
+            if (Round >= Rounds)
+            {
+                Phase = ClashPhase.Over;
+                return ClashStep.Won;
+            }
+            Round++;
+            _phaseTime = 0f;
+            PlayerSum = 0f;
+            EnemySum = 0f;
+            return ClashStep.PushHeld;
         }
 
         /// <summary>Exact integral of the half sine between two times of the push phase.</summary>

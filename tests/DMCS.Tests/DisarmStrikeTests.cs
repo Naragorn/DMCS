@@ -133,15 +133,72 @@ public class DisarmHandsTests
     }
 }
 
+// What a disarmed enemy does (user 2026-11-22: they "just stood there"; now by dice: a short shock, backing off, or
+// cowering, then it goes for a weapon with the game's own behaviour).
+public class DisarmReactionTests
+{
+    [Theory]
+    [InlineData(0.0, DisarmReaction.Shock)]
+    [InlineData(0.33, DisarmReaction.Shock)]
+    [InlineData(0.34, DisarmReaction.BackOff)]
+    [InlineData(0.66, DisarmReaction.BackOff)]
+    [InlineData(0.67, DisarmReaction.Cower)]
+    [InlineData(0.999, DisarmReaction.Cower)]
+    public void EqualChances_SplitTheRollInThirds(double roll, DisarmReaction expected) =>
+        Assert.Equal(expected, DisarmReactions.Pick(roll, 50, 50, 50));
+
+    [Theory]
+    [InlineData(0.0)]
+    [InlineData(0.5)]
+    [InlineData(1.0)]
+    public void OnlyOneChance_AlwaysThatOne(double roll)
+    {
+        Assert.Equal(DisarmReaction.Shock, DisarmReactions.Pick(roll, 10, 0, 0));
+        Assert.Equal(DisarmReaction.BackOff, DisarmReactions.Pick(roll, 0, 100, 0));
+        Assert.Equal(DisarmReaction.Cower, DisarmReactions.Pick(roll, 0, 0, 30));
+    }
+
+    [Fact]
+    public void NoChances_NoReaction()
+    {
+        Assert.Equal(DisarmReaction.None, DisarmReactions.Pick(0.5, 0, 0, 0));
+        Assert.Equal(DisarmReaction.None, DisarmReactions.Pick(0.5, -10, 0, 0));
+    }
+
+    [Fact]
+    public void UnequalChances_WeighTheRoll()
+    {
+        // 80 / 20 / 0: the first 80 % shock, the rest backs off.
+        Assert.Equal(DisarmReaction.Shock, DisarmReactions.Pick(0.79, 80, 20, 0));
+        Assert.Equal(DisarmReaction.BackOff, DisarmReactions.Pick(0.81, 80, 20, 0));
+    }
+
+    [Theory]
+    [InlineData(DisarmReaction.Shock, 2f)]
+    [InlineData(DisarmReaction.BackOff, 3f)]
+    [InlineData(DisarmReaction.Cower, 6f)]
+    [InlineData(DisarmReaction.None, 0f)]
+    public void EachReaction_LastsItsOwnTime(DisarmReaction reaction, float seconds) =>
+        Assert.Equal(seconds, DisarmReactions.Seconds(reaction, 2f, 3f, 6f));
+
+    [Fact]
+    public void Defaults_EvenDice_ShortShock_LongerCower()
+    {
+        Assert.Equal(50, DisarmStrikeSettings.DefaultShockChance);
+        Assert.Equal(50, DisarmStrikeSettings.DefaultBackOffChance);
+        Assert.Equal(50, DisarmStrikeSettings.DefaultCowerChance);
+        Assert.Equal(2f, DisarmStrikeSettings.ShockTime.Default);
+        Assert.Equal(2f, DisarmStrikeSettings.BackOffTime.Default);
+        Assert.Equal(5f, DisarmStrikeSettings.CowerTime.Default);
+        foreach (var s in new[] { DisarmStrikeSettings.ShockTime, DisarmStrikeSettings.BackOffTime, DisarmStrikeSettings.CowerTime })
+        {
+            Assert.True(SliderValues.IndexOf(s.Values(), s.Default) >= 0, s.Name);
+        }
+    }
+}
+
 public class DisarmSettingsTests
 {
-    [Fact]
-    public void NoRegrabDefault_IsOneOfItsSliderValues()
-    {
-        var s = DisarmStrikeSettings.NoRegrabTime;
-
-        Assert.True(SliderValues.IndexOf(s.Values(), s.Default) >= 0);
-    }
 
     [Theory]
     [InlineData(false, 10f, 10f)]

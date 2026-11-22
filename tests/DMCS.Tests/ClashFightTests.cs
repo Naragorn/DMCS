@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using DMCS.Core;
 using Xunit;
 
@@ -53,6 +54,8 @@ public class ClashModeTests
         Assert.True(ClashFightSettings.DefaultWinDisarms);
         Assert.True(ClashFightSettings.DefaultScalesWithHeight);
         Assert.True(ClashFightSettings.DefaultScalesWithGender);
+        Assert.True(ClashFightSettings.DefaultDuelStar);
+        Assert.True(ClashFightSettings.DefaultOutcomeCues);
     }
 
     [Fact]
@@ -126,18 +129,20 @@ public class ClashStrengthTests
     }
 }
 
+// The duel as a pure push contest (user 2026-11-22: the return phase is gone; each round is pushed on its own and the
+// next one starts at once).
 public class ClashRoundsTests
 {
-    // 2 s push phase, 1 s return window, enemy peak 0.06 m, dead zone 0.03 m, back within 0.08 m.
-    private static ClashRounds New(int rounds = 3) => new ClashRounds(rounds, 2f, 1f, 0.06f, 0.03f, 0.08f);
+    // 2 s push rounds, enemy peak 0.06 m, dead zone 0.03 m.
+    private static ClashRounds New(int rounds = 3) => new ClashRounds(rounds, 2f, 0.06f, 0.03f);
 
-    /// <summary>Pushes a whole phase with a constant lead in 0.02 s steps; returns the last step.</summary>
-    private static ClashStep PushPhase(ClashRounds r, float lead)
+    /// <summary>Pushes a whole round with a constant lead in 0.02 s steps; returns the last step.</summary>
+    private static ClashStep PushRound(ClashRounds r, float lead)
     {
         var last = ClashStep.None;
         for (var i = 0; i < 200 && last == ClashStep.None; i++)
         {
-            last = r.Tick(0.02f, lead, lead);
+            last = r.Tick(0.02f, lead);
         }
         return last;
     }
@@ -166,82 +171,182 @@ public class ClashRoundsTests
     [Fact]
     public void EnemySum_IsTheHalfSineIntegral()
     {
-        var r = New();
-        PushPhase(r, 0f);
+        var r = New(1);
+        PushRound(r, 0f);
 
         // ∫0..2 0.06·sin(πt/2) dt = 0.06 · 4/π ≈ 0.0764
         Assert.Equal(0.06f * 4f / (float)Math.PI, r.EnemySum, 4);
     }
 
     [Fact]
-    public void NotPushing_LosesTheFirstPushPhase()
+    public void NotPushing_LosesTheFirstRound()
     {
         var r = New();
 
-        Assert.Equal(ClashStep.LostPush, PushPhase(r, 0.02f));
+        Assert.Equal(ClashStep.LostPush, PushRound(r, 0.02f));
         Assert.Equal(ClashPhase.Over, r.Phase);
     }
 
     [Fact]
-    public void Holding_ThenReturning_GoesThroughEveryRound_ToAWin()
+    public void Holding_GoesStraightIntoTheNextRound_ToAWin()
     {
         var r = New(3);
         var lead = 0.03f + 0.05f; // 0.05 m beyond the dead zone, more than the enemy's mean 0.038 m
 
-        Assert.Equal(ClashStep.PushHeld, PushPhase(r, lead));
-        Assert.Equal(ClashPhase.Return, r.Phase);
-        Assert.Equal(ClashStep.None, r.Tick(0.1f, 0.2f, 0.2f));
-        Assert.Equal(ClashStep.Returned, r.Tick(0.1f, 0f, 0.05f));
+        Assert.Equal(ClashStep.PushHeld, PushRound(r, lead));
+        Assert.Equal(ClashPhase.Push, r.Phase);
         Assert.Equal(2, r.Round);
         Assert.Equal(0f, r.PlayerSum);
-        Assert.Equal(ClashStep.PushHeld, PushPhase(r, lead));
-        Assert.Equal(ClashStep.Returned, r.Tick(0.1f, 0f, 0.0f));
-        Assert.Equal(ClashStep.Won, PushPhase(r, lead));
+        Assert.Equal(0f, r.EnemySum);
+        Assert.Equal(ClashStep.PushHeld, PushRound(r, lead));
+        Assert.Equal(3, r.Round);
+        Assert.Equal(ClashStep.Won, PushRound(r, lead));
         Assert.Equal(ClashPhase.Over, r.Phase);
-        Assert.Equal(ClashStep.None, r.Tick(0.1f, lead, lead));
+        Assert.Equal(ClashStep.None, r.Tick(0.1f, lead));
     }
 
     [Fact]
-    public void NotComingBack_LosesWhenTheReturnWindowRunsOut()
+    public void OneRound_WinsWithTheFirstHeldRound()
     {
-        var r = New(2);
-        PushPhase(r, 0.1f);
-
-        Assert.Equal(ClashStep.None, r.Tick(0.5f, 0.1f, 0.1f));
-        Assert.Equal(ClashStep.LostReturn, r.Tick(0.5f, 0.1f, 0.1f));
-    }
-
-    [Fact]
-    public void OneRound_WinsWithTheFirstHeldPhase()
-    {
-        Assert.Equal(ClashStep.Won, PushPhase(New(1), 0.1f));
+        Assert.Equal(ClashStep.Won, PushRound(New(1), 0.1f));
     }
 
     [Fact]
     public void ALateRound_CanStillBeLost()
     {
         var r = New(3);
-        PushPhase(r, 0.1f);
-        r.Tick(0.05f, 0f, 0f);
+        PushRound(r, 0.1f);
 
-        Assert.Equal(ClashStep.LostPush, PushPhase(r, 0.04f));
+        Assert.Equal(ClashStep.LostPush, PushRound(r, 0.04f));
     }
 
     [Fact]
     public void NoEnemyPush_AnyLeadHolds_ZeroTimeStepsDoNothing()
     {
-        var r = new ClashRounds(1, 1f, 1f, 0f, 0.03f, 0.08f);
+        var r = new ClashRounds(1, 1f, 0f, 0.03f);
 
-        Assert.Equal(ClashStep.None, r.Tick(0f, 0.5f, 0.5f));
-        Assert.Equal(ClashStep.Won, PushPhase(r, 0f));
+        Assert.Equal(ClashStep.None, r.Tick(0f, 0.5f));
+        Assert.Equal(ClashStep.Won, PushRound(r, 0f));
     }
 
     [Fact]
-    public void ALongFrame_DoesNotOvershootThePhase()
+    public void ALongFrame_DoesNotOvershootTheRound()
     {
         var r = New(2);
 
-        Assert.Equal(ClashStep.PushHeld, r.Tick(5f, 0.2f, 0.2f));
-        Assert.Equal(0.17f * 2f, r.PlayerSum, 4);
+        Assert.Equal(ClashStep.PushHeld, r.Tick(5f, 0.2f));
+        Assert.Equal(0f, r.PlayerSum);
+        Assert.Equal(2, r.Round);
+    }
+
+    [Fact]
+    public void Advantage_IsEvenAtTheStartOfEachRound()
+    {
+        var r = New(2);
+
+        Assert.Equal(0f, r.Advantage);
+        PushRound(r, 0.2f);
+        Assert.Equal(0f, r.Advantage);
+    }
+
+    [Fact]
+    public void Advantage_PositiveWhilePushingHarder_NegativeWhileNot_WithinOne()
+    {
+        var ahead = New(1);
+        var behind = New(1);
+        for (var i = 0; i < 50; i++)
+        {
+            ahead.Tick(0.02f, 0.2f);
+            behind.Tick(0.02f, 0f);
+        }
+
+        Assert.InRange(ahead.Advantage, 0.01f, 1f);
+        Assert.InRange(behind.Advantage, -1f, -0.01f);
+    }
+
+    [Fact]
+    public void Advantage_IsClampedToOne()
+    {
+        var r = New(1);
+        for (var i = 0; i < 90; i++)
+        {
+            r.Tick(0.02f, 5f);
+        }
+
+        Assert.Equal(1f, r.Advantage);
+    }
+
+    [Fact]
+    public void Advantage_WithoutEnemyPush_AnyPushIsFullyAhead()
+    {
+        var r = new ClashRounds(1, 2f, 0f, 0.03f);
+        Assert.Equal(0f, r.Advantage);
+
+        r.Tick(0.1f, 0.1f);
+
+        Assert.Equal(1f, r.Advantage);
+    }
+}
+
+// What the player sees and feels in the duel (user 2026-11-22: "unclear whether you win or lose").
+public class ClashDuelSignalTests
+{
+    [Fact]
+    public void Even_IsTheWarmWhiteOfTheFlash_AtItsSize()
+    {
+        var (r, g, b) = ClashDuelSignal.Tint(0f);
+
+        Assert.Equal(1f, r, 3);
+        Assert.Equal(0.92f, g, 3);
+        Assert.Equal(0.7f, b, 3);
+        Assert.Equal(1f, ClashDuelSignal.Size(0f), 3);
+    }
+
+    [Fact]
+    public void Ahead_TurnsGreen_AndGrows()
+    {
+        var (r, g, b) = ClashDuelSignal.Tint(1f);
+
+        Assert.True(g > r && g > b);
+        Assert.True(ClashDuelSignal.Size(1f) > ClashDuelSignal.Size(0.5f));
+        Assert.True(ClashDuelSignal.Size(0.5f) > 1f);
+    }
+
+    [Fact]
+    public void Behind_TurnsRed_AndShrinks()
+    {
+        var (r, g, b) = ClashDuelSignal.Tint(-1f);
+
+        Assert.True(r > g && r > b);
+        Assert.True(ClashDuelSignal.Size(-1f) < 1f);
+    }
+
+    [Fact]
+    public void OutOfRange_IsClamped()
+    {
+        Assert.Equal(ClashDuelSignal.Tint(1f), ClashDuelSignal.Tint(3f));
+        Assert.Equal(ClashDuelSignal.Size(-1f), ClashDuelSignal.Size(-7f));
+    }
+
+    [Fact]
+    public void WinHaptics_AreAFewStrongQuickBeats()
+    {
+        var ticks = ClashDuelSignal.Haptics(won: true);
+
+        Assert.InRange(ticks.Count, 2, 4);
+        Assert.All(ticks, t => Assert.Equal(1f, t.Strength));
+        Assert.True(ticks.Last().Time <= 0.3f);
+    }
+
+    [Fact]
+    public void LoseHaptics_AreALongerWeakerRumble()
+    {
+        var lose = ClashDuelSignal.Haptics(won: false);
+        var win = ClashDuelSignal.Haptics(won: true);
+
+        Assert.True(lose.Count > win.Count);
+        Assert.True(lose.Last().Time > win.Last().Time);
+        Assert.All(lose, t => Assert.True(t.Strength < 1f));
+        Assert.Equal(lose.OrderBy(t => t.Time).Select(t => t.Time), lose.Select(t => t.Time));
     }
 }

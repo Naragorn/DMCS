@@ -1,8 +1,9 @@
 # Step 5c: Clash of Might outcomes (user 2026-11-18). Simple mode (the default): a block at the star knocks the
 # enemy's sword away. On mode: the blades lock for a few rounds; the player holds a round by leading the heavy weapon
-# with the real controller towards the enemy (beyond the dead zone, more than the enemy's push wave), then brings the
-# controller back to the blades. The harness moves the player's right controller with player-push (the PlayerHand pose
-# the hand follows) and raises the game's block event with player-parry. How a push feels: headset.
+# with the real controller away from itself through the crossed blades (beyond the dead zone, more than the enemy's push
+# wave); the next round starts at once (no return phase since 2026-11-22). The harness moves the player's right controller
+# with player-push (the PlayerHand pose the hand follows) and raises the game's block event with player-parry. How a
+# push feels: headset.
 
 wait-level
 press DMCS "Reset To Defaults"
@@ -17,14 +18,14 @@ option-exists DMCS "Clash Fewer Rounds Against Weaker" category="Clash of Might"
 option-exists DMCS "Clash Enemy Push" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Push Dead Zone" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Push Phase" category="Clash of Might" type=Single interaction=Slider save=true
-option-exists DMCS "Clash Return Window" category="Clash of Might" type=Single interaction=Slider save=true
-option-exists DMCS "Clash Return Tolerance" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Win Disarms" category="Clash of Might" type=Boolean interaction=ArrowList save=true
 option-exists DMCS "Clash Win Kneel Chance" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Lose Outcome" category="Clash of Might" type=String interaction=ArrowList save=true
 option-exists DMCS "Clash Lose Damage" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Haptics Strength" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Dark Messiah Sounds" category="Clash of Might" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Clash Duel Star" category="Clash of Might" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Clash Outcome Cues" category="Clash of Might" type=Boolean interaction=ArrowList save=true
 option-exists DMCS "Adrenaline Per Clash Win" category=Adrenaline type=Int32 interaction=Slider save=true
 expect-option DMCS "Clash of Might Mode" Simple
 expect-option DMCS "Clash Difficulty" 50
@@ -79,7 +80,7 @@ expect-no-log -> 100.00)
 expect-log blades unlocked (Decided: you lost)
 player-invincible true
 
-# 3. On, holding and coming back each round: won after 2 rounds, its sword flies away. The harness player's sword
+# 3. On, pushing in each round: won after 2 rounds, its sword flies away, the win cue logs. The harness player's sword
 # does not touch the frozen enemy blade (player-parry is a raised event, the blades stay apart). Before Clash Hold
 # Blade (2026-11-21) nothing held the heavy weapon back: the hand caught up with the moved controller within ~0.4 s
 # (measured 2026-11-18) and no lead lasted. Now the hold keeps the weapon at the lock point, so the lead should last
@@ -91,7 +92,7 @@ player-parry
 expect-log blades locked with HumanMale
 player-push 0.25 2.3
 await-log 3 round 1/2 held
-await-log 3 back at the blades
+expect-log round 2 starts
 player-push 0.25 2.3
 await-log 3 after 2 rounds: its sword flies away
 expect-log blades unlocked (Decided: you won)
@@ -113,13 +114,14 @@ await-log 3 you let go of your weapon; you take 20 damage
 expect-no-log flies away
 screenshot clash-lost of=npc
 
-# 5. Too much swing at the star (user 2026-11-21): a block faster than Clash Max Block Speed (1.5 m/s) locks nothing;
-# the swing goes on and the blades bounce off as in any parry. 2 m/s stays under the power parry (3 m/s). Not run yet.
+# 5. Too much swing at the star (user 2026-11-21): a block faster than Clash Max Block Speed (2.5 m/s since 2026-11-22)
+# locks nothing; the swing goes on and the blades bounce off as in any parry. 2.75 m/s stays under the power parry (3 m/s).
+# Not run yet.
 player-grab SwordShortCommon
 spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
 mark
 await-log 30 blade flashes
-player-parry swing=2
+player-parry swing=2.75
 expect-log TooFast (contact
 expect-no-log blades locked
 quit

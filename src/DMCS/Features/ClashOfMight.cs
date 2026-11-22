@@ -32,7 +32,8 @@ namespace DMCS
         private static float _nextHaptic;
         private static float _enemyPeak;
         private static ConfigurableJoint _hold;
-        private static Vector3 _holdOnEnemyBlade;
+        private static Vector3 _lockOnEnemyBlade;
+        private static readonly List<(float At, float Strength, RagdollHand Hand)> CueTicks = new List<(float At, float Strength, RagdollHand Hand)>();
         private static readonly Dictionary<WavData, AudioClip> DarkMessiahClips = new Dictionary<WavData, AudioClip>();
 
         private static readonly ClashTelegraph<int> Telegraph = new ClashTelegraph<int>(ClashSettings.JudgeWindow);
@@ -45,7 +46,7 @@ namespace DMCS
         /// <summary>The blades are locked with this NPC right now.</summary>
         internal static bool IsLockedWith(Creature npc) => npc != null && Lock.IsLocked && _lockNpc == npc.GetInstanceID();
 
-        internal static Vector3? LockPoint => Lock.IsLocked && _lockFlash != null && _lockFlash.Weapon != null ? _lockFlash.Point : (Vector3?)null;
+        internal static Vector3? LockPoint => Lock.IsLocked && _lockFlash != null && _lockFlash.Weapon != null ? LockPointNow() : (Vector3?)null;
         private static int _lockNpc;
         private static Flash _lockFlash;
         private static Item _lockItem;
@@ -133,14 +134,6 @@ namespace DMCS
         [ModOptionSlider]
         public static float PushPhase { get; set; } = ClashFightSettings.PushPhase.Default;
 
-        [ModOption(name = ClashFightSettings.ReturnWindowName, tooltip = "Seconds to bring your hand back to the blades after a round, or you lose.", valueSourceName = nameof(ReturnWindowValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 33)]
-        [ModOptionSlider]
-        public static float ReturnWindow { get; set; } = ClashFightSettings.ReturnWindow.Default;
-
-        [ModOption(name = ClashFightSettings.ReturnToleranceName, tooltip = "How close (m) your hand must come back to your weapon to count as back at the blades.", valueSourceName = nameof(ReturnToleranceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 34)]
-        [ModOptionSlider]
-        public static float ReturnTolerance { get; set; } = ClashFightSettings.ReturnTolerance.Default;
-
         [ModOption(name = ClashFightSettings.WinDisarmsName, tooltip = "Winning a blade lock knocks the enemy's sword away.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 35)]
         public static bool WinDisarms { get; set; } = ClashFightSettings.DefaultWinDisarms;
 
@@ -159,7 +152,13 @@ namespace DMCS
         [ModOptionSlider]
         public static float Haptics { get; set; } = ClashFightSettings.Haptics.Default;
 
-        [ModOption(name = ClashFightSettings.DarkMessiahSoundsName, tooltip = "Dark Messiah's own blade lock and disarm sounds, read from your Dark Messiah install (never shipped). Falls back to Blade & Sorcery's sounds when it is not found.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 40)]
+        [ModOption(name = ClashFightSettings.DuelStarName, tooltip = "The star at the crossed blades shows who is ahead in the round: green and bigger when you are, red when the enemy is.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 40)]
+        public static bool DuelStar { get; set; } = ClashFightSettings.DefaultDuelStar;
+
+        [ModOption(name = ClashFightSettings.OutcomeCuesName, tooltip = "A won blade lock throws sparks with a victory sound and three strong beats in your hand; a lost one gives a dull thud and a long rumble.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 41)]
+        public static bool OutcomeCues { get; set; } = ClashFightSettings.DefaultOutcomeCues;
+
+        [ModOption(name = ClashFightSettings.DarkMessiahSoundsName, tooltip = "Dark Messiah's own blade lock and disarm sounds, read from your Dark Messiah install (never shipped). Falls back to Blade & Sorcery's sounds when it is not found.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 42)]
         public static bool DarkMessiahSounds
         {
             get => _darkMessiahSounds;
@@ -188,10 +187,6 @@ namespace DMCS
         public static ModOptionFloat[] DeadZoneValues() => Floats(ClashFightSettings.DeadZone, "0.00", " m");
 
         public static ModOptionFloat[] PushPhaseValues() => Floats(ClashFightSettings.PushPhase, "0.00", " s");
-
-        public static ModOptionFloat[] ReturnWindowValues() => Floats(ClashFightSettings.ReturnWindow, "0.00", " s");
-
-        public static ModOptionFloat[] ReturnToleranceValues() => Floats(ClashFightSettings.ReturnTolerance, "0.00", " m");
 
         public static ModOptionFloat[] WinKneelChanceValues() => Floats(ClashFightSettings.WinKneelChance, "0", " %");
 
@@ -230,11 +225,7 @@ namespace DMCS
         [ModOption(name = ClashSettings.FlashAtTopName, tooltip = "The blade flashes when the enemy has raised it all the way, just before the strike, like sunlight caught on it. Off: as soon as the wind-up starts (more warning).", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 22)]
         public static bool FlashAtTop { get; set; } = ClashSettings.DefaultFlashAtTop;
 
-        [ModOption(name = ClashSettings.PointToleranceName, tooltip = "How close (m) to the flash your block must hit the enemy's blade to lock the blades. Elsewhere it is an ordinary parry.", valueSourceName = nameof(PointToleranceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 8)]
-        [ModOptionSlider]
-        public static float PointTolerance { get; set; } = ClashSettings.PointTolerance.Default;
-
-        [ModOption(name = ClashSettings.MaxBlockSpeedName, tooltip = "Swing into the star faster than this (m/s, your hand) and nothing locks: your blade bounces off as in any parry. Slower, and the blades lock.", valueSourceName = nameof(MaxBlockSpeedValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 9)]
+        [ModOption(name = ClashSettings.MaxBlockSpeedName, tooltip = "Block the flashing blade faster than this (m/s, your hand) and nothing locks: your blade bounces off as in any parry. Slower, and the blades lock.", valueSourceName = nameof(MaxBlockSpeedValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 9)]
         [ModOptionSlider]
         public static float MaxBlockSpeed { get; set; } = ClashSettings.MaxBlockSpeed.Default;
 
@@ -272,7 +263,6 @@ namespace DMCS
         [ModOptionSlider]
         public static float HoldTime { get; set; } = ClashSettings.HoldTime.Default;
 
-        public static ModOptionFloat[] PointToleranceValues() => Floats(ClashSettings.PointTolerance, "0.00", " m");
 
         public static ModOptionFloat[] WeaponWeightValues() => Floats(ClashSettings.WeaponWeight, "0", "x");
 
@@ -349,12 +339,14 @@ namespace DMCS
             {
                 RemoveFlash(id);
             }
+            CueTicks.Clear();
             EndTime(force: true);
         }
 
         public static void Update()
         {
             UpdateLock();
+            PlayCueTicks();
             if (_timeOwned && Time.unscaledTime >= _timeEndsAt)
             {
                 Dmcs.Log.Debug(Channel, "slow-motion cap reached");
@@ -383,14 +375,18 @@ namespace DMCS
                     }
                 }
                 var age = flash.ShownAt.HasValue ? Time.unscaledTime - flash.ShownAt.Value : 0f;
-                flash.Glint.transform.position = flash.Point;
-                flash.Glint.transform.localScale = Vector3.one * (GlintSize * Glint.Scale(age));
+                // In a lock the star moves to the crossed blades and shows who is ahead in the round (Clash Duel Star).
+                var duel = DuelStar && Lock.IsLocked && pair.Key == _lockNpc && _rounds != null;
+                var advantage = duel ? _rounds.Advantage : 0f;
+                flash.Glint.transform.position = duel ? LockPointNow() : flash.Point;
+                flash.Glint.transform.localScale = Vector3.one * (GlintSize * Glint.Scale(age) * (duel ? ClashDuelSignal.Size(advantage) : 1f));
                 if (cam != null)
                 {
                     flash.Glint.transform.rotation = Quaternion.LookRotation(flash.Glint.transform.position - cam.transform.position)
                         * Quaternion.Euler(0f, 0f, Glint.SpinDegrees(age));
                 }
-                flash.Renderer.material.SetColor("_BaseColor", new Color(1f, 0.92f, 0.7f, Glint.Pulse(age)));
+                var (r, g, b) = ClashDuelSignal.Tint(advantage);
+                flash.Renderer.material.SetColor("_BaseColor", new Color(r, g, b, duel ? 1f : Glint.Pulse(age)));
             }
         }
 
@@ -743,7 +739,7 @@ namespace DMCS
                     }
                 }
                 // The same hand speed the Parry group reads (fastest in its speed window before the event), so the two agree.
-                var verdict = ClashRules.JudgeBlock(contactToFlash, PointTolerance, angle, BlockAngleTolerance, handSpeed, MaxBlockSpeed);
+                var verdict = ClashRules.JudgeBlock(angle, BlockAngleTolerance, handSpeed, MaxBlockSpeed);
                 var detail = "contact " + F(contactToFlash) + " m from the flash, angle " + (angle.HasValue ? F(angle.Value) + "°" : "n/a")
                     + ", hand " + F(handSpeed) + " m/s";
                 if (verdict != BlockVerdict.Clash)
@@ -795,6 +791,7 @@ namespace DMCS
             _lockFlash = flash;
             _lockItem = item;
             _lockHand = hand;
+            _lockOnEnemyBlade = flash.Weapon.transform.InverseTransformPoint(contact);
             _lockAnimatorSpeed = flash.Npc.animator != null ? flash.Npc.animator.speed : 1f;
             if (flash.Npc.animator != null)
             {
@@ -815,7 +812,7 @@ namespace DMCS
             var weaker = ClashStrength.IsWeaker(ScalesWithHeight, npcHeight, playerHeight, ScalesWithGender, female);
             var rounds = ClashStrength.Rounds(Mathf.RoundToInt(MinRounds), Mathf.RoundToInt(MaxRounds), Dice.NextDouble(), weaker, Mathf.RoundToInt(FewerRounds));
             _enemyPeak = EnemyPush * factor;
-            _rounds = new ClashRounds(rounds, PushPhase, ReturnWindow, _enemyPeak, DeadZone, ReturnTolerance);
+            _rounds = new ClashRounds(rounds, PushPhase, _enemyPeak, DeadZone);
             _lastTick = Time.unscaledTime;
             _nextHaptic = 0f;
             Lock.Start(Time.unscaledTime);
@@ -859,13 +856,13 @@ namespace DMCS
                 else
                 {
                     // The frozen enemy blade still settles a little (harness probe 2026-11-17: 4–28 cm in 0.25 s); the hold follows it.
-                    _hold.connectedAnchor = _lockFlash.Weapon.transform.TransformPoint(_holdOnEnemyBlade);
+                    _hold.connectedAnchor = LockPointNow();
                 }
             }
             var dt = now - _lastTick;
             _lastTick = now;
             Measure(out var lead, out var gap);
-            var step = _rounds.Tick(dt, lead, gap);
+            var step = _rounds.Tick(dt, lead);
             Feel(now);
             if (Lock.DiagnosticDue(now))
             {
@@ -874,45 +871,41 @@ namespace DMCS
             switch (step)
             {
                 case ClashStep.PushHeld:
-                    Dmcs.Log.Debug(Channel, "round " + _rounds.Round + "/" + _rounds.Rounds + " held (you " + F3(_rounds.PlayerSum) + " vs the enemy "
-                        + F3(_rounds.EnemySum) + " m·s): the enemy pushes back, bring your hand back to the blades within " + F(ReturnWindow) + " s");
+                    Dmcs.Log.Debug(Channel, "round " + (_rounds.Round - 1) + "/" + _rounds.Rounds + " held (you " + F3(_rounds.LastPlayerSum) + " vs the enemy "
+                        + F3(_rounds.LastEnemySum) + " m·s): round " + _rounds.Round + " starts");
                     Pulse(1f);
-                    Spark(_lockFlash.Point);
+                    Spark(LockPointNow());
                     PlayDarkMessiahVersus();
-                    break;
-                case ClashStep.Returned:
-                    Dmcs.Log.Debug(Channel, "back at the blades (" + F(gap) + " m): round " + _rounds.Round + "/" + _rounds.Rounds + " starts");
                     break;
                 case ClashStep.Won:
                     Win();
                     break;
                 case ClashStep.LostPush:
-                    Lose("the enemy pushed harder in round " + _rounds.Round + "/" + _rounds.Rounds + " (you " + F3(_rounds.PlayerSum) + " vs the enemy " + F3(_rounds.EnemySum) + " m·s)", disarmPlayer: true);
-                    break;
-                case ClashStep.LostReturn:
-                    Lose("your hand did not come back to the blades within " + F(ReturnWindow) + " s (still " + F(gap) + " m off)", disarmPlayer: true);
+                    Lose("the enemy pushed harder in round " + _rounds.Round + "/" + _rounds.Rounds + " (you " + F3(_rounds.LastPlayerSum) + " vs the enemy " + F3(_rounds.LastEnemySum) + " m·s)", disarmPlayer: true);
                     break;
             }
         }
 
         /// <summary>
         /// How far the player's real controller (PlayerHand.grip, the target the hand follows) is ahead of the weapon hand
-        /// (RagdollHand.grip, lagging behind the heavy weapon): towards the enemy (lead) and at all (gap).
+        /// (RagdollHand.grip, held back by the lock): along the line from the player's head to the lock point (lead,
+        /// ClashGeometry.PushLead) and at all (gap).
         /// </summary>
         private static void Measure(out float lead, out float gap)
         {
             lead = gap = 0f;
             var playerHand = _lockHand != null ? _lockHand.playerHand : null;
-            if (playerHand == null || playerHand.grip == null || _lockHand.grip == null || Player.currentCreature == null)
+            if (playerHand == null || playerHand.grip == null || _lockHand.grip == null || Player.local == null || Player.local.head == null)
             {
                 return;
             }
             var ahead = playerHand.grip.position - _lockHand.grip.position;
-            var toEnemy = _lockFlash.Npc.transform.position - Player.currentCreature.transform.position;
-            toEnemy.y = 0f;
-            lead = toEnemy.sqrMagnitude > 0.0001f ? Vector3.Dot(ahead, toEnemy.normalized) : 0f;
+            lead = ClashGeometry.PushLead(V(ahead), V(Player.local.head.transform.position), V(LockPointNow()));
             gap = ahead.magnitude;
         }
+
+        /// <summary>Where the blades crossed, on the enemy's blade as it is now (the frozen blade still settles a little).</summary>
+        private static Vector3 LockPointNow() => _lockFlash.Weapon.transform.TransformPoint(_lockOnEnemyBlade);
 
         /// <summary>The enemy's push in the weapon hand (haptics), every 0.05 s.</summary>
         private static void Feel(float now)
@@ -936,13 +929,66 @@ namespace DMCS
             }
         }
 
-        /// <summary>Headset diagnostic: the round, its phase, the lead and gap of the controller, the enemy's push, the blades' distance.</summary>
+        /// <summary>Headset diagnostic: the round, the lead and gap of the controller, the enemy's push, who is ahead, the blades' distance.</summary>
         private static void LogDiagnostic(float now, float lead, float gap)
         {
-            var apart = TryPlayerBlade(_lockHand, out var a, out var b) ? ClashGeometry.DistanceToSegment(V(_lockFlash.Point), V(a), V(b)) : float.NaN;
-            Dmcs.Log.Debug(Channel, "lock t=" + F(Lock.Elapsed(now)) + " s, round " + _rounds.Round + "/" + _rounds.Rounds + " " + _rounds.Phase
-                + ": hand ahead " + F(gap) + " m (towards the enemy " + F(lead) + " m), enemy push " + F(_rounds.EnemyPush) + " m, sums you "
-                + F3(_rounds.PlayerSum) + " / enemy " + F3(_rounds.EnemySum) + ", blades " + (float.IsNaN(apart) ? "n/a" : F(apart) + " m") + " apart");
+            var apart = TryPlayerBlade(_lockHand, out var a, out var b) ? ClashGeometry.DistanceToSegment(V(LockPointNow()), V(a), V(b)) : float.NaN;
+            Dmcs.Log.Debug(Channel, "lock t=" + F(Lock.Elapsed(now)) + " s, round " + _rounds.Round + "/" + _rounds.Rounds
+                + ": hand ahead " + F(gap) + " m (pushing " + F(lead) + " m), enemy push " + F(_rounds.EnemyPush) + " m, sums you "
+                + F3(_rounds.PlayerSum) + " / enemy " + F3(_rounds.EnemySum) + ", advantage " + F(_rounds.Advantage) + ", blades "
+                + (float.IsNaN(apart) ? "n/a" : F(apart) + " m") + " apart");
+        }
+
+        /// <summary>
+        /// Clash Outcome Cues (user 2026-11-22: "unclear whether you win or lose"). Won: sparks thrown around the crossed
+        /// blades, the arena's melee-kill stinger and three strong beats. Lost: a heavy thud and a long weaker rumble.
+        /// </summary>
+        private static void Cue(bool won, Vector3 point, RagdollHand hand)
+        {
+            if (!OutcomeCues)
+            {
+                return;
+            }
+            if (won)
+            {
+                for (var i = 0; i < ClashFightSounds.WinSparks; i++)
+                {
+                    Spark(point + (UnityEngine.Random.insideUnitSphere * ClashFightSounds.WinSparkSpread));
+                }
+            }
+            OneShotEffect.Play(won ? ClashFightSounds.WinEffectId : ClashFightSounds.LoseEffectId, point);
+            if (hand == null || Haptics <= 0f)
+            {
+                return;
+            }
+            var now = Time.unscaledTime;
+            foreach (var (time, strength) in ClashDuelSignal.Haptics(won))
+            {
+                CueTicks.Add((now + time, strength, hand));
+            }
+        }
+
+        /// <summary>Plays the due ticks of an outcome cue (they run on after the lock has ended).</summary>
+        private static void PlayCueTicks()
+        {
+            if (CueTicks.Count == 0)
+            {
+                return;
+            }
+            var now = Time.unscaledTime;
+            for (var i = CueTicks.Count - 1; i >= 0; i--)
+            {
+                var (at, strength, hand) = CueTicks[i];
+                if (now < at)
+                {
+                    continue;
+                }
+                if (hand != null)
+                {
+                    hand.HapticTick(Mathf.Clamp01(strength * Haptics));
+                }
+                CueTicks.RemoveAt(i);
+            }
         }
 
         /// <summary>
@@ -955,6 +1001,7 @@ namespace DMCS
             var hand = _lockFlash.Hand;
             var name = _lockFlash.NpcName;
             var rounds = _rounds.Rounds;
+            Cue(won: true, LockPointNow(), _lockHand);
             EndLock(Lock.Decide(), "you won");
             var away = AwayFromPlayer(npc);
             var disarmed = WinDisarms && DisarmStrike.DisarmAlong(npc, hand, away, "won clash");
@@ -976,6 +1023,10 @@ namespace DMCS
             var name = _lockFlash?.NpcName ?? "the enemy";
             var hand = _lockHand;
             var item = _lockItem;
+            if (_lockFlash != null && _lockFlash.Weapon != null)
+            {
+                Cue(won: false, LockPointNow(), hand);
+            }
             EndLock(Lock.Decide(), "you lost");
             var parts = new List<string>();
             if (disarmPlayer && ClashLoseOutcomes.Disarms(LoseOutcome) && hand != null && hand.grabbedHandle != null && hand.grabbedHandle.item == item)
@@ -1054,7 +1105,6 @@ namespace DMCS
             }
             body.velocity = Vector3.zero;
             body.angularVelocity = Vector3.zero;
-            _holdOnEnemyBlade = enemyWeapon.transform.InverseTransformPoint(contact);
             _hold = body.gameObject.AddComponent<ConfigurableJoint>();
             _hold.autoConfigureConnectedAnchor = false;
             _hold.anchor = body.transform.InverseTransformPoint(contact);

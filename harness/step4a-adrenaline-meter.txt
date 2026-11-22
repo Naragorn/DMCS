@@ -29,7 +29,10 @@ expect-option DMCS "Adrenaline Per Charge Stagger" 15
 expect-option DMCS "Adrenaline Per Disarm" 15
 set-option DMCS "Debug Logging" true
 set-option DMCS "Body Hit Drop" false
-set-option DMCS "Disarm No Regrab Time" 4
+set-option DMCS "Disarmed Shock Chance" 100
+set-option DMCS "Disarmed Back Off Chance" 0
+set-option DMCS "Disarmed Cower Chance" 0
+set-option DMCS "Disarmed Shock Time" 4
 
 spawn-npc HumanMale distance=4 angle=90 brain=HumanDummy
 npc-grab DaggerCommon hand=right

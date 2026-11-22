@@ -26,7 +26,7 @@ expect-option DMCS "Clash Slow Motion" true
 expect-option DMCS "Clash Slow Motion Scale" 0.3
 expect-option DMCS "Clash Enemy Reach" 2.5
 expect-option DMCS "Clash Block Reach" 0.6
-expect-option DMCS "Clash Block Angle Tolerance" 45
+expect-option DMCS "Clash Block Angle Tolerance" 90
 set-option DMCS "Debug Logging" true
 # The NPC's hits on the player would fill the meter and its critical/kneel would end the fight
 set-option DMCS "Adrenaline Enabled" false
