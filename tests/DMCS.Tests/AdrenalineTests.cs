@@ -258,7 +258,8 @@ public class AdrenalineSettingsTests
     public void MeterDefaults_MatchTheSpec()
     {
         Assert.Equal(100f, AdrenalineSettings.MeterMax.Default);
-        Assert.Equal(6f, AdrenalineSettings.WindowDuration.Default);
+        // Headset 2026-11-22: "6 s ist zu wenig". 12 s is a guess.
+        Assert.Equal(12f, AdrenalineSettings.WindowDuration.Default);
         Assert.Equal(2f, AdrenalineSettings.DecayPerSecond.Default);
         Assert.Equal(0f, AdrenalineSettings.DecayDelay.Default);
     }
@@ -635,5 +636,58 @@ public class KneelTrackerTests
         Assert.Equal(2f, AdrenalineSettings.KneelAfterNoHit.Default);
         Assert.Equal(2, AdrenalineSettings.DefaultKneelAfterLightHits);
         Assert.Equal(0, AdrenalineSettings.DefaultKneelDeathChance);
+        Assert.Equal(3f, AdrenalineSettings.KneelMaxDistance.Default);
+    }
+
+    // Headset 2026-11-22: "passiert auch bei weit entfernten Gegnern ... sollte nur bei nahen passieren".
+
+    private static KneelCandidate Enemy(int id, float distance, bool alive = true, bool attacksPlayer = true) =>
+        new KneelCandidate(id, distance, alive, attacksPlayer);
+
+    [Fact]
+    public void KneelTarget_TheEnemyHitLast_WhenNear()
+    {
+        var all = new[] { Enemy(1, 2.5f, attacksPlayer: false), Enemy(2, 1f) };
+
+        Assert.Equal(1, KneelTargetRule.Choose(1, all, 3f));
+    }
+
+    [Fact]
+    public void KneelTarget_TheEnemyHitLast_TooFar_TheNearestAttackerInstead()
+    {
+        var all = new[] { Enemy(1, 8f), Enemy(2, 2.9f), Enemy(3, 1.2f) };
+
+        Assert.Equal(3, KneelTargetRule.Choose(1, all, 3f));
+    }
+
+    [Fact]
+    public void KneelTarget_TheEnemyHitLast_Dead_TheNearestAttackerInstead()
+    {
+        var all = new[] { Enemy(1, 1f, alive: false), Enemy(2, 2f) };
+
+        Assert.Equal(2, KneelTargetRule.Choose(1, all, 3f));
+    }
+
+    [Fact]
+    public void KneelTarget_NoHitYet_TheNearestLivingAttackerInReach()
+    {
+        var all = new[] { Enemy(1, 2f, attacksPlayer: false), Enemy(2, 2.5f), Enemy(3, 0.5f, alive: false), Enemy(4, 3f) };
+
+        Assert.Equal(2, KneelTargetRule.Choose(null, all, 3f));
+    }
+
+    [Fact]
+    public void KneelTarget_NobodyNear_Nobody()
+    {
+        var all = new[] { Enemy(1, 8f), Enemy(2, 3.01f) };
+
+        Assert.Null(KneelTargetRule.Choose(1, all, 3f));
+        Assert.Null(KneelTargetRule.Choose(null, null, 3f));
+    }
+
+    [Fact]
+    public void KneelTarget_TheEnemyHitLast_NotInTheList_TheNearestAttacker()
+    {
+        Assert.Equal(2, KneelTargetRule.Choose(9, new[] { Enemy(2, 1f) }, 3f));
     }
 }

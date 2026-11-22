@@ -16,6 +16,7 @@ the player-facing description and the full Mod Menu list are in `README.md`.
 | 5. Clash of Might | **5a (telegraph: big swing, flash, slow-motion) built 2026-11-17, 5b (block at the flash, lock) 2026-11-17, 5c (mode Off/Simple/On, rounds, push measure, outcomes) 2026-11-18; unit tests + harness PASS.** The slow-motion's "go" path, the flash's look, the timing and every push value are unit-tested / headset only. A real press against the frozen blade was never measured (see 5c). Twist Disarm built 2026-11-18, the three more flash sounds 2026-11-20 (step 7). |
 | 6. Counter Parry and Power Parry | **Built 2026-11-20, unit tests + harness: see the test log.** Speeds are guesses; a real parry against a real NPC swing is a headset check. |
 | 7. Skill tree gate, flash sounds DMCS 2–4 | **Built 2026-11-20, unit tests + harness PASS (suite 19/19).** The tree's look, buying with crystals and the sounds' feel are headset checks. |
+| 8. Adrenaline magic (Fire, Lightning, Gravity); headset fixes 2026-11-22 (window 12 s, kneel distance, clash slow-motion reach) | **Built 2026-11-22, unit tests + harness PASS (all 20 scenarios, see the test log).** Look, feel and values: headset. Telekinesis not built. |
 
 ## Versions (checked 2026-11-16)
 
@@ -701,6 +702,42 @@ waited … s for its stagger)" marks its start.
 **Not tested in game:** the harness has no command that pushes the controller sideways (`player-push` moves towards
 the NPC); `step5c` section 3 now sets *Clash Win Disarms* for its forward win. How a sideways wrench feels: headset.
 
+## Step 8: adrenaline magic (2026-11-22)
+
+Spec section 7. Mod Menu group `Adrenaline Magic` (category order 5; Parry moved to 6, Skill Tree to 7). Rule
+`MagicRule` (Core: element of a spell id, decision order NotASpell → AdrenalineOff → MagicOff → UnknownElement →
+ElementOff → TargetIsPlayer → TargetDead → NotReady → Magic; `Around`: living enemies within a radius, nearest first),
+feature `Features/AdrenalineMagic.cs`.
+- **Hook into Adrenaline:** at a hit's start, before the melee critical, `AdrenalineMagic.Claim` takes a player spell hit
+  of a known, switched-on element while the window is open; at the hit's end the meter is used up (`Meter.Consume`) and
+  `Execute` runs: `AdrenalineCritical.Moment` (battle cry, time mode), then the element. Gravity has no hit event:
+  `OnPostPush` calls `Adrenaline.UseForMagic` (meter, flare, Critical event) and then flings. `AdrenalineCritical.Fling`
+  is the critical's throw, shared.
+- **Read in the game code 1.3.2** (a delegated read of the decompiled ThunderRoad.dll, every point with file:line):
+  fireball = `ItemMagicProjectile` with `imbueSpellCastCharge` (set at cast, cleared at despawn), its hit runs
+  `Damager.TryHit` → `Creature.Damage` → `onCreatureHit` before `OnFireballHitEvent`; "Burning" takes a boxed float heat,
+  forced infinite duration, refused in water, ignites and kills at 100; lightning `Hit` sets `casterHand`,
+  DamageType Lightning (merges/skills: Energy); "Electrocute" takes no parameter; the gravity push raises no hit,
+  `OnPostPushEvent(spell, push, items, creatures)` lists the pushed creatures (the caster included); `Mana.OnSpellLoadEvent`
+  fires on `SpellCaster.LoadSpell`.
+- **Harness** `step8-adrenaline-magic`: BasHarness `player-cast <Fire|Lightning|Gravity>` loads the spell on the
+  player's right hand and casts through the game's spell code (fireball `ThrowProjectile` unguided; one bolt `Hit` +
+  `PlayBolt`; push `Throw` at full charge). A real aimed cast, the spray, the look of the burn and the shock: headset.
+- **Not built:** Telekinesis (spec section 7).
+
+**Headset fixes 2026-11-22** (the user's checklist, https://claude.ai/artifact/CN3yqH6Upiocqy4MmT9rwo, and the Windows
+Player.log of 22.11 14:35):
+- *Adrenaline Window* default 6 → 12 s ("6 s ist zu wenig"; 12 s a guess, range now 2–30 s).
+- *Kneel Max Distance* (new, 3 m): far enemies knelt too ("sollte nur bei nahen passieren"). `KneelTargetRule`: the enemy
+  hit last if alive and that near, else the nearest living attacker that near, else nobody (logged once, the window
+  stays open).
+- *Clash Block Reach* default 0.6 → 1.0 m: the user saw no slow-motion; the log shows 4 slow-motions, 54 of 63 judged
+  swings refused as BladeTooFar (4 NpcTooFar, 1 NoSwingPlane). The refusal line now carries the measured distances
+  (`no slow-motion for X's swing: BladeTooFar (enemy … m, blade … m, angle …)`), so the next headset log shows how far.
+- Battle cry and signals: the user wrote "Kampfschrei ?" and "??" for heartbeat, pulses and hand glow. The log shows
+  they ran (11 × `battle cry: Success (male_1_attack_…)`, 14 × heartbeat playing, haptics on, glow 1 hand, ready sound
+  Dark Messiah). Whether they are loud or strong enough is the user's call; nothing changed.
+
 ## API verification
 
 Legend: **V** = verified in the decompiled `ThunderRoad.dll` of game 1.3.2. **V+T** = verified and covered by a test. **A** = assumed / behaviour only provable in game. Line refs point into the decompiled source.
@@ -779,6 +816,7 @@ Results land in `artifacts/harness/<time>/<scenario>/summary.md` (with Player.lo
 | `step3b-body-hit-drop` | Settings and defaults; body hit without stagger → nothing even at 100 %; 0 % + 100 % per extra hit → first body hit fails (sparks, haptic pulse logged), the second drops the dagger (flung 3 m/s); the count starts over with the next stagger; a buckler in the other hand stays while the dagger drops; base 0 % + female 100 % on a male NPC → 0 %, on a female NPC → drops; smaller 100 % with Smaller By 50 cm on an adult NPC → 0 %; Body Hit Drop off / Disarm Strike off → nothing drops (live) |
 | `step6-parry` | Parry settings and defaults; a held guard → `TooSlow`, nothing; the controller swept at 1.5 m/s → counter, NPC staggered, keeps its sword; Power Parry off + 5 m/s → only a counter; Parry off → nothing; 5 m/s → power parry, sword knocked away, staggered; Clash On: a slow block at the star locks (`TakenByClash`), a 5 m/s block at the star is a power parry, no lock |
 | `step7-skill-tree` | the five skills in the catalog (Body tree, tiers 1/1/2/2/3); the five *Needs Skill* toggles, default off; gate off → Parry works without the skill; gate on, not bought → off, the menu still shows Enabled; `player-skill DMCS_Parry true` → on; `false` → off; bought before the gate → works at once |
+| `step8-adrenaline-magic` | the ten magic options and defaults; meter not full → a fireball is no magic; Fire: the one hit burns up (heat 100), the neighbour catches fire (heat 50), battle cry, Hyperfocus, NPC dead; Lightning: the bolt jumps to the neighbour, shocked 4 s, NPC dead; Gravity: everyone around flung, the nearest pushed NPC dead; Magic Fire off → ElementOff, the window stays; Adrenaline Magic off → MagicOff |
 
 The harness hits the NPC through `Creature.Damage` with the player's hand as damager and `pushLevel = -1`, so the
 game's own hit reaction does not push and any stagger comes from DMCS.
@@ -792,6 +830,7 @@ a real physical weapon hit (held-weapon attribution) and how the stagger *feels*
 |---|---|---|
 | 2026-11-20 | 6 | Counter Parry and Power Parry. Unit tests 639 **PASS** (24 new), BasHarness 150 **PASS** (new `player-parry swing=`). Harness `step6-parry` **PASS** first time: measured hand 0.00 m/s → `TooSlow`; 1.50 → counter, NPC `LightAndMedium` stagger, keeps its sword; 5.01 with Power Parry off → counter only; Parry off → nothing; 5.01 → power parry, sword knocked away; Clash On: slow block at the star → lock + `TakenByClash`, 5.03 m/s at the star → `a power parry, not a clash`, no lock. A real NPC swing on the player's sword reached the handler as `TooSlow` (real event). Full suite, run one scenario per call (so OBNG could get gaps): 16/18 in that pass; step1-c failed only because separate calls give each scenario a fresh prefix (step1-b + step1-c together: **PASS**); step5b section 1b failed once: the block came before the strike's first frames, so no swing plane was known (`angle n/a`) and it locked instead of `WrongAngle`, a race in the scenario, not new code (the block now waits for the strike start; 2/2 **PASS**). Before (red): the same two parries filmed on c706503 change nothing, NPC keeps its sword, no DMCS line. Films with side, eye and hand views. |
 | 2026-11-20 | 7 | Skill tree gate and flash sounds DMCS 2–4. Unit tests 665 (26 new), BasHarness 153 (`player-skill`). `step7-skill-tree` on the deployed build 28366c4 (built from a worktree): **FAIL** at step 3/62 (no DMCS skill in the catalog, 127 options); on the new build **PASS** (62/62, 39 s): the five skills in Body tiers 1/1/2/2/3 at the game's own prices 3/3/6/6/9, gate on without the skill → Parry off while the menu keeps Enabled, `player-skill DMCS_Parry true/false` → on/off, bought before the gate → on at once. Full suite **19/19 PASS** in one run (20261120-202248); `step5a` played DMCS 2 (1.60 s), 3 (4.50 s) and 4 (3.00 s). The tree itself (orbs, crystals) is not in the Arena: headset. |
+| 2026-11-22 | 8 | Adrenaline magic (Fire, Lightning, Gravity) and the headset fixes, on top of the Windows branch `fix/metal-rubbing-loop` (8 Clash/Disarm commits, fast-forwarded; written on Windows, its harness changes never run). Unit tests 777, BasHarness 191 (`player-cast`). `step8-adrenaline-magic` failed three times on the harness side, then **PASS**: the fireball started 0.24 m before the chest and never reported a hit (now launched 1.5 m before it); the gravity push starts at the caster's Orb, which the mock headset leaves ~14 m away (the harness moves it 1.2 m before the chest for the push); the spell gets 5 frames to settle after `LoadSpell`. Magic in game: Fire burned the target up (heat 100) and set the neighbour on fire (heat 50), NPC dead; the bolt jumped to 3 NPCs, target dead; the push flung 5 NPCs at 12 m/s, the nearest dead; ElementOff and MagicOff refused. Films `magic-film` before (0be9ffd: plain spell hits) and after. Full suite **16/20** first: `step1-a` (156 options, not the estimated 152), `step4c` (the hit NPC stood at 3.0 m, the edge of Kneel Max Distance, and an older nearer NPC knelt: scenario NPCs now at 2.5 m), `step3` (Windows section 7 waited for a reaction that section 6 never starts; removed), `step5c` (Windows section 5: section 4's enemy flashed first while player-parry blocks the newest NPC: it is killed first; then the 2.75 m/s sweep read 3.06 m/s, a power parry: Power Parry Min Speed 5 in that section). Reruns: all four **PASS**; `step3` once failed at line 90 (the game's own push=1 hit did not stagger the fighting NPC; old section, passed in the runs before and after). |
 | 2026-11-20 | 3c | Twist Disarm reworked: only a staggered enemy (Disarm Requires Stagger), chance 100 %, a slow touch starts no cooldown. Unit tests 615 **PASS**, BasHarness 149 **PASS**. Harness: full suite 17/17 **PASS** (new `step3d-twist-disarm-staggered`, 4 of 4 before that). Before (red, 65a542a): an unstaggered 981°/s twist disarmed; after: `NotStaggered`. Films with side, eye and hand views. BasHarness gained `frame-rate`, `player-strike-weapon phase=ready/strike` and `depth`, a gentle return after a strike, and the hand view. |
 | 2026-11-18 | 3c | Twist Disarm. Unit tests 611 **PASS**, BasHarness 127 **PASS**. Harness `step3c-twist-disarm` (new BasHarness verb `player-strike-weapon [twist=]`: real blade-on-blade physics against a standing `HumanDummy` with a sword) **PASS** three times in a row and in the full suite (16/16): no twist → `TooSlow (roll 0°/s, hit 2.49–2.52 m/s)`, NPC keeps its sword; 900°/s → measured `roll 904–926°/s`, disarmed; Twist off → nothing. Before (red): the same 900°/s strike on 31f38bd leaves the sword in the NPC's hand (whether the blades touched there cannot be read: that build logs no contacts). First runs found: a straight sweep from the player's blade to the NPC's often hit its body first → the verb now comes at the blade from outside the body; the sweep can knock the player's own sword out of the mock hand → each strike grabs a fresh one. |
 | 2026-11-18 | 5c | Clash modes (Off/Simple/On, default Simple), rounds, push measure, win/lose, sounds. Unit tests 591 **PASS**, BasHarness 125 **PASS**. Harness: full suite 14/15 **PASS**; the 15th, step5c, failed there in its first section 4 (controller left 0.8 m out, see 5c), which was then replaced by `player-release`; step5c then **PASS** three times in a row (DMCS code unchanged since the suite run). Before (red): the same step5c on ff931db fails at its first check (no `Clash of Might Mode`); the old lock just ended (`TimeUp`) with the enemy still armed. Found on the way: in the harness nothing holds the heavy weapon back (the blades never touch), so the hand catches up with a moved controller within ~0.4 s; a controller beyond arm's length is read differently by DMCS and BasHarness (open). |

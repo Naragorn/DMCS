@@ -69,10 +69,10 @@ namespace DMCS
         /// <summary>Saved option values are applied before the first level loads; from then on a picked version may set its look.</summary>
         private static bool _optionsApplied;
 
-        [ModOption(name = AdrenalineSettings.ReadySoundName, tooltip = "A sound when the meter is full (after Dark Messiah's).", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 35)]
+        [ModOption(name = AdrenalineSettings.ReadySoundName, tooltip = "A sound when the meter is full (after Dark Messiah's).", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 36)]
         public static bool ReadySoundOn { get; set; } = AdrenalineSettings.DefaultReadySound;
 
-        [ModOption(name = AdrenalineSettings.ReadySoundStyleName, tooltip = "Which meter-full sound: DMCS 1–3 are the versions DMCS built (3 = newest), Dark Messiah = the original, read from your own Dark Messiah install (falls back to DMCS 3 when it is not found).", valueSourceName = nameof(SoundStyleValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 36)]
+        [ModOption(name = AdrenalineSettings.ReadySoundStyleName, tooltip = "Which meter-full sound: DMCS 1–3 are the versions DMCS built (3 = newest), Dark Messiah = the original, read from your own Dark Messiah install (falls back to DMCS 3 when it is not found).", valueSourceName = nameof(SoundStyleValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 37)]
         public static string ReadySoundStyle
         {
             get => _readySoundStyle;
@@ -83,14 +83,14 @@ namespace DMCS
             }
         }
 
-        [ModOption(name = AdrenalineSettings.ReadySoundVolumeName, tooltip = "Volume of the meter-full sound.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 37)]
+        [ModOption(name = AdrenalineSettings.ReadySoundVolumeName, tooltip = "Volume of the meter-full sound.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 38)]
         [ModOptionSlider]
         public static float ReadySoundVolume { get; set; } = AdrenalineSettings.ReadySoundVolume.Default;
 
-        [ModOption(name = AdrenalineSettings.HeartbeatName, tooltip = "A heartbeat while the meter is full.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 38)]
+        [ModOption(name = AdrenalineSettings.HeartbeatName, tooltip = "A heartbeat while the meter is full.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 39)]
         public static bool HeartbeatOn { get; set; } = AdrenalineSettings.DefaultHeartbeat;
 
-        [ModOption(name = AdrenalineSettings.HeartbeatSoundName, tooltip = "Which heartbeat: Blade & Sorcery's own, or Dark Messiah's fast one from your own Dark Messiah install.", valueSourceName = nameof(HeartbeatSoundValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 39)]
+        [ModOption(name = AdrenalineSettings.HeartbeatSoundName, tooltip = "Which heartbeat: Blade & Sorcery's own, or Dark Messiah's fast one from your own Dark Messiah install.", valueSourceName = nameof(HeartbeatSoundValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 40)]
         public static string HeartbeatSound
         {
             get => _heartbeatSound;
@@ -101,28 +101,28 @@ namespace DMCS
             }
         }
 
-        [ModOption(name = AdrenalineSettings.HeartbeatVolumeName, tooltip = "Volume of the heartbeat.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 40)]
+        [ModOption(name = AdrenalineSettings.HeartbeatVolumeName, tooltip = "Volume of the heartbeat.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 41)]
         [ModOptionSlider]
         public static float HeartbeatVolume { get; set; } = AdrenalineSettings.HeartbeatVolume.Default;
 
-        [ModOption(name = AdrenalineSettings.HapticsName, tooltip = "A heartbeat pulse in both controllers while the meter is full.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 41)]
+        [ModOption(name = AdrenalineSettings.HapticsName, tooltip = "A heartbeat pulse in both controllers while the meter is full.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 42)]
         public static bool HapticsOn { get; set; } = AdrenalineSettings.DefaultHaptics;
 
-        [ModOption(name = AdrenalineSettings.HapticsStrengthName, tooltip = "Strength of the controller pulse.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 42)]
+        [ModOption(name = AdrenalineSettings.HapticsStrengthName, tooltip = "Strength of the controller pulse.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 43)]
         [ModOptionSlider]
         public static float HapticsStrength { get; set; } = AdrenalineSettings.HapticsStrength.Default;
 
-        [ModOption(name = AdrenalineSettings.WeaponGlowName, tooltip = "The hand holding your weapon glows while the meter is full.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 43)]
+        [ModOption(name = AdrenalineSettings.WeaponGlowName, tooltip = "The hand holding your weapon glows while the meter is full.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 44)]
         public static bool WeaponGlowOn { get; set; } = AdrenalineSettings.DefaultWeaponGlow;
 
-        [ModOption(name = AdrenalineSettings.VignetteName, tooltip = "Flickering red streaks at the edge of your view while the meter is full (Dark Messiah style).", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 44)]
+        [ModOption(name = AdrenalineSettings.VignetteName, tooltip = "Flickering red streaks at the edge of your view while the meter is full (Dark Messiah style).", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 45)]
         public static bool VignetteOn { get; set; } = AdrenalineSettings.DefaultVignette;
 
         /// <summary>
         /// Which drawing: DMCS 1–3 (choosing one sets streaks, length and hue as that version was built) or Dark Messiah's
         /// own frames from the player's install. Saved values win on load: the look is only set when the player picks a version.
         /// </summary>
-        [ModOption(name = AdrenalineSettings.VignetteStyleName, tooltip = "Which vignette: DMCS 1 flames, DMCS 2 streaks, DMCS 3 patchy streaks, DMCS 4 nearly as Dark Messiah (shimmers in place), Dark Messiah = the original frames from your own Dark Messiah install. Picking a DMCS version sets streaks, length and hue as it was built.", valueSourceName = nameof(VignetteStyleValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 45)]
+        [ModOption(name = AdrenalineSettings.VignetteStyleName, tooltip = "Which vignette: DMCS 1 flames, DMCS 2 streaks, DMCS 3 patchy streaks, DMCS 4 nearly as Dark Messiah (shimmers in place), Dark Messiah = the original frames from your own Dark Messiah install. Picking a DMCS version sets streaks, length and hue as it was built.", valueSourceName = nameof(VignetteStyleValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 46)]
         public static string VignetteStyle
         {
             get => _vignetteStyle;
@@ -141,23 +141,23 @@ namespace DMCS
             }
         }
 
-        [ModOption(name = AdrenalineSettings.VignetteIntensityName, tooltip = "How bright the streaks are.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 46)]
+        [ModOption(name = AdrenalineSettings.VignetteIntensityName, tooltip = "How bright the streaks are.", valueSourceName = nameof(VolumeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 47)]
         [ModOptionSlider]
         public static float VignetteIntensity { get; set; } = AdrenalineSettings.VignetteIntensity.Default;
 
-        [ModOption(name = AdrenalineSettings.VignetteHueName, tooltip = "Colour of the streaks: 0 = red, 40 = orange.", valueSourceName = nameof(HueValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 47)]
+        [ModOption(name = AdrenalineSettings.VignetteHueName, tooltip = "Colour of the streaks: 0 = red, 40 = orange.", valueSourceName = nameof(HueValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 48)]
         [ModOptionSlider]
         public static float VignetteHue { get; set; } = AdrenalineSettings.VignetteHue.Default;
 
-        [ModOption(name = AdrenalineSettings.VignetteStreaksName, tooltip = "How many streaks each frame has.", valueSourceName = nameof(StreakValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 48)]
+        [ModOption(name = AdrenalineSettings.VignetteStreaksName, tooltip = "How many streaks each frame has.", valueSourceName = nameof(StreakValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 49)]
         [ModOptionSlider]
         public static int VignetteStreaks { get; set; } = AdrenalineSettings.DefaultVignetteStreaks;
 
-        [ModOption(name = AdrenalineSettings.VignetteLengthName, tooltip = "How far the streaks reach in from the edge.", valueSourceName = nameof(LengthValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 49)]
+        [ModOption(name = AdrenalineSettings.VignetteLengthName, tooltip = "How far the streaks reach in from the edge.", valueSourceName = nameof(LengthValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 50)]
         [ModOptionSlider]
         public static float VignetteLength { get; set; } = AdrenalineSettings.VignetteLength.Default;
 
-        [ModOption(name = AdrenalineSettings.VignetteSizeName, tooltip = "Degrees from the centre of view to where the streaks start. Smaller = they reach further into view.", valueSourceName = nameof(SizeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 50)]
+        [ModOption(name = AdrenalineSettings.VignetteSizeName, tooltip = "Degrees from the centre of view to where the streaks start. Smaller = they reach further into view.", valueSourceName = nameof(SizeValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 51)]
         [ModOptionSlider]
         public static float VignetteSize
         {
@@ -173,11 +173,11 @@ namespace DMCS
             }
         }
 
-        [ModOption(name = AdrenalineSettings.VignetteFrameRateName, tooltip = "How fast the streaks flicker (frames per second).", valueSourceName = nameof(FrameRateValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 51)]
+        [ModOption(name = AdrenalineSettings.VignetteFrameRateName, tooltip = "How fast the streaks flicker (frames per second).", valueSourceName = nameof(FrameRateValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 52)]
         [ModOptionSlider]
         public static float VignetteFrameRate { get; set; } = AdrenalineSettings.VignetteFrameRate.Default;
 
-        [ModOption(name = AdrenalineSettings.VignetteFlareName, tooltip = "The streaks flare up on the critical.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 52)]
+        [ModOption(name = AdrenalineSettings.VignetteFlareName, tooltip = "The streaks flare up on the critical.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 53)]
         public static bool VignetteFlareOn { get; set; } = AdrenalineSettings.DefaultVignetteFlare;
 
         public static ModOptionString[] SoundStyleValues() => Strings(AdrenalineStyles.SoundNames);

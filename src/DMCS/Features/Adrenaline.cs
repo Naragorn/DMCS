@@ -28,6 +28,7 @@ namespace DMCS
 
         /// <summary>Step 4c: who kneels and when (the enemy hit last; no hit or only light hits in the window).</summary>
         private static readonly KneelTracker<int> Kneel = new KneelTracker<int>();
+        private static bool _noKneelLogged;
 
         private static readonly Dictionary<int, Creature> HitCreatures = new Dictionary<int, Creature>();
         private static bool _hooked;
@@ -234,6 +235,19 @@ namespace DMCS
         /// <summary>The meter is full and waits for the critical.</summary>
         public static bool IsReady => Meter.State == AdrenalineState.Ready;
 
+        /// <summary>A magic critical without a hit event (a gravity push): uses the meter up as a critical does.</summary>
+        internal static bool UseForMagic(Creature target)
+        {
+            if (!Toggle.Enabled || !Meter.Consume())
+            {
+                return false;
+            }
+            Kneel.WindowClosed();
+            AdrenalineSignals.Flare();
+            Critical?.Invoke(target);
+            return true;
+        }
+
         public static void Start()
         {
             Toggle.Changed -= OnToggle;
@@ -247,6 +261,7 @@ namespace DMCS
             ChargeStagger.Staggered += OnChargeStagger;
             DisarmStrike.Disarmed += OnDisarm;
             AdrenalineDodgeCatch.Hook();
+            AdrenalineMagic.Start();
             _hooked = true;
         }
 
@@ -260,6 +275,7 @@ namespace DMCS
                 ChargeStagger.Staggered -= OnChargeStagger;
                 DisarmStrike.Disarmed -= OnDisarm;
                 AdrenalineDodgeCatch.Unhook();
+                AdrenalineMagic.Stop();
                 _hooked = false;
             }
             ResetAll();
@@ -280,6 +296,7 @@ namespace DMCS
         public static void Update()
         {
             PendingCritical.Clear();
+            AdrenalineMagic.Update();
             AdrenalineCritical.Update();
             AdrenalineSignals.Update(Toggle.Enabled, IsReady, AdrenalineCritical.HasExecutionWindow);
             if (!Toggle.Enabled)
@@ -331,6 +348,10 @@ namespace DMCS
                         AdrenalineCritical.Prepare(target, hit);
                         return;
                     }
+                    if (AdrenalineMagic.Claim(target, hit, source, Toggle.Enabled, Meter.State == AdrenalineState.Ready))
+                    {
+                        return;
+                    }
                     var atStart = AdrenalineCritical.Decide(Toggle.Enabled, Meter.State == AdrenalineState.Ready, target, hit, source);
                     if (atStart == CriticalDecision.Critical)
                     {
@@ -342,6 +363,14 @@ namespace DMCS
                         Dmcs.Log.Debug(Channel, "no critical on " + target.name + ": " + atStart + " (swing "
                             + hit.impactVelocity.magnitude.ToString("0.00", CultureInfo.InvariantCulture) + " m/s)");
                     }
+                    return;
+                }
+                if (AdrenalineMagic.TakePending(hit, out var element) && Meter.Consume())
+                {
+                    Kneel.WindowClosed();
+                    AdrenalineMagic.Execute(element, target, hit);
+                    AdrenalineSignals.Flare();
+                    Critical?.Invoke(target);
                     return;
                 }
                 if (AdrenalineCritical.TryFinish(target, hit, source))
@@ -403,26 +432,45 @@ namespace DMCS
             Kneel.WindowClosed();
         }
 
-        /// <summary>The enemy hit last, if alive; else the nearest living enemy that targets the player.</summary>
+        /// <summary>
+        /// The enemy hit last, if alive and within Kneel Max Distance; else the nearest living enemy attacking the player
+        /// within it (KneelTargetRule); else nobody, and the window stays open.
+        /// </summary>
         private static Creature KneelTarget()
         {
-            if (Kneel.HasLastHit && HitCreatures.TryGetValue(Kneel.LastHit, out var last))
-            {
-                if (last != null && !last.isKilled)
-                {
-                    return last;
-                }
-                Kneel.Forget(Kneel.LastHit);
-            }
             var player = Player.currentCreature;
             if (player == null)
             {
                 return null;
             }
-            return Creature.allActive
-                .Where(c => c != null && !c.isPlayer && !c.isKilled && c.brain != null && c.brain.currentTarget == player)
-                .OrderBy(c => (c.transform.position - player.transform.position).sqrMagnitude)
-                .FirstOrDefault();
+            var all = Creature.allActive.Where(c => c != null && !c.isPlayer).ToList();
+            var candidates = all.Select(c => new KneelCandidate(
+                c.GetInstanceID(), Vector3.Distance(c.transform.position, player.transform.position), !c.isKilled,
+                c.brain != null && c.brain.currentTarget == player));
+            int? last = null;
+            if (Kneel.HasLastHit)
+            {
+                if (HitCreatures.TryGetValue(Kneel.LastHit, out var lastHit) && lastHit != null && !lastHit.isKilled)
+                {
+                    last = Kneel.LastHit;
+                }
+                else
+                {
+                    Kneel.Forget(Kneel.LastHit);
+                }
+            }
+            var id = KneelTargetRule.Choose(last, candidates, AdrenalineCritical.KneelMaxDistance);
+            if (id == null)
+            {
+                if (!_noKneelLogged)
+                {
+                    _noKneelLogged = true;
+                    Dmcs.Log.Debug(Channel, "no enemy within " + AdrenalineCritical.KneelMaxDistance.ToString("0.0", CultureInfo.InvariantCulture) + " m to kneel");
+                }
+                return null;
+            }
+            _noKneelLogged = false;
+            return all.First(c => c.GetInstanceID() == id.Value);
         }
 
         private static void Lose(string who)

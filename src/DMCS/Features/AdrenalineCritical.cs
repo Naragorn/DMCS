@@ -105,13 +105,19 @@ namespace DMCS
         [ModOptionSlider]
         public static int KneelAfterLightHits { get; set; } = AdrenalineSettings.DefaultKneelAfterLightHits;
 
-        [ModOption(name = AdrenalineSettings.KneelDeathChanceName, tooltip = "Chance (%) that a kneeling enemy you did not execute dies instead of standing up.", valueSourceName = nameof(KneelDeathChanceValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 34)]
+        [ModOption(name = "Kneel Max Distance", tooltip = "Only an enemy this near you (m) kneels: the one you hit last, else the nearest one attacking you.", valueSourceName = nameof(KneelMaxDistanceValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 34)]
+        [ModOptionSlider]
+        public static float KneelMaxDistance { get; set; } = AdrenalineSettings.KneelMaxDistance.Default;
+
+        [ModOption(name = AdrenalineSettings.KneelDeathChanceName, tooltip = "Chance (%) that a kneeling enemy you did not execute dies instead of standing up.", valueSourceName = nameof(KneelDeathChanceValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 35)]
         [ModOptionSlider]
         public static int KneelDeathChance { get; set; } = AdrenalineSettings.DefaultKneelDeathChance;
 
         public static ModOptionFloat[] ExecutionWindowValues() => Floats(AdrenalineSettings.ExecutionWindow, "0", " s");
 
         public static ModOptionFloat[] KneelAfterNoHitValues() => Floats(AdrenalineSettings.KneelAfterNoHit, "0.0", " s");
+
+        public static ModOptionFloat[] KneelMaxDistanceValues() => Floats(AdrenalineSettings.KneelMaxDistance, "0.0", " m");
 
         public static ModOptionInt[] LightHitValues() =>
             AdrenalineSettings.LightHitValues().Select(v => new ModOptionInt(v.ToString(CultureInfo.InvariantCulture), v)).ToArray();
@@ -511,7 +517,30 @@ namespace DMCS
             {
                 return;
             }
-            var direction = Direction(target, hit);
+            Fling(target, Direction(target, hit), Knockback);
+            Dmcs.Log.Debug(Channel, "threw " + target.name + " at " + Knockback.ToString("0", CultureInfo.InvariantCulture) + " m/s");
+        }
+
+        /// <summary>
+        /// The critical's moment without the melee part (the adrenaline magic): the battle cry and the time mode.
+        /// </summary>
+        internal static void Moment(string what)
+        {
+            Dmcs.Log.Debug(Channel, what.ToUpperInvariant().Substring(0, 1) + what.Substring(1));
+            if (BattleCry)
+            {
+                Shout();
+            }
+            StartTime();
+        }
+
+        /// <summary>Every part of the creature gets <paramref name="speed"/> m/s along <paramref name="direction"/>; a living one is destabilized first, a dying one leaves its dying animation.</summary>
+        internal static void Fling(Creature target, Vector3 direction, float speed)
+        {
+            if (target == null || target.ragdoll == null || speed <= 0f)
+            {
+                return;
+            }
             var death = target.brain?.instance?.GetModule<BrainModuleDeath>(false);
             if (target.isKilled && death != null)
             {
@@ -523,9 +552,8 @@ namespace DMCS
             }
             foreach (var p in target.ragdoll.parts)
             {
-                p.physicBody?.AddForce(direction * Knockback, ForceMode.VelocityChange);
+                p.physicBody?.AddForce(direction * speed, ForceMode.VelocityChange);
             }
-            Dmcs.Log.Debug(Channel, "threw " + target.name + " at " + Knockback.ToString("0", CultureInfo.InvariantCulture) + " m/s");
         }
 
         private static Vector3 Direction(Creature target, CollisionInstance hit) =>

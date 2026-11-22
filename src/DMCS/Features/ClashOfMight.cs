@@ -415,7 +415,7 @@ namespace DMCS
                 var over = Telegraph.JudgingOver(id, now);
                 if (over.HasValue)
                 {
-                    Dmcs.Log.Debug(Channel, "no slow-motion for " + pair.Value.NpcName + "'s swing: " + over.Value);
+                    Dmcs.Log.Debug(Channel, "no slow-motion for " + pair.Value.NpcName + "'s swing: " + over.Value + " (" + pair.Value.LastDetail + ")");
                 }
             }
         }

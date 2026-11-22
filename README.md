@@ -60,7 +60,7 @@ Combat fills a hidden meter. It is filled by:
 
 Hits you take drain the meter. You can switch that so they fill it instead.
 
-**When the meter is full** you get a short window, 6 s by default:
+**When the meter is full** you get a window, 12 s by default:
 - **Signals:** a sound like Dark Messiah's "adrenaline reached", a heartbeat, a heartbeat pulse in both controllers,
   a glowing weapon hand, and flickering red streaks at the edge of your view.
 - **Fatality:** your next **hard** hit is the critical. You shout, time slows down (Hyperfocus: the world slows and you
@@ -68,7 +68,8 @@ Hits you take drain the meter. You can switch that so they fill it instead.
 - **Chest stab:** a critical stab into the chest makes the enemy sink to its knees with your blade in it. Kick it away
   or cut off its head to finish it in slow motion, or let it fall.
 - **Kneeling:** if you land no hard hit for 2 s, or only two light hits, the enemy goes down on its knees. Any hit then
-  executes it. Wait too long and it stands up again and fights on.
+  executes it. Wait too long and it stands up again and fights on. Only an enemy within 3 m of you kneels.
+- **Magic:** your next spell that hits is the critical too, with a big version per element (see Adrenaline Magic).
 
 The window closes unused after its time, and the meter starts over.
 
@@ -118,6 +119,16 @@ How you parry an enemy's attack now matters.
 
 DMCS reads how fast your hand moved just before the parry: from 1 m/s it is a counter, from 3 m/s a power parry.
 Both values are guesses until tested in VR. A hard parry at the Clash of Might star is a power parry, not a clash.
+
+### Adrenaline Magic (testing)
+
+With a full meter, your next spell that hits an enemy is the critical, as a big version of that spell:
+- **Fire:** the enemy hit burns up at once. Enemies within 3 m of it catch fire.
+- **Lightning:** the bolt jumps to every enemy within 5 m and shocks them for 4 s. The enemy hit dies.
+- **Gravity:** a push flings every enemy within 4 m of you away. The nearest one it hit dies.
+
+You shout and time slows down, as with a melee critical. Each element can be switched off on its own. How it looks and
+feels has not been checked in VR yet; the values are guesses.
 
 ### Skill tree (optional)
 
@@ -176,7 +187,7 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Clash Slow Motion | on | | Time slows when your blade is ready to block a flashing swing |
 | Clash Slow Motion Scale | 0.3 | 0.1–0.8 | World speed during it |
 | Clash Enemy Reach | 2.5 m | 1–4 m | How close the enemy must be |
-| Clash Block Reach | 0.6 m | 0.2–1.5 m | How close your blade must be to the flash |
+| Clash Block Reach | 1.0 m | 0.2–2 m | How close your blade must be to the flash for the slow motion |
 | Clash Block Angle Tolerance | 90° | 10–90° | How far your blade may be off a right angle to the swing (90°: any angle) |
 | Clash Flash At Swing Top | on | | The flash comes when the blade is raised all the way, just before the strike; off: as soon as the wind-up starts (more warning) |
 | Clash Max Block Speed | 2.5 m/s | 0.5–4 m/s | Block the flashing blade slower than this and the blades lock. Faster, and your blade just bounces off |
@@ -266,7 +277,7 @@ on body hits.
 |---|---|---|---|
 | Enabled | on | | The meter and everything below |
 | Adrenaline Meter Max | 100 | 50–300 | Points for a full meter |
-| Adrenaline Window | 6 s | 2–20 s | How long a full meter waits for your critical |
+| Adrenaline Window | 12 s | 2–30 s | How long a full meter waits for your critical |
 | Adrenaline Decay | off | | The meter drains over time |
 | Adrenaline Decay Per Second | 2 | 0–20 | How fast it drains |
 | Adrenaline Decay Delay | 0 s | 0–30 s | Seconds after the last gain before it drains |
@@ -298,6 +309,7 @@ on body hits.
 | Kneel And Execution | on | | A full meter without hard hits makes the enemy kneel |
 | Kneel After No Hit | 2 s | 0.5–5 s | Seconds without a hit before it kneels |
 | Kneel After Light Hits | 2 | 1–10 | Light hits before it kneels |
+| Kneel Max Distance | 3 m | 1–15 m | Only an enemy this near you kneels |
 | Kneel Death Chance | 0 % | 0–100 % | Chance it dies instead of standing up again |
 | Adrenaline Ready Sound | on | | Sound when the meter is full |
 | Adrenaline Ready Sound Style | DMCS 3 | DMCS 1–3, Dark Messiah | Which sound (DMCS 1–3 are DMCS's own versions) |
@@ -332,6 +344,21 @@ Picking a DMCS vignette style sets *Streaks*, *Streak Length* and *Hue* to how t
 | Power Parry Min Speed | 3 m/s | 1–10 m/s | How fast your hand must swing for a power parry |
 | Power Parry Chance | 100 % | 0–100 % | Chance a power parry disarms |
 | Parry Speed Window | 0.2 s | 0.05–0.5 s | How long before the parry your hand's speed counts |
+
+**Adrenaline Magic**
+
+| Option | Default | Range | What it does |
+|---|---|---|---|
+| Enabled | on | | With a full meter, your next spell that hits is the critical. Needs Adrenaline on |
+| Magic Fire | on | | A fireball burns the enemy up; those around catch fire |
+| Magic Fire Radius | 3 m | 0–10 m | How far around the burning enemy others catch fire |
+| Magic Fire Spread Heat | 50 | 0–100 | How much heat they get (100 = they burn up too) |
+| Magic Lightning | on | | The bolt jumps to every enemy around; the one hit dies |
+| Magic Lightning Radius | 5 m | 0–15 m | How far the bolt jumps |
+| Magic Lightning Shock | 4 s | 0.5–10 s | How long the others are shocked |
+| Magic Gravity | on | | A push flings every enemy around you away; the nearest one it hit dies |
+| Magic Gravity Radius | 4 m | 0–15 m | How far around you enemies are flung |
+| Magic Gravity Force | 12 m/s | 2–30 m/s | How hard they are flung |
 
 **Skill Tree**
 

@@ -17,7 +17,7 @@ option-exists DMCS "Adrenaline Per Damage Taken" category=Adrenaline type=Int32 
 option-exists DMCS "Adrenaline Per Charge Stagger" category=Adrenaline type=Int32 interaction=Slider save=true
 option-exists DMCS "Adrenaline Per Disarm" category=Adrenaline type=Int32 interaction=Slider save=true
 expect-option DMCS "Adrenaline Meter Max" 100
-expect-option DMCS "Adrenaline Window" 6
+expect-option DMCS "Adrenaline Window" 12
 expect-option DMCS "Adrenaline Decay" false
 expect-option DMCS "Damage Taken Lowers Adrenaline" true
 expect-option DMCS "Adrenaline Decay Per Second" 2

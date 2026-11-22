@@ -1,0 +1,110 @@
+# Step 8: adrenaline magic (user 2026-11-20). With a full meter the next player spell that hits is the critical, with a big
+# version per element: Fire burns the enemy up and sets those around on fire, Lightning jumps to every enemy around and
+# kills the one hit, Gravity flings every enemy around away and kills the nearest one the push hit. Cast through the
+# game's own spell code (BasHarness player-cast: the spell is loaded on the player's right hand, then a fireball is thrown,
+# a bolt strikes, a push goes out). Each section: a fresh pair of NPCs, a neighbour beside the target (about 1 m apart),
+# two hits to fill the meter. How it looks and feels: headset.
+
+wait-level
+frame-rate 90
+press DMCS "Reset To Defaults"
+option-exists DMCS "Adrenaline Magic Enabled" category="Adrenaline Magic" display=Enabled type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Magic Fire" category="Adrenaline Magic" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Magic Fire Radius" category="Adrenaline Magic" type=Single interaction=Slider save=true
+option-exists DMCS "Magic Fire Spread Heat" category="Adrenaline Magic" type=Single interaction=Slider save=true
+option-exists DMCS "Magic Lightning" category="Adrenaline Magic" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Magic Lightning Radius" category="Adrenaline Magic" type=Single interaction=Slider save=true
+option-exists DMCS "Magic Lightning Shock" category="Adrenaline Magic" type=Single interaction=Slider save=true
+option-exists DMCS "Magic Gravity" category="Adrenaline Magic" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Magic Gravity Radius" category="Adrenaline Magic" type=Single interaction=Slider save=true
+option-exists DMCS "Magic Gravity Force" category="Adrenaline Magic" type=Single interaction=Slider save=true
+expect-option DMCS "Adrenaline Magic Enabled" true
+expect-option DMCS "Magic Fire" true
+expect-option DMCS "Magic Fire Radius" 3
+expect-option DMCS "Magic Fire Spread Heat" 50
+expect-option DMCS "Magic Lightning" true
+expect-option DMCS "Magic Lightning Radius" 5
+expect-option DMCS "Magic Lightning Shock" 4
+expect-option DMCS "Magic Gravity" true
+expect-option DMCS "Magic Gravity Radius" 4
+expect-option DMCS "Magic Gravity Force" 12
+set-option DMCS "Debug Logging" true
+# Two hits fill the meter; the window waits long enough; no kneel, no charge, no clash in between
+set-option DMCS "Adrenaline Per Hit" 50
+set-option DMCS "Adrenaline Window" 30
+set-option DMCS "Kneel And Execution" false
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+player-invincible true
+
+# 1. Meter not full: a fireball is an ordinary spell hit (it fills the meter as any hit), no magic
+spawn-npc HumanMale distance=2 angle=-60 brain=HumanDummy
+mark
+player-cast Fire
+await-log 5 +50 Hit (HumanMale
+expect-no-log agic critical
+wait 2
+
+# 2. Fire: the one hit burns up, the neighbour catches fire
+spawn-npc HumanMale distance=2.2 angle=25 brain=HumanDummy
+spawn-npc HumanMale distance=2 angle=0 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+expect-log meter full: window open for 30 s
+mark
+player-cast Fire
+await-log 5 Magic critical: Fire on HumanMale
+expect-log burns up (heat 100)
+expect-log catch fire (heat 50)
+expect-log battle cry:
+expect-log slow-motion Hyperfocus
+expect-npc state Dead within=8
+wait 4
+
+# 3. Lightning: the bolt jumps to the neighbour, the one hit dies
+spawn-npc HumanMale distance=2.2 angle=-25 brain=HumanDummy
+spawn-npc HumanMale distance=2 angle=0 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+expect-log meter full: window open for 30 s
+mark
+player-cast Lightning
+await-log 5 Magic critical: Lightning on HumanMale
+expect-log the bolt jumps to HumanMale
+expect-log shocked for 4 s
+expect-npc state Dead within=3
+wait 4
+
+# 4. Gravity: the push flings everyone around away, the nearest one it hit dies
+spawn-npc HumanMale distance=2.2 angle=25 brain=HumanDummy
+spawn-npc HumanMale distance=1.5 angle=0 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+expect-log meter full: window open for 30 s
+mark
+player-cast Gravity
+await-log 5 Magic critical: Gravity on HumanMale
+expect-log flung HumanMale
+expect-npc state Dead within=3
+wait 4
+
+# 5. An element switched off: no magic, the window stays open for the next hit
+set-option DMCS "Magic Fire" false
+spawn-npc HumanMale distance=2 angle=0 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+expect-log meter full: window open for 30 s
+mark
+player-cast Fire
+await-log 5 no magic on HumanMale
+expect-log : ElementOff (Fire)
+expect-no-log agic critical
+set-option DMCS "Magic Fire" true
+
+# 6. Adrenaline Magic off: the same, MagicOff
+set-option DMCS "Adrenaline Magic Enabled" false
+mark
+player-cast Fire
+await-log 5 : MagicOff (Fire)
+expect-no-log agic critical
+quit

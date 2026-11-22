@@ -422,7 +422,8 @@ public class ClashSettingsTests
         Assert.Equal(0.4f, ClashSettings.MinWindUp.Default);
         Assert.Equal(0.3f, ClashSettings.SlowMoScale.Default);
         Assert.Equal(90f, ClashSettings.BlockAngleTolerance.Default);
-        Assert.Equal(0.6f, ClashSettings.BlockReach.Default);
+        // Headset 2026-11-22: the slow-motion hardly came (BladeTooFar on 54 of 63 swings at 0.6 m). 1.0 m is a guess.
+        Assert.Equal(1.0f, ClashSettings.BlockReach.Default);
         Assert.Equal(2.5f, ClashSettings.NpcReach.Default);
     }
 

@@ -18,7 +18,8 @@ namespace DMCS.Core
         public static readonly SliderSpec MeterMax = new SliderSpec(MeterMaxName, 50f, 300f, 10f, 100f);
 
         /// <summary>Seconds the full meter waits for the critical (real time).</summary>
-        public static readonly SliderSpec WindowDuration = new SliderSpec(WindowDurationName, 2f, 20f, 1f, 6f);
+        /// <summary>Seconds the full meter waits for the critical (headset 2026-11-22: 6 s was too short; 12 s is a guess).</summary>
+        public static readonly SliderSpec WindowDuration = new SliderSpec(WindowDurationName, 2f, 30f, 1f, 12f);
 
         /// <summary>Points per second a filling meter loses; 0 = never drains.</summary>
         public static readonly SliderSpec DecayPerSecond = new SliderSpec(DecayPerSecondName, 0f, 20f, 0.5f, 2f);
@@ -117,10 +118,16 @@ namespace DMCS.Core
         /// <summary>Seconds without a player hit in the adrenaline window before the enemy kneels (user, 2026-11-16: 2).</summary>
         public static readonly SliderSpec KneelAfterNoHit = new SliderSpec(KneelAfterNoHitName, 0.5f, 5f, 0.5f, 2f);
 
+        /// <summary>
+        /// Only an enemy this near (m, chest to chest) kneels (headset 2026-11-22: far enemies knelt too). 3 m is a guess:
+        /// a sword's reach plus a step.
+        /// </summary>
+        public static readonly SliderSpec KneelMaxDistance = new SliderSpec("Kneel Max Distance", 1f, 15f, 0.5f, 3f);
+
         public static int[] LightHitValues() => Enumerable.Range(1, 10).ToArray();
 
         public static readonly SliderSpec[] CriticalSliders =
-            { HyperfocusScale, SlowTimeScale, HyperfocusDuration, SlowTimeDuration, MinSwingSpeed, Knockback, ExecutionWindow, KneelAfterNoHit };
+            { HyperfocusScale, SlowTimeScale, HyperfocusDuration, SlowTimeDuration, MinSwingSpeed, Knockback, ExecutionWindow, KneelAfterNoHit, KneelMaxDistance };
 
         public static int[] GainValues() => Enumerable.Range(0, 51).ToArray();
 

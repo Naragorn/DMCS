@@ -309,6 +309,7 @@ public class ModOptionMetadataTests
                 (AdrenalineSettings.KneelEnabledName, "System.Boolean", "ArrowList"),
                 (AdrenalineSettings.KneelAfterNoHitName, "System.Single", "Slider"),
                 (AdrenalineSettings.KneelAfterLightHitsName, "System.Int32", "Slider"),
+                (AdrenalineSettings.KneelMaxDistance.Name, "System.Single", "Slider"),
                 (AdrenalineSettings.KneelDeathChanceName, "System.Int32", "Slider"),
                 (AdrenalineSettings.ReadySoundName, "System.Boolean", "ArrowList"),
                 (AdrenalineSettings.ReadySoundStyleName, "System.String", "ArrowList"),
@@ -349,10 +350,10 @@ public class ModOptionMetadataTests
     }
 
     [Fact]
-    public void Categories_AreExactlyGeneral_TheFeatures_AndSkillTree()
+    public void Categories_AreExactlyGeneral_TheFeatures_AdrenalineMagic_AndSkillTree()
     {
         var categories = Options.Value.Select(o => o.Category).Distinct().OrderBy(c => c).ToArray();
-        var expected = new[] { DmcsCategories.General, DmcsCategories.SkillTree }.Concat(DmcsCategories.Features).OrderBy(c => c).ToArray();
+        var expected = new[] { DmcsCategories.General, DmcsCategories.SkillTree, DmcsCategories.AdrenalineMagic }.Concat(DmcsCategories.Features).OrderBy(c => c).ToArray();
 
         Assert.Equal(expected, categories);
     }
@@ -396,6 +397,31 @@ public class ModOptionMetadataTests
         Assert.Equal(inGroup.Min(o => o.Order), toggle.Order);
         Assert.Equal("ArrowList", toggle.InteractionType);
         Assert.True(toggle.SaveValue);
+    }
+
+    [Fact]
+    public void AdrenalineMagic_ExposesItsSettings_InOrder()
+    {
+        var group = Options.Value.Where(o => o.Category == DmcsCategories.AdrenalineMagic).OrderBy(o => o.Order).ToList();
+
+        Assert.Equal(
+            new[]
+            {
+                (AdrenalineMagicSettings.EnabledName, "System.Boolean", "ArrowList"),
+                (AdrenalineMagicSettings.FireName, "System.Boolean", "ArrowList"),
+                (AdrenalineMagicSettings.FireRadius.Name, "System.Single", "Slider"),
+                (AdrenalineMagicSettings.FireSpreadHeat.Name, "System.Single", "Slider"),
+                (AdrenalineMagicSettings.LightningName, "System.Boolean", "ArrowList"),
+                (AdrenalineMagicSettings.LightningRadius.Name, "System.Single", "Slider"),
+                (AdrenalineMagicSettings.LightningShock.Name, "System.Single", "Slider"),
+                (AdrenalineMagicSettings.GravityName, "System.Boolean", "ArrowList"),
+                (AdrenalineMagicSettings.GravityRadius.Name, "System.Single", "Slider"),
+                (AdrenalineMagicSettings.GravityForce.Name, "System.Single", "Slider"),
+            },
+            group.Select(o => (o.Name, o.DataType, o.InteractionType)));
+        Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));
+        Assert.All(group.Where(o => o.DataType != "System.Boolean"), o => Assert.False(string.IsNullOrEmpty(o.ValueSource), o.Name + " needs a value list"));
+        Assert.Equal(DmcsCategories.EnabledLocalizationId, group[0].NameLocalizationId);
     }
 
     [Fact]

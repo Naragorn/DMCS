@@ -44,7 +44,7 @@ Sprint → Charge attack → Stagger → Hit hand → Disarm → (Clash if enemy
 **Flow**
 1. **Big swing:** an NPC melee attack with a long wind-up. B&S has no power-attack class: at `AttackStage.WindUp` the running attack is `BrainModuleMelee.attack` (`AttackMotion`; `lastAttack` is the one before); its real wind-up in seconds is `animationClip.length × start / (animationSpeed × brain speed)` (`AttackMotion.GetRealTime`). A big swing = real wind-up ≥ `clashMinWindUp` (value from the probe that measures all of the game's attacks; the clip lengths are not in the catalog JSON). Thrusts do not count.
 2. **Flash:** a short bright glint at the middle of the NPC's blade (middle of its slash damager) = the signal. `clashOnlySwords` (default on): only swords; off: every blade with a slash damager.
-3. **Auto slow-motion** (`clashSlowMo`, default on, scale `clashSlowMoScale` 0.3) when, at the start of the strike (the first physics frames of `AttackStage.Attack`, see the probe), all hold: the NPC is within its swing reach of the player; the player's blade is within `clashBlockReach` (~0.6 m, guess) of the flash point; and the player's blade is roughly at a right angle to the swing: perpendicular to the swing plane (the plane of the NPC blade's axis and its motion), within `clashBlockAngleTolerance` (very generous, default 45°). Skipped when another slow-motion runs (as the critical). Ends when the clash starts, or at the end of the swing.
+3. **Auto slow-motion** (`clashSlowMo`, default on, scale `clashSlowMoScale` 0.3) when, at the start of the strike (the first physics frames of `AttackStage.Attack`, see the probe), all hold: the NPC is within its swing reach of the player; the player's blade is within `clashBlockReach` (default 1.0 m since 2026-11-22, first 0.6 m; headset log 2026-11-22: at 0.6 m 54 of 63 judged swings were refused as BladeTooFar and the user saw no slow-motion; 1.0 m is a guess, the refusal log now names the distances) of the flash point; and the player's blade is roughly at a right angle to the swing: perpendicular to the swing plane (the plane of the NPC blade's axis and its motion), within `clashBlockAngleTolerance` (very generous, default 45°). Skipped when another slow-motion runs (as the critical). Ends when the clash starts, or at the end of the swing.
 4. **Block of the flashing blade:** the game reports the NPC attack hitting the player's weapon (`EventManager.onCreatureAttackParry`, with the contact point). **No exact point any more (user 2026-11-22: "far too rarely hit"):** any block of the flashing blade counts; `clashPointTolerance` is gone. The angle check stays as a slider, default 90° (= any angle). Otherwise an ordinary parry (+10 Adrenaline as now), no clash. **Too much swing (user 2026-11-21, built):** a block whose hand is at or above `clashMaxBlockSpeed` (default 2.5 m/s since 2026-11-22, first 1.5; the hand speed the Parry group reads) is no clash either: the swing goes on, the blades bounce off, an ordinary parry (the Parry group still applies its own counter and power rules to it). Applies to Simple and On. Less swing → the clash triggers. Player.log 2026-11-22: 6 of 23 blocked star swings locked with point 0.25 m, 45° and 1.5 m/s; with the new rules 18 of 23 would have (docs/IMPLEMENTATION.md).
 5. **Clash:** DMCS holds the NPC in its swing pose (AI hold as the kneel in 4c; risk, see the probe) and makes the player's weapon heavy (mass ×`clashWeaponWeight` while it lasts; B&S's own weight handling makes it lag behind the controller), so the player cannot just push through. **Hold Blade (user 2026-11-21, built):** the player's blade stays where the blades met (`clashHoldBlade`, default on; `clashHoldSlack` 2 cm, a guess); before, a swing into the block carried it up to 0.27–1.14 m past the lock point (seven locks in the Player.log of 2026-11-20). **Hold options (user 2026-11-22, built):** `clashHoldStyle` `Spring` (default) / `Hard`; spring `clashHoldSpringStrength` (Hz, 3) and `clashHoldSpringDamping` (0.5), sized on the blade's lock mass; `clashHoldRotation` (off: the blade turns around the lock point); `clashHoldBriefly` (off) with `clashHoldTime` (0.3 s): hold only the swing-through, then the weight alone. All values guesses for the headset.
 6. **Push measure (a), decided:** how far the player's real controller is ahead of the held weapon, along the line from the player's head to the lock point (since 2026-11-22: pushing the crossed blades away from oneself; before, only "level towards the NPC's body" counted and most pushes were lost) = push strength. **Sideways (user 2026-11-22, built):** with `clashSidePush` (on) the push to the player's right or left (head's right, square to that line) counts too (forward and side together, pulling back adds nothing); a duel won mostly sideways (over all its rounds) always disarms, flinging the sword to that side; the star turns gold while the player is ahead pushing sideways. `clashWinDisarms` (now only the forward win) defaults to off, so the direction decides: forward = stagger or kneel, sideways = disarm. A disarmed winner's enemy gets the disarm reaction, no stagger on top; per push round against the enemy's push wave (2026-11-18: rounds replace the first draft "accumulate against `npcResistance`, lose after `clashMaxDuration`"; see "Decisions for 5c").
@@ -165,7 +165,7 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 
 **Own meter, not the game's Focus.** The base game has Focus (`Mana.currentFocus`, 30 without skills, regen 3/s, half while moving). It is spent on a manual slow-time (`SpellPowerSlowTime`, held on the right B button in the SteamVR bindings, scale 0.5, 6 focus/s, needs 10). Full Focus only plays a sound (`Effect_FocusFull`). The skill `SkillCombatFocus` refills it on kill, slice, parry, deflect and disarm. Focus has no automatic critical, so DMCS keeps its own meter and leaves Focus alone.
 
-**State machine** (pure logic in `DMCS.Core`, unit-tested over every flow): `Filling → Ready (window timer) → Critical → Filling`; an unused window empties the meter. `meterMax` default 100, `adrenalineWindowDuration` default 6 s, `meterDecay` 2 per second after `meterDecayDelay` 0 s, switched off by default (see "Meter decay" below).
+**State machine** (pure logic in `DMCS.Core`, unit-tested over every flow): `Filling → Ready (window timer) → Critical → Filling`; an unused window empties the meter. `meterMax` default 100, `adrenalineWindowDuration` default 12 s (headset 2026-11-22: "6 s ist zu wenig"; 12 s is a guess, range 2–30 s), `meterDecay` 2 per second after `meterDecayDelay` 0 s, switched off by default (see "Meter decay" below).
 
 **Gains** (each its own slider; defaults confirmed by the user 2026-11-16, not tried in game yet):
 
@@ -226,7 +226,7 @@ Read in the decompiled `ThunderRoad.dll` (game 1.3.2) and the game's catalog JSO
 3. The NPC goes down on its knees, alive, when either
    - no hard player hit lands for `kneelAfterNoHit` seconds (2 s, confirmed; must be shorter than the window), or
    - the player lands only short, light hits (below the hard-swing speed): after `kneelAfterLightHits` of them (2, confirmed).
-   Which NPC: the one the player hit last; if none yet in this fight, the nearest enemy attacking the player.
+   Which NPC: the one the player hit last; if none yet in this fight, the nearest enemy attacking the player. Since 2026-11-22 only within `kneelMaxDistance` (default 3 m, a guess; headset: far enemies knelt too); nobody that near = no kneel, the window stays open (`KneelTargetRule`).
 4. The kneeling replaces the adrenaline window with an execution window (`executionWindow`, 5 s, confirmed; shared with the chest-stab finish). Any player hit on the kneeling NPC is the execution: it counts as the critical (time mode, battle cry, kill); a stab plays the kneeling death, anything else ragdolls it.
 5. No execution in time: the NPC stands up again and fights on, or with `kneelDeathChance` (default 0 %) it dies and falls over. The meter is empty either way.
 - Kneeling alive: the catalog animation `HumanIdleExamineKneel` (KneelingStart / ExamineKneel loop / KneelingEnd), held the way the game's `BrainModuleFear.Panic` holds a cowering NPC (`brain.isIncapacitated`, behaviour tree reset and `updateTree = false`, stance Idle, `StopAnimation(true)`, `PlayAnimation`); released as `StopPanic` does. A first try with a brain swap to `HumanDummy` left the NPC standing (harness screenshot 2026-11-16).
@@ -287,7 +287,7 @@ DMCS's own additions (not in DM): kneel and execution, catch bonus, dodge bonus,
 | Double fatality (Adrenaline skill) | Store more adrenaline, two fatalities in a row | small: an option on the existing meter |
 | Whirlwind at full adrenaline | Crouch + power strike: a spin hitting everyone in reach | medium: VR needs a gesture (e.g. a fast turn with the weapon drawn), to be designed |
 | Leap attack | Jump + power strike | small to medium; GameSpot: "not extremely useful" |
-| Adrenaline-enhanced magic | With a full meter: Telekinesis grabs and throws enemies, Weaken shrinks them for good | medium to large: an effect per spell; whether B&S spells can be extended this way is not checked |
+| Adrenaline-enhanced magic | With a full meter: Telekinesis grabs and throws enemies, Weaken shrinks them for good | Fire, Lightning and Gravity built 2026-11-22 (section 7); Telekinesis next; Weaken left out (B&S has no such spell) |
 | Finisher on a downed enemy | Stab a knocked-down enemy in the chest, without adrenaline | small: in DMCS only inside the adrenaline window so far |
 | Stealth backstab | A dagger power strike on an unaware enemy kills at once | medium: whether B&S tells that an NPC has not noticed the player is not checked |
 | Skill-tree odds and ends | Flurry of Blows, Strength +2 damage, Critical Hit +2 % double damage | hardly useful in VR; B&S's damage comes from physics |
@@ -349,6 +349,28 @@ as a parry) knocks the enemy's weapon out of its hand, without a twist.
   without one; Adrenaline gain (Disarm +15 as every disarm path, plus parry +10).
 
 **Config (proposal):** `counterParry`, `counterParryWindow`, `powerParry`, `powerParryMinSpeed`, `powerParryChance`.
+
+## 7. Adrenaline Magic (user go 2026-11-20 "ja go für die magie"; Fire, Lightning, Gravity built 2026-11-22)
+
+With a full meter the next player spell that hits an enemy is the critical, with a big version per element instead of
+the melee fatality (battle cry and time mode as the critical; no cut). Mod Menu group `Adrenaline Magic` (category
+order 5): Enabled, per element a toggle and its values. Part of Adrenaline: its toggle and skill gate count. Rule
+`DMCS.Core.MagicRule`, feature `Features/AdrenalineMagic.cs`, harness `step8-adrenaline-magic` (BasHarness `player-cast`).
+- **Fire:** the struck enemy gets the game's "Burning" at full heat (100: it ignites and dies the fire death); enemies
+  within `magicFireRadius` (3 m) of it get `magicFireSpreadHeat` (50). Read in the game code 1.3.2: the fireball is an
+  item with `ItemMagicProjectile`, its hit raises `onCreatureHit`, `imbueSpellCastCharge.id` is "Fire"; the game's own
+  burn on a fireball comes from the default skill Ignition (heat 40).
+- **Lightning:** the bolt (`SpellCastLightning.Hit`, `casterHand` set, DamageType Lightning) jumps to every enemy within
+  `magicLightningRadius` (5 m): `PlayBolt` and "Electrocute" for `magicLightningShock` (4 s); the struck one dies
+  (with Critical Kills). Lightning merges and skills hit with Energy and do not count.
+- **Gravity:** the push (`SpellCastGravity.Throw`) damages nothing, so DMCS listens to the player's gravity spell's
+  `OnPostPushEvent` (found through `Mana.OnSpellLoadEvent`): every enemy within `magicGravityRadius` (4 m) of the
+  player is flung away at `magicGravityForce` (12 m/s); the nearest one the push hit dies.
+- **Telekinesis (next, not built):** during the window the player's TK may grab a standing enemy (`grabRagdoll`, as
+  the game's Marionette skill sets it) and throw it (`allowThrow`, as Telethrow); DMCS scales the throw and kills on
+  the impact (`SpellTelekinesis.onTelekinesisUngrabEvent` with thrown = true, then the creature's own next self-hit).
+- Weaken (DM shrinks enemies): left out; B&S has no such spell.
+- All values are guesses for the headset.
 
 ## 5. Perfect Block (idea, user 2026-11-20; not designed, not built)
 

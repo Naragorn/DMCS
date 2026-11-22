@@ -28,7 +28,11 @@ namespace DMCS.Core
         public static readonly SliderSpec NpcReach = new SliderSpec(NpcReachName, 1f, 4f, 0.25f, 2.5f);
 
         /// <summary>Metres from the flash point to the player's blade within which the slow-motion can start (a guess).</summary>
-        public static readonly SliderSpec BlockReach = new SliderSpec(BlockReachName, 0.2f, 1.5f, 0.1f, 0.6f);
+        /// <summary>
+        /// How near (m) the player's blade must be to the flash point at the strike's start for the slow-motion. Headset
+        /// 2026-11-22: at 0.6 m the slow-motion hardly came (BladeTooFar on 54 of 63 judged swings); 1.0 m is a guess.
+        /// </summary>
+        public static readonly SliderSpec BlockReach = new SliderSpec(BlockReachName, 0.2f, 2f, 0.1f, 1.0f);
 
         /// <summary>
         /// Degrees the player's blade may be off a right angle to the swing; 90 = no angle check. Default 90 (user 2026-11-22:

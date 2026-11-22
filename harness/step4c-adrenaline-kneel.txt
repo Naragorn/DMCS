@@ -20,8 +20,11 @@ set-option DMCS "Adrenaline Per Hit" 50
 set-option DMCS "Adrenaline Window" 20
 set-option DMCS "Critical Min Swing Speed" 6
 
+# The NPCs stand 2.5 m away: only an enemy within Kneel Max Distance (3 m, 2026-11-22) kneels; at 3 m the one hit last sat
+# on the edge and an older, nearer NPC knelt instead (first run 2026-11-22). The distance rule itself: unit tests.
+
 # 1. No hit for 2 s: the enemy hit last kneels; a hit executes it
-spawn-npc HumanMale distance=3 angle=60
+spawn-npc HumanMale distance=2.5 angle=60
 mark
 hit-npc Torso velocity=8
 hit-npc Torso velocity=8
@@ -39,7 +42,7 @@ expect-log slow-motion over: time back to normal
 
 # 2. Only light hits: kneels; not executed, it stands up again
 set-option DMCS "Execution Window" 2
-spawn-npc HumanMale distance=3 angle=-60
+spawn-npc HumanMale distance=2.5 angle=-60
 hit-npc Torso velocity=8
 hit-npc Torso velocity=8
 mark
@@ -52,7 +55,7 @@ expect-no-log CRITICAL on
 
 # 3. Death chance 100 %: not executed, it dies
 set-option DMCS "Kneel Death Chance" 100
-spawn-npc HumanMale distance=3 angle=0 brain=HumanDummy
+spawn-npc HumanMale distance=2.5 angle=0 brain=HumanDummy
 hit-npc Torso velocity=8
 hit-npc Torso velocity=8
 mark
@@ -63,7 +66,7 @@ expect-npc state Dead within=2
 # 4. Executed with a stab: it kneels into death and can be kicked away
 set-option DMCS "Kneel Death Chance" 0
 set-option DMCS "Execution Window" 5
-spawn-npc HumanMale distance=3 angle=30 brain=HumanDummy
+spawn-npc HumanMale distance=2.5 angle=30 brain=HumanDummy
 hit-npc Torso velocity=8
 hit-npc Torso velocity=8
 mark

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace DMCS.Core
 {
@@ -98,5 +99,45 @@ namespace DMCS.Core
     {
         /// <summary>The execution window ran out: the enemy stands up, or dies with the set chance.</summary>
         public static KneelEnd AfterWindow(float roll, float deathChance) => roll < deathChance ? KneelEnd.Dies : KneelEnd.StandsUp;
+    }
+
+    /// <summary>A creature that might kneel: how far it is from the player and whether it fights the player.</summary>
+    public readonly struct KneelCandidate
+    {
+        public KneelCandidate(int id, float distance, bool alive, bool attacksPlayer)
+        {
+            Id = id;
+            Distance = distance;
+            Alive = alive;
+            AttacksPlayer = attacksPlayer;
+        }
+
+        public int Id { get; }
+        public float Distance { get; }
+        public bool Alive { get; }
+        public bool AttacksPlayer { get; }
+    }
+
+    /// <summary>Which enemy kneels: only one near the player (headset 2026-11-22: far enemies knelt too).</summary>
+    public static class KneelTargetRule
+    {
+        /// <summary>
+        /// The enemy hit last, if alive and within <paramref name="maxDistance"/> m; else the nearest living enemy that
+        /// attacks the player within it; else nobody (null).
+        /// </summary>
+        public static int? Choose(int? lastHit, IEnumerable<KneelCandidate> candidates, float maxDistance)
+        {
+            if (candidates == null)
+            {
+                return null;
+            }
+            var near = candidates.Where(c => c.Alive && c.Distance <= maxDistance).ToList();
+            if (lastHit.HasValue && near.Any(c => c.Id == lastHit.Value))
+            {
+                return lastHit.Value;
+            }
+            var attacker = near.Where(c => c.AttacksPlayer).OrderBy(c => c.Distance).Select(c => (int?)c.Id).FirstOrDefault();
+            return attacker;
+        }
     }
 }
