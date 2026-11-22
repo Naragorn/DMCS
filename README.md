@@ -90,13 +90,14 @@ of its hand. A block faster than 2.5 m/s just bounces off, as any parry.
 
 **On, the blade lock:** the same block locks the blades. The enemy freezes in its swing and your weapon turns heavy.
 Your blade stays where the blades met. Then it is strength against strength, over a few rounds (3 to 5 by default):
-- **Push:** press the crossed blades away from you with your real hand: forward, up or to the side, wherever they
-  met. The enemy pushes back in a wave, swelling and easing off again; you hold the round if you pushed at least as
-  hard as it did. The next round starts at once.
-- **The star at the blades shows who is ahead:** green and bigger while you are, red while the enemy is. Each held
-  round gives a jolt and sparks.
-- **Win** every round: sparks burst, a victory sound plays, three strong beats in your hand, and the enemy's sword
-  flies away; it staggers, or (25 %) drops to its knees for you to execute.
+- **Push:** with your real hand, press the crossed blades away from you (forward, wherever they met) or to your right
+  or left. The enemy pushes back in a wave, swelling and easing off again; you hold the round if you pushed at least
+  as hard as it did. The next round starts at once.
+- **The star at the blades shows who is ahead:** green and bigger while you are, gold while you are ahead pushing
+  sideways, red while the enemy is. Each held round gives a jolt and sparks.
+- **Win** every round: sparks burst, a victory sound plays, three strong beats in your hand. How you pushed decides
+  what happens: mostly sideways, you wrench the enemy's sword out of its hand to that side, every time. Mostly forward,
+  it staggers, or (25 %) drops to its knees for you to execute.
 - **Lose** a round or let go of your weapon: a heavy thud and a long rumble, your weapon flies away and you take a hit
   (20 health), as set.
 - How hard enemies push is the **Difficulty** (0–200, default 50). Taller enemies push harder and smaller ones weaker;
@@ -201,7 +202,8 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Clash Enemy Push | 0.06 m | 0.01–0.2 m | How far your hand must push past your held weapon to match the enemy's push at its strongest (at difficulty 50) |
 | Clash Push Dead Zone | 0.03 m | 0–0.1 m | Lead that does not count as pushing (the heavy weapon's natural lag) |
 | Clash Push Phase | 2 s | 0.5–5 s | Length of one push round |
-| Clash Win Disarms | on | | Winning a lock knocks the enemy's sword away |
+| Clash Side Push | on | | Pushing to your right or left counts too; a lock won mostly sideways always knocks the enemy's sword to that side |
+| Clash Win Disarms | off | | A lock won pushing forward knocks the enemy's sword away too |
 | Clash Win Kneel Chance | 25 % | 0–100 % | Chance a beaten enemy kneels for an execution instead of staggering |
 | Clash Lose Outcome | Disarm + Hit | Disarm + Hit, Disarm, Hit, None | What a lost lock costs you |
 | Clash Lose Damage | 20 | 0–100 | Health the hit costs (you have 100) |

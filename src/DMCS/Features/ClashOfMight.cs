@@ -134,7 +134,10 @@ namespace DMCS
         [ModOptionSlider]
         public static float PushPhase { get; set; } = ClashFightSettings.PushPhase.Default;
 
-        [ModOption(name = ClashFightSettings.WinDisarmsName, tooltip = "Winning a blade lock knocks the enemy's sword away.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 35)]
+        [ModOption(name = ClashFightSettings.SidePushName, tooltip = "Pushing the crossed blades to your right or left counts too. Win a lock pushing mostly sideways and the enemy's sword always flies to that side; the star turns gold while you push sideways.", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 33)]
+        public static bool SidePush { get; set; } = ClashFightSettings.DefaultSidePush;
+
+        [ModOption(name = ClashFightSettings.WinDisarmsName, tooltip = "Winning a blade lock pushing forward knocks the enemy's sword away too. Off: it staggers or kneels (a sideways win always disarms).", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 35)]
         public static bool WinDisarms { get; set; } = ClashFightSettings.DefaultWinDisarms;
 
         [ModOption(name = ClashFightSettings.WinKneelChanceName, tooltip = "Chance (percent) that a beaten enemy goes down on its knees and you can execute it. Otherwise it staggers.", valueSourceName = nameof(WinKneelChanceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 36)]
@@ -385,7 +388,7 @@ namespace DMCS
                     flash.Glint.transform.rotation = Quaternion.LookRotation(flash.Glint.transform.position - cam.transform.position)
                         * Quaternion.Euler(0f, 0f, Glint.SpinDegrees(age));
                 }
-                var (r, g, b) = ClashDuelSignal.Tint(advantage);
+                var (r, g, b) = ClashDuelSignal.Tint(advantage, duel && _rounds.PushingSideways);
                 flash.Renderer.material.SetColor("_BaseColor", new Color(r, g, b, duel ? 1f : Glint.Pulse(age)));
             }
         }
@@ -861,12 +864,12 @@ namespace DMCS
             }
             var dt = now - _lastTick;
             _lastTick = now;
-            Measure(out var lead, out var gap);
-            var step = _rounds.Tick(dt, lead);
+            Measure(out var lead, out var side, out var gap);
+            var step = _rounds.Tick(dt, lead, SidePush ? side : 0f);
             Feel(now);
             if (Lock.DiagnosticDue(now))
             {
-                LogDiagnostic(now, lead, gap);
+                LogDiagnostic(now, lead, side, gap);
             }
             switch (step)
             {
@@ -888,19 +891,20 @@ namespace DMCS
 
         /// <summary>
         /// How far the player's real controller (PlayerHand.grip, the target the hand follows) is ahead of the weapon hand
-        /// (RagdollHand.grip, held back by the lock): along the line from the player's head to the lock point (lead,
-        /// ClashGeometry.PushLead) and at all (gap).
+        /// (RagdollHand.grip, held back by the lock): along the line from the player's head to the lock point (lead), to the
+        /// player's right (+) or left (−) square to that line (side; ClashGeometry.PushComponents) and at all (gap).
         /// </summary>
-        private static void Measure(out float lead, out float gap)
+        private static void Measure(out float lead, out float side, out float gap)
         {
-            lead = gap = 0f;
+            lead = side = gap = 0f;
             var playerHand = _lockHand != null ? _lockHand.playerHand : null;
             if (playerHand == null || playerHand.grip == null || _lockHand.grip == null || Player.local == null || Player.local.head == null)
             {
                 return;
             }
             var ahead = playerHand.grip.position - _lockHand.grip.position;
-            lead = ClashGeometry.PushLead(V(ahead), V(Player.local.head.transform.position), V(LockPointNow()));
+            var head = Player.local.head.transform;
+            (lead, side) = ClashGeometry.PushComponents(V(ahead), V(head.position), V(LockPointNow()), V(head.right));
             gap = ahead.magnitude;
         }
 
@@ -930,11 +934,12 @@ namespace DMCS
         }
 
         /// <summary>Headset diagnostic: the round, the lead and gap of the controller, the enemy's push, who is ahead, the blades' distance.</summary>
-        private static void LogDiagnostic(float now, float lead, float gap)
+        private static void LogDiagnostic(float now, float lead, float side, float gap)
         {
             var apart = TryPlayerBlade(_lockHand, out var a, out var b) ? ClashGeometry.DistanceToSegment(V(LockPointNow()), V(a), V(b)) : float.NaN;
             Dmcs.Log.Debug(Channel, "lock t=" + F(Lock.Elapsed(now)) + " s, round " + _rounds.Round + "/" + _rounds.Rounds
-                + ": hand ahead " + F(gap) + " m (pushing " + F(lead) + " m), enemy push " + F(_rounds.EnemyPush) + " m, sums you "
+                + ": hand ahead " + F(gap) + " m (forward " + F(lead) + " m, side " + F(side) + " m" + (_rounds.PushingSideways ? ", sideways" : "")
+                + "), enemy push " + F(_rounds.EnemyPush) + " m, sums you "
                 + F3(_rounds.PlayerSum) + " / enemy " + F3(_rounds.EnemySum) + ", advantage " + F(_rounds.Advantage) + ", blades "
                 + (float.IsNaN(apart) ? "n/a" : F(apart) + " m") + " apart");
         }
@@ -1001,19 +1006,44 @@ namespace DMCS
             var hand = _lockFlash.Hand;
             var name = _lockFlash.NpcName;
             var rounds = _rounds.Rounds;
+            var sideways = SidePush && _rounds.Sideways;
+            var sideSign = _rounds.SideSign;
             Cue(won: true, LockPointNow(), _lockHand);
             EndLock(Lock.Decide(), "you won");
             var away = AwayFromPlayer(npc);
-            var disarmed = WinDisarms && DisarmStrike.DisarmAlong(npc, hand, away, "won clash");
+            string outcome;
+            // User 2026-11-22: a duel won mostly sideways always disarms, the sword flung to that side; a forward win
+            // disarms only with Clash Win Disarms. A disarmed enemy gets the disarm reaction, not a stagger on top (a
+            // stagger push would end the game's cowering at once).
+            var disarm = sideways || WinDisarms;
+            var fling = sideways ? SideOf(sideSign) : away;
+            var disarmed = disarm && DisarmStrike.DisarmAlong(npc, hand, fling, sideways ? "won clash sideways" : "won clash");
             PlayDarkMessiahDisarm(disarmed);
-            var kneels = Dice.NextDouble() * 100.0 < WinKneelChance && AdrenalineCritical.KneelAlive(npc, KneelReason.ClashWin);
-            if (!kneels && npc != null && !npc.isKilled)
+            if (disarmed)
             {
-                npc.ForceStagger(away, BrainModuleHitReaction.PushBehaviour.Effect.StaggerMedium);
+                outcome = sideways ? "you wrenched its sword aside to the " + (sideSign < 0 ? "left" : "right") : "its sword flies away";
             }
-            Dmcs.Log.Debug(Channel, "you won the clash against " + name + " after " + rounds + " round" + (rounds == 1 ? "" : "s") + ": "
-                + (WinDisarms ? (disarmed ? "its sword flies away, " : "no sword to knock away, ") : "") + (kneels ? "it kneels" : "it staggers"));
+            else
+            {
+                var kneels = Dice.NextDouble() * 100.0 < WinKneelChance && AdrenalineCritical.KneelAlive(npc, KneelReason.ClashWin);
+                if (!kneels && npc != null && !npc.isKilled)
+                {
+                    npc.ForceStagger(away, BrainModuleHitReaction.PushBehaviour.Effect.StaggerMedium);
+                }
+                outcome = (disarm ? "no sword to knock away, " : "") + (kneels ? "it kneels" : "it staggers");
+            }
+            Dmcs.Log.Debug(Channel, "you won the clash against " + name + " after " + rounds + " round" + (rounds == 1 ? "" : "s")
+                + (sideways ? " pushing sideways" : " pushing forward") + ": " + outcome);
             Adrenaline.Add(AdrenalineSource.ClashWin, name);
+        }
+
+        /// <summary>The player's right (sign 1) or left (−1), level, a little up: where a sideways win flings the sword.</summary>
+        private static Vector3 SideOf(int sign)
+        {
+            var head = Player.local != null && Player.local.head != null ? Player.local.head.transform : null;
+            var right = head != null ? head.right : Vector3.right;
+            right.y = 0f;
+            return ((right.normalized * (sign < 0 ? -1f : 1f)) + (Vector3.up * 0.3f)).normalized;
         }
 
         /// <summary>The player lost the lock: per Lose Outcome the weapon flies away and/or the player takes the hit; the enemy swings on.</summary>

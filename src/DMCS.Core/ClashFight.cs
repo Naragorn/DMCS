@@ -52,7 +52,13 @@ namespace DMCS.Core
         public const string EnemyPushName = "Clash Enemy Push";
         public const string DeadZoneName = "Clash Push Dead Zone";
         public const string PushPhaseName = "Clash Push Phase";
+        public const string SidePushName = "Clash Side Push";
         public const string WinDisarmsName = "Clash Win Disarms";
+
+        /// <summary>
+        /// Pushing to the player's right or left counts too, and a duel won mostly sideways always disarms (user 2026-11-22).
+        /// </summary>
+        public const bool DefaultSidePush = true;
         public const string WinKneelChanceName = "Clash Win Kneel Chance";
         public const string LoseOutcomeName = "Clash Lose Outcome";
         public const string LoseDamageName = "Clash Lose Damage";
@@ -69,7 +75,11 @@ namespace DMCS.Core
 
         public const bool DefaultScalesWithHeight = true;
         public const bool DefaultScalesWithGender = true;
-        public const bool DefaultWinDisarms = true;
+        /// <summary>
+        /// A forward win disarms too. Off since 2026-11-22: a sideways win always disarms, so the push direction decides
+        /// (forward: the enemy staggers or kneels; sideways: its sword flies to that side).
+        /// </summary>
+        public const bool DefaultWinDisarms = false;
         public const bool DefaultDarkMessiahSounds = false;
         public const string DefaultLoseOutcome = ClashLoseOutcomes.DisarmAndHit;
 
@@ -136,6 +146,23 @@ namespace DMCS.Core
     }
 
     /// <summary>
+    /// The push in a blade lock (user 2026-11-22): away from the player (forward) and to the player's right or left
+    /// (side) both count; pulling back adds nothing. A duel won mostly sideways always disarms.
+    /// </summary>
+    public static class ClashPush
+    {
+        /// <summary>The push's size: forward (only away from the player) and sideways together.</summary>
+        public static float Effective(float forward, float side)
+        {
+            var f = Math.Max(0f, forward);
+            return (float)Math.Sqrt((f * f) + (side * side));
+        }
+
+        /// <summary>Sideways when the side part is bigger than the forward part (a tie counts as forward).</summary>
+        public static bool IsSideways(float forward, float side) => Math.Abs(side) > Math.Max(0f, forward);
+    }
+
+    /// <summary>
     /// What the player sees and feels in a blade lock (user 2026-11-22: "unclear whether you win or lose"). The star at the
     /// crossed blades shows who is ahead in the round: warm white when even (the flash's own colour), green and bigger when
     /// the player is ahead, red and smaller when the enemy is. Win and loss each get their own vibration.
@@ -146,15 +173,21 @@ namespace DMCS.Core
         private static readonly (float R, float G, float B) Ahead = (0.3f, 1f, 0.35f);
         private static readonly (float R, float G, float B) Behind = (1f, 0.2f, 0.15f);
 
+        /// <summary>Ahead while pushing sideways: gold, the colour of the disarm the sideways win brings.</summary>
+        private static readonly (float R, float G, float B) AheadSideways = (1f, 0.78f, 0.15f);
+
         /// <summary>Size factor of the star when fully ahead and fully behind.</summary>
         private const float AheadSize = 1.4f;
         private const float BehindSize = 0.7f;
 
-        /// <summary>The star's colour for an advantage from −1 (the enemy is ahead) to 1 (the player is).</summary>
-        public static (float R, float G, float B) Tint(float advantage)
+        /// <summary>
+        /// The star's colour for an advantage from −1 (the enemy is ahead) to 1 (the player is); ahead it is green, or gold
+        /// while the player pushes sideways.
+        /// </summary>
+        public static (float R, float G, float B) Tint(float advantage, bool sideways = false)
         {
             var a = Clamp(advantage);
-            var to = a >= 0f ? Ahead : Behind;
+            var to = a >= 0f ? (sideways ? AheadSideways : Ahead) : Behind;
             var t = Math.Abs(a);
             return (Lerp(Even.R, to.R, t), Lerp(Even.G, to.G, t), Lerp(Even.B, to.B, t));
         }
@@ -320,11 +353,29 @@ namespace DMCS.Core
         public float EnemyPushAt(float t) =>
             t <= 0f || t >= _pushSeconds ? 0f : _enemyPeak * (float)Math.Sin(Math.PI * t / _pushSeconds);
 
-        /// <summary>The player's push from the controller's lead towards the enemy: what lies beyond the dead zone.</summary>
+        /// <summary>The player's push from the controller's lead: what lies beyond the dead zone.</summary>
         public float PlayerPush(float lead) => Math.Max(0f, lead - _deadZone);
 
-        /// <summary>One step of dt real seconds; lead = how far the controller pushes ahead of the held weapon (m).</summary>
-        public ClashStep Tick(float dt, float lead)
+        /// <summary>
+        /// The duel was pushed mostly sideways (over all its rounds so far): a sideways win always disarms (user 2026-11-22).
+        /// </summary>
+        public bool Sideways => _sideSum > _forwardSum;
+
+        /// <summary>Which side the sideways push went: 1 = the player's right, −1 = left, 0 = none.</summary>
+        public int SideSign => _signedSideSum > 0f ? 1 : _signedSideSum < 0f ? -1 : 0;
+
+        /// <summary>The last step pushed (beyond the dead zone) and mostly sideways: the star shows it in gold.</summary>
+        public bool PushingSideways { get; private set; }
+
+        private float _forwardSum;
+        private float _sideSum;
+        private float _signedSideSum;
+
+        /// <summary>
+        /// One step of dt real seconds. forward = how far the controller pushes ahead of the held weapon away from the player
+        /// (m), side = to the player's right (+) or left (−); both count (<see cref="ClashPush.Effective"/>).
+        /// </summary>
+        public ClashStep Tick(float dt, float forward, float side)
         {
             if (Phase == ClashPhase.Over || dt <= 0f)
             {
@@ -332,7 +383,21 @@ namespace DMCS.Core
             }
             var from = _phaseTime;
             var to = Math.Min(_pushSeconds, from + dt);
-            PlayerSum += PlayerPush(lead) * (to - from);
+            var push = PlayerPush(ClashPush.Effective(forward, side)) * (to - from);
+            PlayerSum += push;
+            PushingSideways = push > 0f && ClashPush.IsSideways(forward, side);
+            if (push > 0f)
+            {
+                if (ClashPush.IsSideways(forward, side))
+                {
+                    _sideSum += push;
+                    _signedSideSum += Math.Sign(side) * push;
+                }
+                else
+                {
+                    _forwardSum += push;
+                }
+            }
             EnemySum += EnemyIntegral(from, to);
             _phaseTime = to;
             if (_phaseTime < _pushSeconds - Epsilon)

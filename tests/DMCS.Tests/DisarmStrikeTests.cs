@@ -173,6 +173,17 @@ public class DisarmReactionTests
         Assert.Equal(DisarmReaction.BackOff, DisarmReactions.Pick(0.81, 80, 20, 0));
     }
 
+    // A reaction waits for a running stagger to end (a stagger push ends the game's cowering at once, and a move
+    // would cut the stagger animation), but not forever.
+    [Theory]
+    [InlineData(false, 0f, true)]
+    [InlineData(true, 0.5f, false)]
+    [InlineData(true, 2.99f, false)]
+    [InlineData(true, 3f, true)]
+    [InlineData(false, 5f, true)]
+    public void Reaction_StartsOnceTheStaggerIsOver_OrAfterTheLongestWait(bool staggered, float waited, bool starts) =>
+        Assert.Equal(starts, DisarmReactions.ReadyToReact(staggered, waited));
+
     [Theory]
     [InlineData(DisarmReaction.Shock, 2f)]
     [InlineData(DisarmReaction.BackOff, 3f)]

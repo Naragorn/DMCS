@@ -128,6 +128,72 @@ public class ClashPushTests
     [Fact]
     public void LockAtTheHead_NoDirection_CountsNothing() =>
         Assert.Equal(0f, ClashGeometry.PushLead(new Vec3(0, 0, 0.1f), Head, Head));
+
+    // User 2026-11-22: the push can also go sideways, right or left as the player sees it.
+    private static readonly Vec3 HeadRight = new Vec3(1, 0, 0);
+
+    [Fact]
+    public void Components_StraightAway_IsAllForward()
+    {
+        var (forward, side) = ClashGeometry.PushComponents(new Vec3(0, 0, 0.1f), Head, new Vec3(0, 1.7f, 0.6f), HeadRight);
+
+        Assert.Equal(0.1f, forward, 3);
+        Assert.Equal(0f, side, 3);
+    }
+
+    [Fact]
+    public void Components_ToTheRight_IsPositiveSide_ToTheLeftNegative()
+    {
+        var lockPoint = new Vec3(0, 1.5f, 0.6f);
+
+        Assert.Equal(0.1f, ClashGeometry.PushComponents(new Vec3(0.1f, 0, 0), Head, lockPoint, HeadRight).Side, 3);
+        Assert.Equal(-0.1f, ClashGeometry.PushComponents(new Vec3(-0.1f, 0, 0), Head, lockPoint, HeadRight).Side, 3);
+    }
+
+    [Fact]
+    public void Components_OverheadBind_SideIsStillThePlayersRight()
+    {
+        // The blades cross straight above: forward is up, and right stays the player's right.
+        var lockPoint = new Vec3(0, 2.3f, 0.05f);
+        var (forward, side) = ClashGeometry.PushComponents(new Vec3(0.1f, 0, 0), Head, lockPoint, HeadRight);
+
+        Assert.Equal(0.1f, side, 3);
+        Assert.Equal(0f, forward, 2);
+    }
+
+    [Fact]
+    public void Components_HeadRightTiltedIntoTheLine_IsMadeSquare()
+    {
+        // A head turned a little towards the lock: only the part of its right across the line counts as sideways.
+        var tilted = new Vec3(0.8f, 0, 0.6f);
+        var (forward, side) = ClashGeometry.PushComponents(new Vec3(0, 0, 0.1f), Head, new Vec3(0, 1.7f, 0.6f), tilted);
+
+        Assert.Equal(0.1f, forward, 3);
+        Assert.Equal(0f, side, 3);
+    }
+}
+
+// What counts as pushing and which way the duel was won (user 2026-11-22: a sideways win always disarms).
+public class ClashPushDirectionTests
+{
+    [Fact]
+    public void Effective_IsForwardAndSideTogether_PullingBackAddsNothing()
+    {
+        Assert.Equal(0.1f, ClashPush.Effective(0.1f, 0f), 4);
+        Assert.Equal(0.1f, ClashPush.Effective(0f, -0.1f), 4);
+        Assert.Equal(0.05f, ClashPush.Effective(0.03f, 0.04f), 4);
+        Assert.Equal(0.04f, ClashPush.Effective(-0.2f, 0.04f), 4);
+    }
+
+    [Theory]
+    [InlineData(0.1f, 0f, false)]
+    [InlineData(0.05f, 0.06f, true)]
+    [InlineData(0.05f, -0.06f, true)]
+    [InlineData(0.06f, 0.06f, false)]
+    [InlineData(-0.1f, 0.02f, true)]
+    [InlineData(0f, 0f, false)]
+    public void Sideways_WhenTheSideIsTheBiggerPart(float forward, float side, bool sideways) =>
+        Assert.Equal(sideways, ClashPush.IsSideways(forward, side));
 }
 
 public class ClashGeometryTests

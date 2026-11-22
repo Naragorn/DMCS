@@ -675,6 +675,32 @@ and the game's `BehaviorTree_HumanUnarmed` (GetItem → MoveTo → PickupItem, r
 `step5b` block away from the flash now locks, `step5c` no return phase and a 2.75 m/s block, `step3b`/`step4a` dice
 fixed on a 4 s shock); not run (Windows).
 
+## Sideways push in the duel (2026-11-22)
+
+**User:** choose the push direction, not only forward but also right or left; a sideways win always disarms.
+
+**Rule** (Core, unit-tested): `ClashGeometry.PushComponents(handAhead, head, lockPoint, headRight)` splits the lead into
+forward (along head → lock point, as before) and side (the head's right made square to that line; + right, − left; an
+overhead bind keeps the player's right). `ClashPush.Effective` = √(max(0, forward)² + side²): both count, pulling back
+adds nothing; the dead zone applies to that size. `ClashPush.IsSideways` = |side| > max(0, forward). `ClashRounds.Tick
+(dt, forward, side)` sums the push of each step into forward or sideways; `Sideways` = more sideways than forward over
+the whole duel, `SideSign` = the side it went, `PushingSideways` = the last step (the star's gold).
+
+**Outcome** (`ClashOfMight.Win`): sideways (with *Clash Side Push*, default on) → `DisarmStrike.DisarmAlong` flings the
+sword to the player's right or left (head's right, level, a little up); forward → disarm only with *Clash Win Disarms*,
+whose default went to off so the direction matters; otherwise kneel or stagger as before. A disarmed enemy is no longer
+staggered on top: the stagger push would end the game's cowering at once (`BrainModuleFear.CreaturePushed` →
+`StopPanic`, read 2026-11-22).
+
+**Disarm reactions wait for the stagger:** a reaction starts once `HitInfo.IsStaggered` is false (or after 3 s,
+`DisarmReactions.ReadyToReact`); the no-regrab window is re-marked to end exactly with the reaction. Most disarms hit a
+staggered enemy (Disarm Strike needs one, the Power Parry staggers it the next frame), and `UpdateMoveCycleDirection`
+calls `StopAnimation`, which would cut a stagger animation. The disarm log names the planned reaction; "… now (… s,
+waited … s for its stagger)" marks its start.
+
+**Not tested in game:** the harness has no command that pushes the controller sideways (`player-push` moves towards
+the NPC); `step5c` section 3 now sets *Clash Win Disarms* for its forward win. How a sideways wrench feels: headset.
+
 ## API verification
 
 Legend: **V** = verified in the decompiled `ThunderRoad.dll` of game 1.3.2. **V+T** = verified and covered by a test. **A** = assumed / behaviour only provable in game. Line refs point into the decompiled source.

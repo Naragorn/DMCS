@@ -51,7 +51,9 @@ public class ClashModeTests
         Assert.Equal(25f, ClashFightSettings.WinKneelChance.Default);
         Assert.Equal(20f, ClashFightSettings.LoseDamage.Default);
         Assert.Equal(ClashLoseOutcomes.DisarmAndHit, ClashFightSettings.DefaultLoseOutcome);
-        Assert.True(ClashFightSettings.DefaultWinDisarms);
+        // 2026-11-22: a forward win no longer disarms by default; a sideways win always does (Clash Side Push).
+        Assert.False(ClashFightSettings.DefaultWinDisarms);
+        Assert.True(ClashFightSettings.DefaultSidePush);
         Assert.True(ClashFightSettings.DefaultScalesWithHeight);
         Assert.True(ClashFightSettings.DefaultScalesWithGender);
         Assert.True(ClashFightSettings.DefaultDuelStar);
@@ -142,7 +144,7 @@ public class ClashRoundsTests
         var last = ClashStep.None;
         for (var i = 0; i < 200 && last == ClashStep.None; i++)
         {
-            last = r.Tick(0.02f, lead);
+            last = r.Tick(0.02f, lead, 0f);
         }
         return last;
     }
@@ -202,7 +204,7 @@ public class ClashRoundsTests
         Assert.Equal(3, r.Round);
         Assert.Equal(ClashStep.Won, PushRound(r, lead));
         Assert.Equal(ClashPhase.Over, r.Phase);
-        Assert.Equal(ClashStep.None, r.Tick(0.1f, lead));
+        Assert.Equal(ClashStep.None, r.Tick(0.1f, lead, 0f));
     }
 
     [Fact]
@@ -225,7 +227,7 @@ public class ClashRoundsTests
     {
         var r = new ClashRounds(1, 1f, 0f, 0.03f);
 
-        Assert.Equal(ClashStep.None, r.Tick(0f, 0.5f));
+        Assert.Equal(ClashStep.None, r.Tick(0f, 0.5f, 0f));
         Assert.Equal(ClashStep.Won, PushRound(r, 0f));
     }
 
@@ -234,7 +236,7 @@ public class ClashRoundsTests
     {
         var r = New(2);
 
-        Assert.Equal(ClashStep.PushHeld, r.Tick(5f, 0.2f));
+        Assert.Equal(ClashStep.PushHeld, r.Tick(5f, 0.2f, 0f));
         Assert.Equal(0f, r.PlayerSum);
         Assert.Equal(2, r.Round);
     }
@@ -256,8 +258,8 @@ public class ClashRoundsTests
         var behind = New(1);
         for (var i = 0; i < 50; i++)
         {
-            ahead.Tick(0.02f, 0.2f);
-            behind.Tick(0.02f, 0f);
+            ahead.Tick(0.02f, 0.2f, 0f);
+            behind.Tick(0.02f, 0f, 0f);
         }
 
         Assert.InRange(ahead.Advantage, 0.01f, 1f);
@@ -270,7 +272,7 @@ public class ClashRoundsTests
         var r = New(1);
         for (var i = 0; i < 90; i++)
         {
-            r.Tick(0.02f, 5f);
+            r.Tick(0.02f, 5f, 0f);
         }
 
         Assert.Equal(1f, r.Advantage);
@@ -282,9 +284,91 @@ public class ClashRoundsTests
         var r = new ClashRounds(1, 2f, 0f, 0.03f);
         Assert.Equal(0f, r.Advantage);
 
-        r.Tick(0.1f, 0.1f);
+        r.Tick(0.1f, 0.1f, 0f);
 
         Assert.Equal(1f, r.Advantage);
+    }
+
+    // User 2026-11-22: the push can go sideways too; a duel won mostly sideways always disarms.
+    [Fact]
+    public void SidewaysPush_HoldsARoundLikeAForwardOne()
+    {
+        var forward = New(1);
+        var side = New(1);
+        var last = ClashStep.None;
+        for (var i = 0; i < 200 && last == ClashStep.None; i++)
+        {
+            forward.Tick(0.02f, 0.08f, 0f);
+            last = side.Tick(0.02f, 0f, -0.08f);
+        }
+
+        Assert.Equal(ClashStep.Won, last);
+        Assert.Equal(forward.LastPlayerSum, side.LastPlayerSum, 4);
+    }
+
+    [Fact]
+    public void Sideways_IsWhereMostOfThePushWent_OverTheWholeDuel()
+    {
+        var r = New(2);
+        for (var i = 0; i < 100; i++)
+        {
+            r.Tick(0.02f, 0.1f, 0f);
+        }
+        for (var i = 0; i < 100; i++)
+        {
+            r.Tick(0.02f, 0f, 0.12f);
+        }
+
+        Assert.Equal(ClashPhase.Over, r.Phase);
+        Assert.True(r.Sideways);
+        Assert.Equal(1, r.SideSign);
+    }
+
+    [Fact]
+    public void ForwardMostly_IsNotSideways()
+    {
+        var r = New(1);
+        for (var i = 0; i < 100; i++)
+        {
+            r.Tick(0.02f, 0.1f, i < 20 ? -0.2f : 0f);
+        }
+
+        Assert.False(r.Sideways);
+    }
+
+    [Fact]
+    public void ToTheLeft_SideSignIsNegative()
+    {
+        var r = New(1);
+        for (var i = 0; i < 100; i++)
+        {
+            r.Tick(0.02f, 0f, -0.1f);
+        }
+
+        Assert.True(r.Sideways);
+        Assert.Equal(-1, r.SideSign);
+    }
+
+    [Fact]
+    public void NoPush_IsNeitherWay()
+    {
+        var r = New(1);
+        r.Tick(0.5f, 0.01f, 0.01f);
+
+        Assert.False(r.Sideways);
+        Assert.Equal(0, r.SideSign);
+        Assert.False(r.PushingSideways);
+    }
+
+    [Fact]
+    public void PushingSideways_FollowsTheLastStep()
+    {
+        var r = New(1);
+
+        r.Tick(0.02f, 0.02f, 0.1f);
+        Assert.True(r.PushingSideways);
+        r.Tick(0.02f, 0.1f, 0.02f);
+        Assert.False(r.PushingSideways);
     }
 }
 
@@ -326,6 +410,17 @@ public class ClashDuelSignalTests
     {
         Assert.Equal(ClashDuelSignal.Tint(1f), ClashDuelSignal.Tint(3f));
         Assert.Equal(ClashDuelSignal.Size(-1f), ClashDuelSignal.Size(-7f));
+    }
+
+    [Fact]
+    public void AheadPushingSideways_TurnsGold_BehindStaysRed()
+    {
+        var (r, g, b) = ClashDuelSignal.Tint(1f, sideways: true);
+
+        Assert.True(r > b && g > b, "gold");
+        Assert.NotEqual(ClashDuelSignal.Tint(1f), ClashDuelSignal.Tint(1f, sideways: true));
+        Assert.Equal(ClashDuelSignal.Tint(-1f), ClashDuelSignal.Tint(-1f, sideways: true));
+        Assert.Equal(ClashDuelSignal.Tint(0f), ClashDuelSignal.Tint(0f, sideways: true));
     }
 
     [Fact]

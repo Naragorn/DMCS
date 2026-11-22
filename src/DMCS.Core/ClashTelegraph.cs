@@ -379,6 +379,17 @@ namespace DMCS.Core
             return Vec3.Dot(handAhead, line);
         }
 
+        /// <summary>
+        /// The lead split into forward (along head → lock point, as <see cref="PushLead"/>) and sideways (along the player's
+        /// right, made square to that line; positive = right, negative = left). User 2026-11-22: the push can go sideways.
+        /// </summary>
+        public static (float Forward, float Side) PushComponents(Vec3 handAhead, Vec3 head, Vec3 lockPoint, Vec3 headRight)
+        {
+            var line = (lockPoint - head).Normalized();
+            var right = (headRight - (line * Vec3.Dot(headRight, line))).Normalized();
+            return (Vec3.Dot(handAhead, line), Vec3.Dot(handAhead, right));
+        }
+
         public static float DistanceToSegment(Vec3 point, Vec3 a, Vec3 b)
         {
             var ab = b - a;

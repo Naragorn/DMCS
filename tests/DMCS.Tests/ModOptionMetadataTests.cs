@@ -192,6 +192,7 @@ public class ModOptionMetadataTests
                 (ClashFightSettings.EnemyPushName, "System.Single", "Slider"),
                 (ClashFightSettings.DeadZoneName, "System.Single", "Slider"),
                 (ClashFightSettings.PushPhaseName, "System.Single", "Slider"),
+                (ClashFightSettings.SidePushName, "System.Boolean", "ArrowList"),
                 (ClashFightSettings.WinDisarmsName, "System.Boolean", "ArrowList"),
                 (ClashFightSettings.WinKneelChanceName, "System.Single", "Slider"),
                 (ClashFightSettings.LoseOutcomeName, "System.String", "ArrowList"),

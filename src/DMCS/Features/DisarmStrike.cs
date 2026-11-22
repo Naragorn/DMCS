@@ -439,7 +439,8 @@ namespace DMCS
         /// After any disarm (user 2026-11-22: they "just stood there"): the dice pick a reaction (a short shock, backing
         /// off, or cowering) and its time; the hands stay empty for that time, then the enemy gets its own brain back and
         /// goes for a weapon with the game's own behaviour (BehaviorTree_HumanUnarmed: find, walk to, pick up). With Stays
-        /// Permanent it stands still for good after the reaction.
+        /// Permanent it stands still for good after the reaction. The reaction starts once a running stagger is over (most
+        /// disarms hit a staggered enemy), at most <see cref="DisarmReactions.MaxStaggerWait"/> later.
         /// </summary>
         private static void MarkDisarmed(Creature target, DisarmHands hands, string how, List<string> dropped)
         {
@@ -450,15 +451,25 @@ namespace DMCS
             if (Reactions.TryGetValue(id, out var running))
             {
                 // The other hand dropped while it still reacts: the same reaction runs on.
-                reacts = "still " + running.Kind;
+                reacts = "still " + Describe(running.Kind);
             }
             else
             {
                 var reaction = DisarmReactions.Pick(Dice.NextDouble(), ShockChance, BackOffChance, CowerChance);
                 var reactSeconds = DisarmReactions.Seconds(reaction, ShockTime, BackOffTime, CowerTime);
-                reaction = StartReaction(target, id, reaction, reactSeconds);
-                Reactions[id] = new Reaction(target, reaction, Time.time + reactSeconds);
-                DisarmedWindows.Mark(id, Time.time, DisarmStrikeSettings.NoRegrabSeconds(StayDisarmed, reactSeconds));
+                if (reaction == DisarmReaction.None)
+                {
+                    DisarmedWindows.Mark(id, Time.time, DisarmStrikeSettings.NoRegrabSeconds(StayDisarmed, 0f));
+                    if (StayDisarmed)
+                    {
+                        MakePassive(target, id);
+                    }
+                }
+                else
+                {
+                    Reactions[id] = Reaction.Pending(target, reaction, reactSeconds, Time.time);
+                    DisarmedWindows.Mark(id, Time.time, DisarmStrikeSettings.NoRegrabSeconds(StayDisarmed, reactSeconds + DisarmReactions.MaxStaggerWait));
+                }
                 reacts = Describe(reaction) + (reaction == DisarmReaction.None ? "" : " for " + reactSeconds.ToString("0", CultureInfo.InvariantCulture) + " s");
             }
             Dmcs.Log.Debug(Channel, "disarmed " + target.name + " (" + how + "): dropped " + string.Join(", ", dropped) + ", " + reacts
@@ -509,13 +520,17 @@ namespace DMCS
             return MakePassive(target, id) ? DisarmReaction.Shock : DisarmReaction.None;
         }
 
-        /// <summary>Every frame while a reaction runs: walks a backing-off enemy; ends a reaction whose time is up.</summary>
+        /// <summary>
+        /// Every frame: starts a waiting reaction once its stagger is over, walks a backing-off enemy, ends a reaction whose
+        /// time is up.
+        /// </summary>
         private static void UpdateReactions()
         {
             if (Reactions.Count == 0)
             {
                 return;
             }
+            var now = Time.time;
             foreach (var pair in Reactions.ToList())
             {
                 var r = pair.Value;
@@ -524,7 +539,21 @@ namespace DMCS
                     Reactions.Remove(pair.Key);
                     continue;
                 }
-                if (Time.time >= r.EndsAt)
+                if (!r.Started)
+                {
+                    if (DisarmReactions.ReadyToReact(HitInfo.IsStaggered(r.Creature), now - r.MarkedAt))
+                    {
+                        var kind = StartReaction(r.Creature, pair.Key, r.Kind, r.Seconds);
+                        Reactions[pair.Key] = r.Start(kind, now);
+                        // The no-regrab window now ends exactly with the reaction.
+                        DisarmedWindows.Remove(pair.Key);
+                        DisarmedWindows.Mark(pair.Key, now, DisarmStrikeSettings.NoRegrabSeconds(StayDisarmed, r.Seconds));
+                        Dmcs.Log.Debug(Channel, r.Creature.name + " " + Describe(kind) + " now (" + r.Seconds.ToString("0", CultureInfo.InvariantCulture)
+                            + " s, waited " + (now - r.MarkedAt).ToString("0.0", CultureInfo.InvariantCulture) + " s for its stagger)");
+                    }
+                    continue;
+                }
+                if (now >= r.EndsAt)
                 {
                     EndReaction(pair.Key);
                     continue;
@@ -545,7 +574,7 @@ namespace DMCS
             }
             Reactions.Remove(id);
             var creature = r.Creature;
-            if (creature == null || creature.isKilled || creature.brain == null || creature.brain.instance == null)
+            if (!r.Started || creature == null || creature.isKilled || creature.brain == null || creature.brain.instance == null)
             {
                 return;
             }
@@ -830,19 +859,30 @@ namespace DMCS
             BodyHitCreatures.Remove(id);
         }
 
-        /// <summary>A disarmed enemy's running reaction and when it ends (game time).</summary>
+        /// <summary>A disarmed enemy's reaction: waiting for its stagger to end, then running until EndsAt (game time).</summary>
         private readonly struct Reaction
         {
-            public Reaction(Creature creature, DisarmReaction kind, float endsAt)
+            private Reaction(Creature creature, DisarmReaction kind, float seconds, float markedAt, bool started, float endsAt)
             {
                 Creature = creature;
                 Kind = kind;
+                Seconds = seconds;
+                MarkedAt = markedAt;
+                Started = started;
                 EndsAt = endsAt;
             }
 
             public Creature Creature { get; }
             public DisarmReaction Kind { get; }
+            public float Seconds { get; }
+            public float MarkedAt { get; }
+            public bool Started { get; }
             public float EndsAt { get; }
+
+            public static Reaction Pending(Creature creature, DisarmReaction kind, float seconds, float now) =>
+                new Reaction(creature, kind, seconds, now, false, float.PositiveInfinity);
+
+            public Reaction Start(DisarmReaction kind, float now) => new Reaction(Creature, kind, Seconds, MarkedAt, true, now + Seconds);
         }
     }
 }

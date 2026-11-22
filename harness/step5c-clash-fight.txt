@@ -19,6 +19,7 @@ option-exists DMCS "Clash Enemy Push" category="Clash of Might" type=Single inte
 option-exists DMCS "Clash Push Dead Zone" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Push Phase" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Win Disarms" category="Clash of Might" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Clash Side Push" category="Clash of Might" type=Boolean interaction=ArrowList save=true
 option-exists DMCS "Clash Win Kneel Chance" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Lose Outcome" category="Clash of Might" type=String interaction=ArrowList save=true
 option-exists DMCS "Clash Lose Damage" category="Clash of Might" type=Single interaction=Slider save=true
@@ -34,7 +35,8 @@ expect-option DMCS "Clash Difficulty Scales With Gender" true
 expect-option DMCS "Clash Female Strength Reduction" 50
 expect-option DMCS "Clash Min Rounds" 3
 expect-option DMCS "Clash Max Rounds" 5
-expect-option DMCS "Clash Win Disarms" true
+expect-option DMCS "Clash Win Disarms" false
+expect-option DMCS "Clash Side Push" true
 expect-option DMCS "Clash Win Kneel Chance" 25
 expect-option DMCS "Clash Lose Outcome" "Disarm + Hit"
 expect-option DMCS "Clash Lose Damage" 20
@@ -85,7 +87,11 @@ player-invincible true
 # Blade (2026-11-21) nothing held the heavy weapon back: the hand caught up with the moved controller within ~0.4 s
 # (measured 2026-11-18) and no lead lasted. Now the hold keeps the weapon at the lock point, so the lead should last
 # (not run yet). Difficulty 0 (no enemy push) lets the rounds run either way; how far a real press leads: headset.
+# Clash Win Disarms is off by default since 2026-11-22 (a sideways win always disarms); player-push moves towards the
+# NPC, mostly forward, so the forward win disarms here only with the setting on. A sideways push needs a harness command
+# that moves the controller sideways (not there yet); the rule is unit-tested (ClashRoundsTests.Sideways_*).
 set-option DMCS "Clash Difficulty" 0
+set-option DMCS "Clash Win Disarms" true
 mark
 await-log 30 blade flashes
 player-parry
@@ -94,7 +100,7 @@ player-push 0.25 2.3
 await-log 3 round 1/2 held
 expect-log round 2 starts
 player-push 0.25 2.3
-await-log 3 after 2 rounds: its sword flies away
+await-log 3 after 2 rounds pushing
 expect-log blades unlocked (Decided: you won)
 expect-log [DMCS][Adrenaline] +25 ClashWin (HumanMale
 expect-npc holding false within=1

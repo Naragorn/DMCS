@@ -105,6 +105,15 @@ namespace DMCS.Core
         /// <summary>Walking speed while backing off, as a share of the enemy's forward speed (a guess for the headset).</summary>
         public const float BackOffSpeedRatio = 0.5f;
 
+        /// <summary>Longest wait (s) for a running stagger to end before the reaction starts anyway (a guess).</summary>
+        public const float MaxStaggerWait = 3f;
+
+        /// <summary>
+        /// A reaction starts once the enemy is no longer staggered, or after <see cref="MaxStaggerWait"/>: a stagger push
+        /// ends the game's cowering at once (BrainModuleFear.CreaturePushed), and a move would cut the stagger animation.
+        /// </summary>
+        public static bool ReadyToReact(bool staggered, float waited) => !staggered || waited >= MaxStaggerWait;
+
         /// <summary>One of the reactions by its chance against the others (roll 0..1); None when every chance is 0.</summary>
         public static DisarmReaction Pick(double roll, int shock, int backOff, int cower)
         {
