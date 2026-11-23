@@ -168,6 +168,7 @@ DMCS leaves out what Blade & Sorcery or other mods already do well.
   Dive Strike skill then also works with the pommel, so you can slam into the ground with a hammer or staff.
   It changes only the game's Dive Strike skill, which DMCS does not touch. Not tested together with DMCS yet.
 - **Kick:** nothing needed. The game's own kick and its Mighty Kick skill cover it.
+- **Stealth kill:** nothing needed. Sneak up and put a blade into the enemy's throat.
 
 ## Dark Messiah's own sounds and vignette (optional)
 
