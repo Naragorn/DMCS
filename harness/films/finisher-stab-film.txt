@@ -1,0 +1,43 @@
+# Film of the finisher with a real stab (not part of the suite). The NPC is put on the ground with a push hit
+# (the game's own push, level 3); the player walks up (BasHarness player-stab step=true) and thrusts a held sword
+# down into its chest through the game's own physics (penetration and hit events). Round 1 with Finisher off, round 2 on.
+# Views: beside both and beside the NPC.
+wait-level
+frame-rate 90
+press DMCS "Reset To Defaults"
+set-option DMCS "Debug Logging" true
+set-option DMCS "Adrenaline Enabled" false
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+player-invincible true
+player-eyes
+player-grab SwordShortCommon
+
+set-option DMCS "Finisher Enabled" false
+spawn-npc HumanMale distance=1.1 angle=0 brain=HumanDummy container=CivilianMeleeSword
+hit-npc Torso velocity=1.5 push=3
+expect-npc state Destabilized within=2
+wait 1
+record-start finisher-off fps=60 width=640 height=360 views=side,npc angle=90 distance=2.5
+wait 0.3
+mark
+player-stab Torso speed=2
+wait 3
+record-stop
+expect-no-log finished HumanMale
+wait 1
+
+set-option DMCS "Finisher Enabled" true
+spawn-npc HumanMale distance=1.1 angle=0 brain=HumanDummy container=CivilianMeleeSword
+hit-npc Torso velocity=1.5 push=3
+expect-npc state Destabilized within=2
+wait 1
+record-start finisher-on fps=60 width=640 height=360 views=side,npc angle=90 distance=2.5
+wait 0.3
+mark
+player-stab Torso speed=2
+await-log 3 finished HumanMale
+wait 3
+record-stop
+expect-npc state Dead
+quit
