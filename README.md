@@ -160,6 +160,15 @@ need the core skill of that tier.
 The orbs use icons of the game's own skills for now, so two orbs may look alike; the name tells them apart. How the
 skills look in the tree has not been checked in VR yet.
 
+## Recommended mods
+
+DMCS leaves out what Blade & Sorcery or other mods already do well.
+
+- **Leap attack:** [High Dive Skill](https://www.nexusmods.com/bladeandsorcery/mods/10264) by FNIIM. The game's own
+  Dive Strike skill then also works with the pommel, so you can slam into the ground with a hammer or staff.
+  It changes only the game's Dive Strike skill, which DMCS does not touch. Not tested together with DMCS yet.
+- **Kick:** nothing needed. The game's own kick and its Mighty Kick skill cover it.
+
 ## Dark Messiah's own sounds and vignette (optional)
 
 DMCS ships only its own sounds and graphics, made to sound and look close to Dark Messiah's. Under *Ready Sound Style*,

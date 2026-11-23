@@ -286,7 +286,7 @@ DMCS's own additions (not in DM): kneel and execution, catch bonus, dodge bonus,
 | Kick | DM's trademark: enemies fly far, into spikes, fire, water or off ledges | **not built (user 2026-11-23: "the game has it already")**: B&S's kicks and its Mighty Kick skill (`SkillMightyKick`) |
 | Double fatality (Adrenaline skill) | Store more adrenaline, two fatalities in a row | built 2026-11-23: option *Double Fatality* (default off) and a Body-tree skill on the last tier (section 8) |
 | Whirlwind at full adrenaline | Crouch + power strike: a spin hitting everyone in reach | medium: VR needs a gesture (e.g. a fast turn with the weapon drawn), to be designed |
-| Leap attack | Jump + power strike | small to medium; GameSpot: "not extremely useful" |
+| Leap attack | Jump + power strike | **not built (user 2026-11-23: another mod does it)**: the game's Dive Strike skill plus High Dive Skill (FNIIM, Nexus 10264), listed under "Recommended mods" in the README |
 | Adrenaline-enhanced magic | With a full meter: Telekinesis grabs and throws enemies, Weaken shrinks them for good | Fire, Lightning and Gravity built 2026-11-22, Telekinesis 2026-11-23 (section 7); Weaken left out (B&S has no such spell) |
 | Finisher on a downed enemy | Stab a knocked-down enemy in the chest, without adrenaline | built 2026-11-23: group *Finisher* (default on), section 8 |
 | Stealth backstab | A dagger power strike on an unaware enemy kills at once | medium: whether B&S tells that an NPC has not noticed the player is not checked |
