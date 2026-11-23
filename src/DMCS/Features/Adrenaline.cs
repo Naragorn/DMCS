@@ -235,14 +235,45 @@ namespace DMCS
         /// <summary>The meter is full and waits for the critical.</summary>
         public static bool IsReady => Meter.State == AdrenalineState.Ready;
 
-        /// <summary>A magic critical without a hit event (a gravity push): uses the meter up as a critical does.</summary>
-        internal static bool UseForMagic(Creature target)
+        /// <summary>Double Fatality's gate: the menu option and, with its Needs Skill on, the skill (SkillGate).</summary>
+        public static readonly FeatureToggle DoubleFatalityToggle = new FeatureToggle(AdrenalineSettings.DoubleFatalityName, AdrenalineSettings.DefaultDoubleFatality, Dmcs.Log);
+
+        [ModOption(name = AdrenalineSettings.DoubleFatalityName, tooltip = "A full meter holds two fatalities: after the first critical a fresh window waits for the second.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 54)]
+        public static bool DoubleFatality
         {
-            if (!Toggle.Enabled || !Meter.Consume())
+            get => DoubleFatalityToggle.MenuEnabled;
+            set => DoubleFatalityToggle.Set(value);
+        }
+
+        /// <summary>
+        /// Spends the ready meter on a critical (melee or magic). With Double Fatality the first critical leaves the meter
+        /// full and opens a fresh window for the second (AdrenalineMeter.Spend). False if the meter was not ready.
+        /// </summary>
+        private static bool SpendCritical()
+        {
+            var now = Time.unscaledTime;
+            var spend = Meter.Spend(DoubleFatalityToggle.Enabled, now, WindowDuration);
+            if (spend == CriticalSpend.NotReady)
             {
                 return false;
             }
             Kneel.WindowClosed();
+            if (spend == CriticalSpend.SecondReady)
+            {
+                Kneel.WindowOpened(now);
+                Dmcs.Log.Debug(Channel, "double fatality: the meter stays full, window open for "
+                    + WindowDuration.ToString("0", CultureInfo.InvariantCulture) + " s for the second");
+            }
+            return true;
+        }
+
+        /// <summary>A magic critical without a hit event (a gravity push): uses the meter up as a critical does.</summary>
+        internal static bool UseForMagic(Creature target)
+        {
+            if (!Toggle.Enabled || !SpendCritical())
+            {
+                return false;
+            }
             AdrenalineSignals.Flare();
             Critical?.Invoke(target);
             return true;
@@ -365,9 +396,8 @@ namespace DMCS
                     }
                     return;
                 }
-                if (AdrenalineMagic.TakePending(hit, out var element) && Meter.Consume())
+                if (AdrenalineMagic.TakePending(hit, out var element) && SpendCritical())
                 {
-                    Kneel.WindowClosed();
                     AdrenalineMagic.Execute(element, target, hit);
                     AdrenalineSignals.Flare();
                     Critical?.Invoke(target);
@@ -383,9 +413,8 @@ namespace DMCS
                     Critical?.Invoke(target);
                     return;
                 }
-                if (PendingCritical.Remove(hit) && Meter.Consume())
+                if (PendingCritical.Remove(hit) && SpendCritical())
                 {
-                    Kneel.WindowClosed();
                     AdrenalineCritical.Execute(target, hit, source);
                     AdrenalineSignals.Flare();
                     Critical?.Invoke(target);

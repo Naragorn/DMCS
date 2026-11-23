@@ -1,0 +1,44 @@
+# Step 9: finisher on a downed enemy (user 2026-11-23, default on; Dark Messiah: stab a knocked-down enemy in the chest,
+# no adrenaline). The enemy is put on the ground with a hard push hit (the game's own push, level 3), then stabbed.
+# A real knock-down by a charge or a kick, and the feel: headset.
+
+wait-level
+frame-rate 90
+press DMCS "Reset To Defaults"
+option-exists DMCS "Finisher Enabled" category=Finisher display=Enabled type=Boolean interaction=ArrowList save=true
+expect-option DMCS "Finisher Enabled" true
+set-option DMCS "Debug Logging" true
+set-option DMCS "Adrenaline Enabled" false
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+player-invincible true
+
+# 1. Standing: a stab into the chest is an ordinary hit
+spawn-npc HumanMale distance=2 angle=0 brain=HumanDummy
+mark
+hit-npc Torso velocity=3 type=Pierce damage=1 by=held item=DaggerCommon
+expect-no-log finished
+expect-npc state Alive
+
+# 2. On the ground: a cut is no finisher, a stab into the chest is
+hit-npc Torso velocity=6 push=3
+expect-npc state Destabilized within=2
+mark
+hit-npc Torso velocity=3 type=Slash damage=1 by=held item=DaggerCommon
+expect-log no finisher on HumanMale0 (on the ground): NotAStab
+expect-npc state Destabilized
+mark
+hit-npc Torso velocity=3 type=Pierce damage=1 by=held item=DaggerCommon
+expect-log finished HumanMale0 on the ground with a stab into the chest
+expect-npc state Dead within=2
+
+# 3. Finisher off: a stab into a downed enemy's chest is an ordinary hit
+set-option DMCS "Finisher Enabled" false
+spawn-npc HumanMale distance=2 angle=30 brain=HumanDummy
+hit-npc Torso velocity=6 push=3
+expect-npc state Destabilized within=2
+mark
+hit-npc Torso velocity=3 type=Pierce damage=1 by=held item=DaggerCommon
+expect-no-log finished
+expect-npc state Destabilized
+quit

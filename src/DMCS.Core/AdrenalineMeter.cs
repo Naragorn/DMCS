@@ -33,9 +33,22 @@ namespace DMCS.Core
     /// The Adrenaline meter: Filling → Ready (window timer) → (critical or expiry) → Filling.
     /// Times are seconds on one clock the caller picks (DMCS uses real time, so slow-mo does not stretch them).
     /// </summary>
+    /// <summary>What spending a ready meter on a critical did.</summary>
+    public enum CriticalSpend
+    {
+        NotReady,
+
+        /// <summary>The meter is empty again.</summary>
+        Spent,
+
+        /// <summary>Double fatality: the meter stays full and a fresh window waits for the second critical.</summary>
+        SecondReady,
+    }
+
     public sealed class AdrenalineMeter
     {
         private float _lastGainAt;
+        private bool _secondUsed;
 
         public float Value { get; private set; }
 
@@ -102,6 +115,26 @@ namespace DMCS.Core
             return true;
         }
 
+        /// <summary>
+        /// Spends a ready meter on a critical. With <paramref name="doubleFatality"/> the first critical of a full meter
+        /// leaves it full and opens a fresh window for a second one (user 2026-11-23); the second empties it.
+        /// </summary>
+        public CriticalSpend Spend(bool doubleFatality, float now, float windowSeconds)
+        {
+            if (State != AdrenalineState.Ready)
+            {
+                return CriticalSpend.NotReady;
+            }
+            if (doubleFatality && !_secondUsed)
+            {
+                _secondUsed = true;
+                WindowEndsAt = now + windowSeconds;
+                return CriticalSpend.SecondReady;
+            }
+            Reset();
+            return CriticalSpend.Spent;
+        }
+
         /// <summary>A lowered max: a filling meter is capped (it only fills on the next gain).</summary>
         public void Cap(float max)
         {
@@ -113,6 +146,7 @@ namespace DMCS.Core
 
         public void Reset()
         {
+            _secondUsed = false;
             Value = 0f;
             State = AdrenalineState.Filling;
             WindowEndsAt = 0f;

@@ -29,7 +29,7 @@ public class DmcsSkillsTests
     [Fact]
     public void EveryFeature_HasOneSkill_InTheBodyTree()
     {
-        Assert.Equal(DmcsCategories.Features, DmcsSkills.All.Select(s => s.Feature));
+        Assert.Equal(DmcsCategories.Features.Append(DmcsSkills.DoubleFatality), DmcsSkills.All.Select(s => s.Feature));
         Assert.Equal(DmcsSkills.All.Length, DmcsSkills.All.Select(s => s.Id).Distinct().Count());
         Assert.Equal("Body", DmcsSkills.Tree);
         Assert.All(DmcsSkills.All, s => Assert.InRange(s.Tier, 0, 2));
@@ -41,7 +41,9 @@ public class DmcsSkillsTests
     [InlineData(DmcsCategories.Parry, "DMCS_Parry", 0)]
     [InlineData(DmcsCategories.DisarmStrike, "DMCS_DisarmStrike", 1)]
     [InlineData(DmcsCategories.ClashOfMight, "DMCS_ClashOfMight", 1)]
-    [InlineData(DmcsCategories.Adrenaline, "DMCS_Adrenaline", 2)]
+    // User 2026-11-23: Adrenaline to tier 2 of 3, Double Fatality the last tier.
+    [InlineData(DmcsCategories.Adrenaline, "DMCS_Adrenaline", 1)]
+    [InlineData(DmcsSkills.DoubleFatality, "DMCS_DoubleFatality", 2)]
     public void Skill_PerFeature_IdAndTier(string feature, string id, int tier)
     {
         var skill = DmcsSkills.ForFeature(feature)!;

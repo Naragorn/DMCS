@@ -107,6 +107,11 @@ namespace DMCS.Core
         public static readonly SliderSpec Knockback = new SliderSpec(KnockbackName, 0f, 20f, 1f, 8f);
 
         public const string KneelEnabledName = "Kneel And Execution";
+
+        /// <summary>Two fatalities from one full meter (user 2026-11-23, default off; also a Body-tree skill, last tier).</summary>
+        public const string DoubleFatalityName = "Double Fatality";
+
+        public const bool DefaultDoubleFatality = false;
         public const string KneelAfterNoHitName = "Kneel After No Hit";
         public const string KneelAfterLightHitsName = "Kneel After Light Hits";
         public const string KneelDeathChanceName = "Kneel Death Chance";

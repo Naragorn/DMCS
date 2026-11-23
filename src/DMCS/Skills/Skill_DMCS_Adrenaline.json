@@ -9,7 +9,7 @@
   "prefabAddress": "Bas.Item.Misc.SkillOrb",
   "meshAddress": null,
   "meshSize": 1.0,
-  "tier": 2,
+  "tier": 1,
   "allowSkill": true,
   "forceAllowRefund": false,
   "showInTree": true,

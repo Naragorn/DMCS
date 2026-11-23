@@ -283,12 +283,12 @@ DMCS's own additions (not in DM): kneel and execution, catch bonus, dodge bonus,
 | Dark Messiah | What it does | Cost for DMCS |
 |---|---|---|
 | Counter parry | Parrying right before the enemy's strike destabilizes it and opens it to a counter (manual: "Counter") | built 2026-11-20 with the Power Parry (section 6) |
-| Kick | DM's trademark: enemies fly far, into spikes, fire, water or off ledges | medium: B&S has kicks and a "Mighty Kick" skill (`SkillMightyKick` in the game code), weaker; DMCS could boost the kick (sprinting, or with a full meter). Feel: headset. |
-| Double fatality (Adrenaline skill) | Store more adrenaline, two fatalities in a row | small: an option on the existing meter |
+| Kick | DM's trademark: enemies fly far, into spikes, fire, water or off ledges | **not built (user 2026-11-23: "the game has it already")**: B&S's kicks and its Mighty Kick skill (`SkillMightyKick`) |
+| Double fatality (Adrenaline skill) | Store more adrenaline, two fatalities in a row | built 2026-11-23: option *Double Fatality* (default off) and a Body-tree skill on the last tier (section 8) |
 | Whirlwind at full adrenaline | Crouch + power strike: a spin hitting everyone in reach | medium: VR needs a gesture (e.g. a fast turn with the weapon drawn), to be designed |
 | Leap attack | Jump + power strike | small to medium; GameSpot: "not extremely useful" |
-| Adrenaline-enhanced magic | With a full meter: Telekinesis grabs and throws enemies, Weaken shrinks them for good | Fire, Lightning and Gravity built 2026-11-22 (section 7); Telekinesis next; Weaken left out (B&S has no such spell) |
-| Finisher on a downed enemy | Stab a knocked-down enemy in the chest, without adrenaline | small: in DMCS only inside the adrenaline window so far |
+| Adrenaline-enhanced magic | With a full meter: Telekinesis grabs and throws enemies, Weaken shrinks them for good | Fire, Lightning and Gravity built 2026-11-22, Telekinesis 2026-11-23 (section 7); Weaken left out (B&S has no such spell) |
+| Finisher on a downed enemy | Stab a knocked-down enemy in the chest, without adrenaline | built 2026-11-23: group *Finisher* (default on), section 8 |
 | Stealth backstab | A dagger power strike on an unaware enemy kills at once | medium: whether B&S tells that an NPC has not noticed the player is not checked |
 | Skill-tree odds and ends | Flurry of Blows, Strength +2 damage, Critical Hit +2 % double damage | hardly useful in VR; B&S's damage comes from physics |
 
@@ -366,11 +366,28 @@ order 5): Enabled, per element a toggle and its values. Part of Adrenaline: its 
 - **Gravity:** the push (`SpellCastGravity.Throw`) damages nothing, so DMCS listens to the player's gravity spell's
   `OnPostPushEvent` (found through `Mana.OnSpellLoadEvent`): every enemy within `magicGravityRadius` (4 m) of the
   player is flung away at `magicGravityForce` (12 m/s); the nearest one the push hit dies.
-- **Telekinesis (next, not built):** during the window the player's TK may grab a standing enemy (`grabRagdoll`, as
-  the game's Marionette skill sets it) and throw it (`allowThrow`, as Telethrow); DMCS scales the throw and kills on
-  the impact (`SpellTelekinesis.onTelekinesisUngrabEvent` with thrown = true, then the creature's own next self-hit).
+- **Telekinesis (built 2026-11-23):** while the window is open the player's TK may grab a standing enemy
+  (`grabRagdoll`, as the game's Marionette skill sets it) and throw it (`allowThrow`, as Telethrow); DMCS opens both
+  only while the window is open and restores what was there before. A throw of an enemy
+  (`SpellTelekinesis.onTelekinesisUngrabEvent`, thrown = true) is the critical: every part's velocity ×`magicTelekinesisThrow`
+  (3), and the creature's next hit not from the player within `magicTelekinesisImpactTime` (3 s; its own impact) kills it.
+  Harness: BasHarness `npc-tk-throw` flings the NPC and raises the game's release event; a real grab and swing: headset.
 - Weaken (DM shrinks enemies): left out; B&S has no such spell.
 - All values are guesses for the headset.
+
+## 8. Finisher on a downed enemy (user 2026-11-23, default on; built 2026-11-23)
+
+Dark Messiah: a knocked-down enemy is finished with a stab into the chest, no adrenaline needed. Group `Finisher`
+(category order 7; Skill Tree moved to 8), one option `Enabled`. A stab (penetration or Pierce) with a weapon in the
+player's hand into the torso of a living enemy whose ragdoll is Destabilized or Inert kills it. A kneeling enemy (the
+adrenaline kneel or the chest-stab death) is left to the execution. Rule `FinisherRule`, `Features/Finisher.cs`, harness
+`step9-finisher`. No skill (not asked for).
+
+**Double Fatality (user 2026-11-23):** option `Double Fatality` in the Adrenaline group, default off, plus a Body-tree
+skill on the last tier (`DMCS_DoubleFatality`, tier 3, *Double Fatality Needs Skill* in the Skill Tree group, default
+off). On: the first critical of a full meter (melee or magic) leaves the meter full and opens a fresh window for a
+second critical; the second empties it (`AdrenalineMeter.Spend`). The kneel's execution still uses up the whole meter.
+With it the Adrenaline skill moved from tier 3 to tier 2 (user 2026-11-23).
 
 ## 5. Perfect Block (idea, user 2026-11-20; not designed, not built)
 
@@ -415,7 +432,8 @@ the feature works only while the player has that skill; off, it works as before.
 Skill), but keeps every saved Enabled value and every harness scenario as it is.
 - Skills (catalog JSON `src/DMCS/Skills/Skill_<id>.json`, `$type` `ThunderRoad.Skill.CustomSkillData`, shipped next to
   DMCS.dll; the game reads every `*.json` of a mod folder and its subfolders): Charge Stagger tier 1, Counter Parry
-  (the Parry group) tier 1, Disarm Strike tier 2, Clash of Might tier 2, Adrenaline tier 3 (catalog tiers 0/0/1/1/2).
+  (the Parry group) tier 1, Disarm Strike tier 2, Clash of Might tier 2, Adrenaline tier 2 (tier 3 until 2026-11-23),
+  Double Fatality tier 3 (catalog tiers 0/0/1/1/1/2).
   The game adds each tier's core skill as a requirement and prices them like its own skills of that tier
   (`SkillData.OnCatalogRefresh`, `SkillData.Cost`, read in the game code 1.3.2).
 - Icons: game icons as stand-ins (Juggernaut, TemporalRiposte, WeaponTheft, BruteForce, HyperFocus); an empty address

@@ -10,6 +10,9 @@ namespace DMCS.Core
         Fire,
         Lightning,
         Gravity,
+
+        /// <summary>A telekinesis throw of an enemy (no spell hit: SpellTelekinesis.onTelekinesisUngrabEvent).</summary>
+        Telekinesis,
     }
 
     public enum MagicDecision
@@ -133,6 +136,10 @@ namespace DMCS.Core
 
         public static bool IsMagic(MagicDecision decision) => decision == MagicDecision.Magic;
 
+        /// <summary>Whether the player's telekinesis may grab and throw enemies now: only while the window is open.</summary>
+        public static bool TelekinesisGrab(bool adrenalineOn, bool magicOn, bool telekinesisOn, bool ready) =>
+            adrenalineOn && magicOn && telekinesisOn && ready;
+
         /// <summary>The living enemies within <paramref name="radius"/> m, nearest first.</summary>
         public static List<int> Around(IEnumerable<MagicTarget> others, float radius)
         {
@@ -151,11 +158,13 @@ namespace DMCS.Core
         public const string FireName = "Magic Fire";
         public const string LightningName = "Magic Lightning";
         public const string GravityName = "Magic Gravity";
+        public const string TelekinesisName = "Magic Telekinesis";
 
         public const bool DefaultEnabled = true;
         public const bool DefaultFire = true;
         public const bool DefaultLightning = true;
         public const bool DefaultGravity = true;
+        public const bool DefaultTelekinesis = true;
 
         /// <summary>The game's full heat (Burning.maxHeat): at 100 the creature ignites and dies the fire death.</summary>
         public const float FullHeat = 100f;
@@ -175,6 +184,12 @@ namespace DMCS.Core
         /// <summary>m/s every part of a flung enemy gets, away from the player.</summary>
         public static readonly SliderSpec GravityForce = new SliderSpec("Magic Gravity Force", 2f, 30f, 1f, 12f);
 
-        public static IEnumerable<SliderSpec> Sliders => new[] { FireRadius, FireSpreadHeat, LightningRadius, LightningShock, GravityRadius, GravityForce };
+        /// <summary>How much harder (×) a telekinesis throw of an enemy flies (the game's own ragdoll throw has no multiplier).</summary>
+        public static readonly SliderSpec TelekinesisThrow = new SliderSpec("Magic Telekinesis Throw", 1f, 6f, 0.5f, 3f);
+
+        /// <summary>Seconds after the throw in which the thrown enemy's impact kills it.</summary>
+        public static readonly SliderSpec TelekinesisImpactTime = new SliderSpec("Magic Telekinesis Impact Time", 0.5f, 10f, 0.5f, 3f);
+
+        public static IEnumerable<SliderSpec> Sliders => new[] { FireRadius, FireSpreadHeat, LightningRadius, LightningShock, GravityRadius, GravityForce, TelekinesisThrow, TelekinesisImpactTime };
     }
 }

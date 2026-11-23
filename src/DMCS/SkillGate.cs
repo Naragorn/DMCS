@@ -44,7 +44,7 @@ namespace DMCS
             set => SetNeeds(ChargeStagger.Toggle, value);
         }
 
-        [ModOption(name = DmcsCategories.Adrenaline + Suffix, tooltip = "Adrenaline. " + TooltipStart + "\"Adrenaline\", tier 3" + TooltipEnd, category = DmcsCategories.SkillTree, categoryOrder = DmcsCategories.SkillTreeOrder, order = 3)]
+        [ModOption(name = DmcsCategories.Adrenaline + Suffix, tooltip = "Adrenaline. " + TooltipStart + "\"Adrenaline\", tier 2" + TooltipEnd, category = DmcsCategories.SkillTree, categoryOrder = DmcsCategories.SkillTreeOrder, order = 3)]
         public static bool AdrenalineNeedsSkill
         {
             get => Adrenaline.Toggle.NeedsSkill;
@@ -56,6 +56,13 @@ namespace DMCS
         {
             get => Parry.Toggle.NeedsSkill;
             set => SetNeeds(Parry.Toggle, value);
+        }
+
+        [ModOption(name = DmcsSkills.DoubleFatality + Suffix, tooltip = "Double Fatality (Adrenaline group). " + TooltipStart + "\"Double Fatality\", tier 3" + TooltipEnd, category = DmcsCategories.SkillTree, categoryOrder = DmcsCategories.SkillTreeOrder, order = 5)]
+        public static bool DoubleFatalityNeedsSkill
+        {
+            get => Adrenaline.DoubleFatalityToggle.NeedsSkill;
+            set => SetNeeds(Adrenaline.DoubleFatalityToggle, value);
         }
 
         public static void Start()
@@ -99,7 +106,8 @@ namespace DMCS
             return skill.Id + " in " + data.primarySkillTreeId + " tier " + (data.tier + 1) + " (cost " + data.Cost + owned + ")";
         }
 
-        private static FeatureToggle Toggle(DmcsSkill skill) => Features.All.FirstOrDefault(t => t.Name == skill.Feature);
+        private static FeatureToggle Toggle(DmcsSkill skill) =>
+            Features.All.Append(Adrenaline.DoubleFatalityToggle).FirstOrDefault(t => t.Name == skill.Feature);
 
         private static void SetNeeds(FeatureToggle toggle, bool value)
         {

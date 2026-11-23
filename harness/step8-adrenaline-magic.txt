@@ -18,6 +18,12 @@ option-exists DMCS "Magic Lightning Shock" category="Adrenaline Magic" type=Sing
 option-exists DMCS "Magic Gravity" category="Adrenaline Magic" type=Boolean interaction=ArrowList save=true
 option-exists DMCS "Magic Gravity Radius" category="Adrenaline Magic" type=Single interaction=Slider save=true
 option-exists DMCS "Magic Gravity Force" category="Adrenaline Magic" type=Single interaction=Slider save=true
+option-exists DMCS "Magic Telekinesis" category="Adrenaline Magic" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Magic Telekinesis Throw" category="Adrenaline Magic" type=Single interaction=Slider save=true
+option-exists DMCS "Magic Telekinesis Impact Time" category="Adrenaline Magic" type=Single interaction=Slider save=true
+expect-option DMCS "Magic Telekinesis" true
+expect-option DMCS "Magic Telekinesis Throw" 3
+expect-option DMCS "Magic Telekinesis Impact Time" 3
 expect-option DMCS "Adrenaline Magic Enabled" true
 expect-option DMCS "Magic Fire" true
 expect-option DMCS "Magic Fire Radius" 3
@@ -87,6 +93,23 @@ await-log 5 Magic critical: Gravity on HumanMale
 expect-log flung HumanMale
 expect-npc state Dead within=3
 wait 4
+
+# 4b. Telekinesis: while the window is open the player's telekinesis may grab enemies; a thrown one flies 3x as hard and
+# its impact kills it. The throw is BasHarness npc-tk-throw (flings the NPC, raises the game's own release event).
+spawn-npc HumanMale distance=2 angle=0 brain=HumanDummy
+hit-npc Torso velocity=2
+mark
+hit-npc Torso velocity=2
+expect-log meter full: window open for 30 s
+await-log 3 can grab and throw enemies (window open)
+mark
+npc-tk-throw speed=6
+await-log 3 Magic critical: Telekinesis on HumanMale
+expect-log 3x as hard; its impact within 3 s kills it
+await-log 5 after the throw and dies
+expect-npc state Dead within=2
+await-log 3 telekinesis back to normal
+wait 3
 
 # 5. An element switched off: no magic, the window stays open for the next hit
 set-option DMCS "Magic Fire" false

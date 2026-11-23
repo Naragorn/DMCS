@@ -329,6 +329,7 @@ public class ModOptionMetadataTests
                 (AdrenalineSettings.VignetteSizeName, "System.Single", "Slider"),
                 (AdrenalineSettings.VignetteFrameRateName, "System.Single", "Slider"),
                 (AdrenalineSettings.VignetteFlareName, "System.Boolean", "ArrowList"),
+                (AdrenalineSettings.DoubleFatalityName, "System.Boolean", "ArrowList"),
             },
             group.Select(o => (o.Name, o.DataType, o.InteractionType)));
         Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));
@@ -353,7 +354,7 @@ public class ModOptionMetadataTests
     public void Categories_AreExactlyGeneral_TheFeatures_AdrenalineMagic_AndSkillTree()
     {
         var categories = Options.Value.Select(o => o.Category).Distinct().OrderBy(c => c).ToArray();
-        var expected = new[] { DmcsCategories.General, DmcsCategories.SkillTree, DmcsCategories.AdrenalineMagic }.Concat(DmcsCategories.Features).OrderBy(c => c).ToArray();
+        var expected = new[] { DmcsCategories.General, DmcsCategories.SkillTree, DmcsCategories.AdrenalineMagic, DmcsCategories.Finisher }.Concat(DmcsCategories.Features).OrderBy(c => c).ToArray();
 
         Assert.Equal(expected, categories);
     }
@@ -387,6 +388,8 @@ public class ModOptionMetadataTests
     [InlineData(DmcsCategories.ChargeStagger)]
     [InlineData(DmcsCategories.Adrenaline)]
     [InlineData(DmcsCategories.Parry)]
+    [InlineData(DmcsCategories.AdrenalineMagic)]
+    [InlineData(DmcsCategories.Finisher)]
     public void EveryFeatureGroup_StartsWithItsEnabledToggle(string category)
     {
         var inGroup = Options.Value.Where(o => o.Category == category).ToList();
@@ -417,6 +420,9 @@ public class ModOptionMetadataTests
                 (AdrenalineMagicSettings.GravityName, "System.Boolean", "ArrowList"),
                 (AdrenalineMagicSettings.GravityRadius.Name, "System.Single", "Slider"),
                 (AdrenalineMagicSettings.GravityForce.Name, "System.Single", "Slider"),
+                (AdrenalineMagicSettings.TelekinesisName, "System.Boolean", "ArrowList"),
+                (AdrenalineMagicSettings.TelekinesisThrow.Name, "System.Single", "Slider"),
+                (AdrenalineMagicSettings.TelekinesisImpactTime.Name, "System.Single", "Slider"),
             },
             group.Select(o => (o.Name, o.DataType, o.InteractionType)));
         Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));

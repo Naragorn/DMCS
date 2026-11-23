@@ -60,7 +60,8 @@ Combat fills a hidden meter. It is filled by:
 
 Hits you take drain the meter. You can switch that so they fill it instead.
 
-**When the meter is full** you get a window, 12 s by default:
+**When the meter is full** you get a window, 12 s by default (with *Double Fatality* on, the first fatality opens a
+fresh window for a second one):
 - **Signals:** a sound like Dark Messiah's "adrenaline reached", a heartbeat, a heartbeat pulse in both controllers,
   a glowing weapon hand, and flickering red streaks at the edge of your view.
 - **Fatality:** your next **hard** hit is the critical. You shout, time slows down (Hyperfocus: the world slows and you
@@ -126,9 +127,17 @@ With a full meter, your next spell that hits an enemy is the critical, as a big 
 - **Fire:** the enemy hit burns up at once. Enemies within 3 m of it catch fire.
 - **Lightning:** the bolt jumps to every enemy within 5 m and shocks them for 4 s. The enemy hit dies.
 - **Gravity:** a push flings every enemy within 4 m of you away. The nearest one it hit dies.
+- **Telekinesis:** while the meter is full your telekinesis grabs even a standing enemy. Throw it and it flies three
+  times as hard; if it hits something within 3 s, it dies.
 
 You shout and time slows down, as with a melee critical. Each element can be switched off on its own. How it looks and
 feels has not been checked in VR yet; the values are guesses.
+
+### Finisher
+
+Stab an enemy lying on the ground in the chest and it dies, no adrenaline needed. It works on any enemy that is down:
+knocked over by a second charge hit, a gravity push or a fall. A kneeling enemy in the adrenaline window is the
+execution's, not the finisher's. On by default.
 
 ### Skill tree (optional)
 
@@ -141,7 +150,8 @@ tree, priced like the game's own skills of the same tier:
 | Counter Parry | 1 | Counter Parry and Power Parry |
 | Disarm Strike | 2 | Disarm Strike |
 | Clash of Might | 2 | Clash of Might |
-| Adrenaline | 3 | Adrenaline |
+| Adrenaline | 2 | Adrenaline |
+| Double Fatality | 3 | Two fatalities from one full meter (the *Double Fatality* option, off by default) |
 
 By default nothing changes: every mechanic works without its skill. Switch on *… Needs Skill* under **Skill Tree** in
 the Mod Menu, and that mechanic works only once you have bought its skill. As with the game's own skills, you first
@@ -310,6 +320,7 @@ on body hits.
 | Kneel After No Hit | 2 s | 0.5–5 s | Seconds without a hit before it kneels |
 | Kneel After Light Hits | 2 | 1–10 | Light hits before it kneels |
 | Kneel Max Distance | 3 m | 1–15 m | Only an enemy this near you kneels |
+| Double Fatality | off | | A full meter holds two fatalities: after the first, a fresh window waits for the second |
 | Kneel Death Chance | 0 % | 0–100 % | Chance it dies instead of standing up again |
 | Adrenaline Ready Sound | on | | Sound when the meter is full |
 | Adrenaline Ready Sound Style | DMCS 3 | DMCS 1–3, Dark Messiah | Which sound (DMCS 1–3 are DMCS's own versions) |
@@ -359,6 +370,15 @@ Picking a DMCS vignette style sets *Streaks*, *Streak Length* and *Hue* to how t
 | Magic Gravity | on | | A push flings every enemy around you away; the nearest one it hit dies |
 | Magic Gravity Radius | 4 m | 0–15 m | How far around you enemies are flung |
 | Magic Gravity Force | 12 m/s | 2–30 m/s | How hard they are flung |
+| Magic Telekinesis | on | | Telekinesis grabs standing enemies while the meter is full; a thrown one dies on impact |
+| Magic Telekinesis Throw | 3× | 1–6× | How much harder a thrown enemy flies |
+| Magic Telekinesis Impact Time | 3 s | 0.5–10 s | How long after the throw an impact still kills |
+
+**Finisher**
+
+| Option | Default | What it does |
+|---|---|---|
+| Enabled | on | A stab into the chest of an enemy lying on the ground kills it |
 
 **Skill Tree**
 
@@ -369,6 +389,7 @@ Picking a DMCS vignette style sets *Streaks*, *Streak Length* and *Hue* to how t
 | Charge Stagger Needs Skill | off | The same for Charge Stagger |
 | Adrenaline Needs Skill | off | The same for Adrenaline |
 | Parry Needs Skill | off | The same for Counter Parry and Power Parry (skill "Counter Parry") |
+| Double Fatality Needs Skill | off | Double Fatality works only once you have bought its skill (Body tree, tier 3) |
 
 ## Reporting bugs
 

@@ -110,6 +110,36 @@ expect-log slow-motion Slow Time: 0.50× for 3.0 s
 expect-no-log you keep your speed
 expect-log slow-motion over: time back to normal
 
+# 5. Double Fatality (user 2026-11-23, default off): the first critical keeps the meter full for a second one
+set-option DMCS "Critical Time Mode" Hyperfocus
+set-option DMCS "Double Fatality" true
+spawn-npc HumanMale distance=2.6 angle=40 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+expect-log meter full: window open for 20 s
+mark
+hit-npc RightArm velocity=8 type=Slash damage=1
+expect-log CRITICAL on HumanMale
+expect-log double fatality: the meter stays full, window open for 20 s for the second
+wait 4
+# the second fatality, on a second enemy (the first one is dead)
+spawn-npc HumanMale distance=2.4 angle=-40 brain=HumanDummy
+mark
+hit-npc LeftArm velocity=8 type=Slash damage=1
+expect-log CRITICAL on HumanMale
+expect-no-log double fatality
+wait 4
+# off again: one critical empties the meter
+set-option DMCS "Double Fatality" false
+spawn-npc HumanMale distance=2.4 angle=0 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+mark
+hit-npc RightArm velocity=8 type=Slash damage=1
+expect-log CRITICAL on HumanMale
+expect-no-log double fatality
+wait 4
+
 press DMCS "Reset To Defaults"
 expect-no-log Exception
 screenshot step4b-adrenaline-critical

@@ -116,6 +116,34 @@ public class AdrenalineMagicTests
         Assert.Empty(MagicRule.Around(null, 5f));
     }
 
+    // Telekinesis (2026-11-23): while the window is open the player's telekinesis may grab and throw enemies.
+
+    [Theory]
+    [InlineData(true, true, true, true, true)]
+    [InlineData(false, true, true, true, false)]
+    [InlineData(true, false, true, true, false)]
+    [InlineData(true, true, false, true, false)]
+    [InlineData(true, true, true, false, false)]
+    public void TelekinesisGrab_OnlyWhileTheWindowIsOpen_AndEverythingOn(bool adrenalineOn, bool magicOn, bool tkOn, bool ready, bool expected)
+    {
+        Assert.Equal(expected, MagicRule.TelekinesisGrab(adrenalineOn, magicOn, tkOn, ready));
+    }
+
+    [Fact]
+    public void Telekinesis_IsAnElement_ButNoSpellHitIsOne()
+    {
+        Assert.Equal(MagicDecision.Magic, MagicRule.Decide(Cast(element: MagicElement.Telekinesis)));
+        Assert.Equal(MagicElement.None, MagicRule.ElementOf("Telekinesis"));
+    }
+
+    [Fact]
+    public void Settings_Telekinesis()
+    {
+        Assert.True(AdrenalineMagicSettings.DefaultTelekinesis);
+        Assert.Equal(3f, AdrenalineMagicSettings.TelekinesisThrow.Default);
+        Assert.Equal(3f, AdrenalineMagicSettings.TelekinesisImpactTime.Default);
+    }
+
     [Fact]
     public void Settings_Defaults_AreAllOn_WithTheirSliders()
     {
@@ -130,6 +158,6 @@ public class AdrenalineMagicTests
         Assert.Equal(4f, AdrenalineMagicSettings.GravityRadius.Default);
         Assert.Equal(12f, AdrenalineMagicSettings.GravityForce.Default);
         Assert.All(AdrenalineMagicSettings.Sliders, s => Assert.InRange(s.Default, s.Min, s.Max));
-        Assert.Equal(6, AdrenalineMagicSettings.Sliders.Count());
+        Assert.Equal(8, AdrenalineMagicSettings.Sliders.Count());
     }
 }

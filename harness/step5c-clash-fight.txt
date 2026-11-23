@@ -131,7 +131,8 @@ set-option DMCS "Power Parry Min Speed" 5
 player-grab SwordShortCommon
 spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
 mark
-await-log 30 blade flashes
+# Section 1's enemy may still be fighting too (2026-11-23 it flashed first): wait for this section's NPC (the fourth).
+await-log 30 HumanMale3's blade flashes
 player-parry swing=2.75
 expect-log TooFast (contact
 expect-no-log blades locked

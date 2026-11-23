@@ -148,6 +148,56 @@ public class AdrenalineMeterTests
         Assert.False(m.Consume());
     }
 
+    // Double fatality (user 2026-11-23, default off): the first critical leaves the meter full and opens a fresh window
+    // for a second one; the second empties it.
+
+    [Fact]
+    public void DoubleFatality_FirstCriticalReopensTheWindow_SecondEmptiesIt()
+    {
+        var m = Filled();
+
+        Assert.Equal(CriticalSpend.SecondReady, m.Spend(doubleFatality: true, now: 3f, windowSeconds: Window));
+        Assert.Equal(AdrenalineState.Ready, m.State);
+        Assert.Equal(9f, m.WindowEndsAt);
+        Assert.Equal(CriticalSpend.Spent, m.Spend(doubleFatality: true, now: 4f, windowSeconds: Window));
+        Assert.Equal(AdrenalineState.Filling, m.State);
+        Assert.Equal(0f, m.Value);
+        Assert.Equal(CriticalSpend.NotReady, m.Spend(true, 5f, Window));
+    }
+
+    [Fact]
+    public void DoubleFatality_Off_OneCriticalEmptiesIt()
+    {
+        var m = Filled();
+
+        Assert.Equal(CriticalSpend.Spent, m.Spend(doubleFatality: false, now: 1f, windowSeconds: Window));
+        Assert.Equal(AdrenalineState.Filling, m.State);
+    }
+
+    [Fact]
+    public void DoubleFatality_SecondWindowExpires_TheNextFillGivesTwoAgain()
+    {
+        var m = Filled();
+        m.Spend(true, 1f, Window);
+
+        Assert.Equal(AdrenalineEvent.WindowExpired, m.Tick(7.5f, 0.1f, 0f, 0f));
+        m.Gain(Max, 8f, Max, Window);
+
+        Assert.Equal(CriticalSpend.SecondReady, m.Spend(true, 9f, Window));
+    }
+
+    [Fact]
+    public void DoubleFatality_PlainConsume_EndsBothAtOnce()
+    {
+        var m = Filled();
+        m.Spend(true, 1f, Window);
+
+        Assert.True(m.Consume());
+        Assert.Equal(AdrenalineState.Filling, m.State);
+        m.Gain(Max, 2f, Max, Window);
+        Assert.Equal(CriticalSpend.SecondReady, m.Spend(true, 3f, Window));
+    }
+
     [Fact]
     public void Consume_OnAFillingMeter_DoesNothing()
     {

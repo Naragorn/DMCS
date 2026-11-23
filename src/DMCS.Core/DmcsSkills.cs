@@ -47,9 +47,12 @@ namespace DMCS.Core
 
         public const bool DefaultNeedsSkill = false;
 
+        /// <summary>Not a feature group: the Double Fatality option of the Adrenaline group, a skill of its own (user 2026-11-23).</summary>
+        public const string DoubleFatality = AdrenalineSettings.DoubleFatalityName;
+
         private const string Icons = "Bas.Ui.SkillTree.Icons[";
 
-        /// <summary>In the spec's feature order (DmcsCategories.Features).</summary>
+        /// <summary>In the spec's feature order (DmcsCategories.Features), then Double Fatality.</summary>
         public static readonly DmcsSkill[] All =
         {
             new DmcsSkill(
@@ -62,11 +65,14 @@ namespace DMCS.Core
                 DmcsCategories.ChargeStagger, "DMCS_ChargeStagger", 0, Icons + "Juggernaut]", "Charge Stagger",
                 "Hit an enemy while sprinting and it staggers. A second charge hit knocks it down."),
             new DmcsSkill(
-                DmcsCategories.Adrenaline, "DMCS_Adrenaline", 2, Icons + "HyperFocus]", "Adrenaline",
+                DmcsCategories.Adrenaline, "DMCS_Adrenaline", 1, Icons + "HyperFocus]", "Adrenaline",
                 "Fighting fills your adrenaline. When it is full, your next hard hit is a fatality."),
             new DmcsSkill(
                 DmcsCategories.Parry, "DMCS_Parry", 0, Icons + "TemporalRiposte]", "Counter Parry",
                 "Bring your weapon into an enemy's swing just in time and it staggers. Swing hard into its attack and its weapon flies away."),
+            new DmcsSkill(
+                DoubleFatality, "DMCS_DoubleFatality", 2, Icons + "SecondWind]", "Double Fatality",
+                "A full adrenaline meter holds two fatalities: after the first, a fresh window waits for the second."),
         };
 
         public static DmcsSkill ForFeature(string feature) => feature == null ? null : All.FirstOrDefault(s => s.Feature == feature);

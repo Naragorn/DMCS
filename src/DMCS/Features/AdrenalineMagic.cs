@@ -5,6 +5,7 @@ using System.Linq;
 using DMCS.Core;
 using ThunderRoad;
 using ThunderRoad.Skill.Spell;
+using ThunderRoad.Skill.SpellPower;
 using UnityEngine;
 
 namespace DMCS
@@ -84,6 +85,21 @@ namespace DMCS
 
         public static ModOptionFloat[] GravityForceValues() => Floats(AdrenalineMagicSettings.GravityForce, "0", " m/s");
 
+        [ModOption(name = AdrenalineMagicSettings.TelekinesisName, tooltip = "With a full meter your telekinesis grabs even a standing enemy; throw it hard and the impact kills it.", category = DmcsCategories.AdrenalineMagic, categoryOrder = DmcsCategories.AdrenalineMagicOrder, order = 10)]
+        public static bool TelekinesisEnabled { get; set; } = AdrenalineMagicSettings.DefaultTelekinesis;
+
+        [ModOption(name = "Magic Telekinesis Throw", tooltip = "How much harder (×) a thrown enemy flies.", valueSourceName = nameof(TelekinesisThrowValues), category = DmcsCategories.AdrenalineMagic, categoryOrder = DmcsCategories.AdrenalineMagicOrder, order = 11)]
+        [ModOptionSlider]
+        public static float TelekinesisThrow { get; set; } = AdrenalineMagicSettings.TelekinesisThrow.Default;
+
+        [ModOption(name = "Magic Telekinesis Impact Time", tooltip = "Seconds after the throw in which the thrown enemy's impact kills it.", valueSourceName = nameof(TelekinesisImpactTimeValues), category = DmcsCategories.AdrenalineMagic, categoryOrder = DmcsCategories.AdrenalineMagicOrder, order = 12)]
+        [ModOptionSlider]
+        public static float TelekinesisImpactTime { get; set; } = AdrenalineMagicSettings.TelekinesisImpactTime.Default;
+
+        public static ModOptionFloat[] TelekinesisThrowValues() => Floats(AdrenalineMagicSettings.TelekinesisThrow, "0.0", "×");
+
+        public static ModOptionFloat[] TelekinesisImpactTimeValues() => Floats(AdrenalineMagicSettings.TelekinesisImpactTime, "0.0", " s");
+
         public static void Start()
         {
             if (_hooked)
@@ -91,6 +107,8 @@ namespace DMCS
                 return;
             }
             EventManager.onPossess += OnPossess;
+            SpellTelekinesis.onTelekinesisUngrabEvent += OnTelekinesisRelease;
+            EventManager.onCreatureHit += OnThrownHit;
             _hooked = true;
             Watch(Player.currentCreature);
         }
@@ -102,12 +120,152 @@ namespace DMCS
                 return;
             }
             EventManager.onPossess -= OnPossess;
+            SpellTelekinesis.onTelekinesisUngrabEvent -= OnTelekinesisRelease;
+            EventManager.onCreatureHit -= OnThrownHit;
+            SetTelekinesisGrab(false);
+            Thrown.Clear();
             Watch(null);
             _hooked = false;
             Pending.Clear();
         }
 
-        public static void Update() => Pending.Clear();
+        public static void Update()
+        {
+            Pending.Clear();
+            SetTelekinesisGrab(MagicRule.TelekinesisGrab(Adrenaline.Toggle.Enabled, Enabled, TelekinesisEnabled, Adrenaline.IsReady));
+            var now = Time.unscaledTime;
+            foreach (var id in Thrown.Where(t => now > t.Value.Until || t.Value.Creature == null).Select(t => t.Key).ToList())
+            {
+                Thrown.Remove(id);
+            }
+        }
+
+        // ---- Telekinesis (2026-11-23) ----------------------------------------------------------------------------
+        // Read in the game code 1.3.2: the player's telekinesis grabs a living enemy only with SpellTelekinesis.grabRagdoll
+        // (set by the game's Marionette skill) and throws a held creature only with allowThrow (Telethrow skill). The throw
+        // (HandleRagdoll release) pushes the grabbed part with 30 m/s and the others with 8 m/s along the hand's swing, then
+        // SpellTelekinesis.onTelekinesisUngrabEvent fires with thrown = true. A thrown body hitting a wall or the ground
+        // damages itself (its own ragdoll damager), which raises onCreatureHit with no player source.
+
+        private sealed class ThrownEnemy
+        {
+            public Creature Creature;
+            public float Until;
+        }
+
+        private static readonly Dictionary<int, ThrownEnemy> Thrown = new Dictionary<int, ThrownEnemy>();
+
+        /// <summary>The telekinesis of each hand DMCS opened, with what it was before.</summary>
+        private static readonly Dictionary<SpellTelekinesis, (bool Grab, bool Throw)> Opened = new Dictionary<SpellTelekinesis, (bool Grab, bool Throw)>();
+
+        private static void SetTelekinesisGrab(bool open)
+        {
+            var player = Player.currentCreature;
+            if (open && player != null)
+            {
+                foreach (var hand in new[] { player.handLeft, player.handRight })
+                {
+                    var tk = hand?.caster?.telekinesis;
+                    if (tk == null || Opened.ContainsKey(tk))
+                    {
+                        continue;
+                    }
+                    Opened[tk] = (tk.grabRagdoll, tk.allowThrow);
+                    tk.grabRagdoll = true;
+                    tk.allowThrow = true;
+                    Dmcs.Log.Debug(Channel, "telekinesis of the " + hand.side + " hand can grab and throw enemies (window open)");
+                }
+                return;
+            }
+            if (Opened.Count == 0)
+            {
+                return;
+            }
+            foreach (var pair in Opened)
+            {
+                if (pair.Key != null)
+                {
+                    // Only what DMCS opened: a skill that grants it (Marionette, Telethrow) had it true before.
+                    pair.Key.grabRagdoll = pair.Value.Grab;
+                    pair.Key.allowThrow = pair.Value.Throw;
+                }
+            }
+            Opened.Clear();
+            Dmcs.Log.Debug(Channel, "telekinesis back to normal");
+        }
+
+        private static void OnTelekinesisRelease(SpellCaster caster, SpellTelekinesis tk, Side side, Handle handle, bool thrown)
+        {
+            try
+            {
+                var creature = (handle as HandleRagdoll)?.ragdollPart?.ragdoll?.creature;
+                var player = caster?.mana?.creature;
+                if (!thrown || creature == null || creature.isPlayer || player == null || !player.isPlayer)
+                {
+                    return;
+                }
+                var decision = MagicRule.Decide(new MagicCast(
+                    Adrenaline.Toggle.Enabled, Enabled, Adrenaline.IsReady, true, MagicElement.Telekinesis, TelekinesisEnabled,
+                    false, creature.isKilled));
+                if (decision != MagicDecision.Magic)
+                {
+                    if (Adrenaline.IsReady)
+                    {
+                        Dmcs.Log.Debug(Channel, "no magic on " + creature.name + ": " + decision + " (Telekinesis)");
+                    }
+                    return;
+                }
+                if (!Adrenaline.UseForMagic(creature))
+                {
+                    return;
+                }
+                AdrenalineCritical.Moment("magic critical: Telekinesis on " + creature.name);
+                var extra = Mathf.Max(0f, TelekinesisThrow - 1f);
+                foreach (var part in creature.ragdoll.parts)
+                {
+                    var body = part.physicBody;
+                    if (body != null)
+                    {
+                        body.AddForce(body.velocity * extra, ForceMode.VelocityChange);
+                    }
+                }
+                Thrown[creature.GetInstanceID()] = new ThrownEnemy { Creature = creature, Until = Time.unscaledTime + TelekinesisImpactTime };
+                Dmcs.Log.Debug(Channel, "threw " + creature.name + " " + F(TelekinesisThrow) + "x as hard; its impact within "
+                    + F(TelekinesisImpactTime) + " s kills it");
+            }
+            catch (Exception e)
+            {
+                Dmcs.Log.Info("Adrenaline Magic error: " + e);
+            }
+        }
+
+        /// <summary>The thrown enemy's first hit not from the player (its own impact) kills it.</summary>
+        private static void OnThrownHit(Creature target, CollisionInstance hit, EventTime eventTime)
+        {
+            try
+            {
+                if (eventTime != EventTime.OnEnd || target == null || Thrown.Count == 0
+                    || !Thrown.TryGetValue(target.GetInstanceID(), out var thrown) || HitInfo.SourceOf(hit) != HitSource.NotPlayer)
+                {
+                    return;
+                }
+                Thrown.Remove(target.GetInstanceID());
+                if (Time.unscaledTime > thrown.Until || target.isKilled)
+                {
+                    return;
+                }
+                if (AdrenalineCritical.Kills)
+                {
+                    target.Kill(hit);
+                }
+                Dmcs.Log.Debug(Channel, target.name + " hit " + (hit.targetColliderGroup == null && hit.sourceColliderGroup == null ? "the ground" : "something")
+                    + " after the throw" + (target.isKilled ? " and dies" : ""));
+            }
+            catch (Exception e)
+            {
+                Dmcs.Log.Info("Adrenaline Magic error: " + e);
+            }
+        }
 
         /// <summary>At the hit's start: whether this player spell hit is the magic critical (then the melee critical is skipped).</summary>
         public static bool Claim(Creature target, CollisionInstance hit, HitSource source, bool adrenalineOn, bool ready)

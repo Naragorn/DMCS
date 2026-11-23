@@ -10,8 +10,9 @@ frame-rate 90
 expect-log Skill tree: DMCS_ClashOfMight in Body tier 2 (cost
 expect-log DMCS_DisarmStrike in Body tier 2 (cost
 expect-log DMCS_ChargeStagger in Body tier 1 (cost
-expect-log DMCS_Adrenaline in Body tier 3 (cost
+expect-log DMCS_Adrenaline in Body tier 2 (cost
 expect-log DMCS_Parry in Body tier 1 (cost
+expect-log DMCS_DoubleFatality in Body tier 3 (cost
 expect-no-log NOT in the game's catalog
 press DMCS "Reset To Defaults"
 option-exists DMCS "Clash of Might Needs Skill" category="Skill Tree" type=Boolean interaction=ArrowList save=true
@@ -24,6 +25,8 @@ expect-option DMCS "Disarm Strike Needs Skill" false
 expect-option DMCS "Charge Stagger Needs Skill" false
 expect-option DMCS "Adrenaline Needs Skill" false
 expect-option DMCS "Parry Needs Skill" false
+option-exists DMCS "Double Fatality Needs Skill" category="Skill Tree" type=Boolean interaction=ArrowList save=true
+expect-option DMCS "Double Fatality Needs Skill" false
 set-option DMCS "Debug Logging" true
 set-option DMCS "Charge Stagger Enabled" false
 set-option DMCS "Adrenaline Enabled" false

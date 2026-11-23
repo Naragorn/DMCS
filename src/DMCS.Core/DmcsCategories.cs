@@ -13,6 +13,9 @@ namespace DMCS.Core
         /// <summary>Part of Adrenaline (its own toggle and skill gate count), a group of its own in the menu.</summary>
         public const string AdrenalineMagic = "Adrenaline Magic";
 
+        /// <summary>Finisher on a downed enemy (user 2026-11-23); a group of its own, no skill.</summary>
+        public const string Finisher = "Finisher";
+
         /// <summary>Not a feature: one "Needs Skill" toggle per feature (the skill tree gate, 2026-11-20).</summary>
         public const string SkillTree = "Skill Tree";
 
@@ -23,7 +26,8 @@ namespace DMCS.Core
         public const int AdrenalineOrder = 4;
         public const int AdrenalineMagicOrder = 5;
         public const int ParryOrder = 6;
-        public const int SkillTreeOrder = 7;
+        public const int FinisherOrder = 7;
+        public const int SkillTreeOrder = 8;
 
         /// <summary>
         /// The game's own "Enabled" text (Texts/Text_*.json, group "Default", id "Enabled").
@@ -48,6 +52,7 @@ namespace DMCS.Core
                 case Adrenaline: return AdrenalineOrder;
                 case AdrenalineMagic: return AdrenalineMagicOrder;
                 case Parry: return ParryOrder;
+                case Finisher: return FinisherOrder;
                 case SkillTree: return SkillTreeOrder;
                 default: return -1;
             }

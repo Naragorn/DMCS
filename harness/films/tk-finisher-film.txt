@@ -1,0 +1,36 @@
+# Film of the telekinesis magic and the finisher (not part of the suite). Round 1: a full meter, then BasHarness
+# npc-tk-throw flings the NPC and raises the game's telekinesis release. Round 2: an NPC is pushed to the ground (push=3)
+# and stabbed in the chest with a held dagger. Views: beside the NPC and the player's own eyes. Sets only options an older
+# build has too, so the same scenario films the "before".
+wait-level
+frame-rate 90
+press DMCS "Reset To Defaults"
+set-option DMCS "Debug Logging" true
+set-option DMCS "Adrenaline Per Hit" 50
+set-option DMCS "Adrenaline Window" 20
+set-option DMCS "Kneel And Execution" false
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+player-invincible true
+
+spawn-npc HumanMale distance=2 angle=0 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+wait 1
+record-start telekinesis fps=60 width=640 height=360 views=npc,first
+wait 0.5
+npc-tk-throw speed=6
+wait 4
+record-stop
+wait 2
+
+spawn-npc HumanMale distance=1.6 angle=0 brain=HumanDummy
+set-option DMCS "Adrenaline Enabled" false
+record-start finisher fps=60 width=640 height=360 views=npc,first
+wait 0.3
+hit-npc Torso velocity=6 push=3
+expect-npc state Destabilized within=2
+hit-npc Torso velocity=3 type=Pierce damage=1 by=held item=DaggerCommon
+wait 3
+record-stop
+quit
