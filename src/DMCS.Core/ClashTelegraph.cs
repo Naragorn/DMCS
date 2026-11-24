@@ -109,11 +109,14 @@ namespace DMCS.Core
 
     public enum BlockVerdict
     {
-        /// <summary>Both hands on the weapon: the blades lock, the clash starts (user 2026-11-24).</summary>
+        /// <summary>Both hands on the weapon and blade on blade: the blades lock, the clash starts (user 2026-11-24).</summary>
         Clash,
 
         /// <summary>One hand on the weapon: an ordinary parry.</summary>
         OneHanded,
+
+        /// <summary>Both hands, but the blades did not meet (a hilt, guard or handle took the blow): an ordinary parry.</summary>
+        NotBladeOnBlade,
     }
 
     public enum LockEnd
@@ -248,10 +251,17 @@ namespace DMCS.Core
 
         /// <summary>
         /// A block of the flashing blade (the NPC's swing hit the player's weapon) locks the blades when the player holds
-        /// that weapon with both hands; with one hand it is an ordinary parry. The only condition (user 2026-11-24): angle,
-        /// hand speed and where on the blade it hit do not count.
+        /// that weapon with both hands and the two blades met, blade on blade (user 2026-11-24); otherwise it is an ordinary
+        /// parry. One hand is named first. Angle, hand speed and where along the blades they met do not count.
         /// </summary>
-        public static BlockVerdict JudgeBlock(bool twoHanded) => twoHanded ? BlockVerdict.Clash : BlockVerdict.OneHanded;
+        public static BlockVerdict JudgeBlock(bool twoHanded, bool bladesMeet)
+        {
+            if (!twoHanded)
+            {
+                return BlockVerdict.OneHanded;
+            }
+            return bladesMeet ? BlockVerdict.Clash : BlockVerdict.NotBladeOnBlade;
+        }
 
         public static bool CanFlash(bool onlySwords, bool isSword, bool hasSlashBlade) => hasSlashBlade && (!onlySwords || isSword);
 

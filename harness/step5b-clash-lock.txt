@@ -1,5 +1,5 @@
 # Step 5b: Clash of Might lock (mode On). A two-handed block of the flashing blade (the game's own block event, raised
-# here with player-parry since the harness cannot swing the player's arm; the only condition since 2026-11-24) locks the blades: the NPC freezes in its swing, the
+# here with player-parry since the harness cannot swing the player's arm; since 2026-11-24 both hands and blade on blade) locks the blades: the NPC freezes in its swing, the
 # player's weapon gets heavy, a diagnostic is logged every 0.1 s; without pushing, the first round is lost and both are
 # released (the rounds themselves: step5c). A one-handed block stays an ordinary parry. The player's sword in the mock hand also meets real swings now and then:
 # those raise the game's own block event too and may lock for real (seen 2026-11-17: contact 0.06 m, 70.9°), so the
@@ -27,6 +27,7 @@ await-log 30 blade flashes
 player-parry
 expect-log blades locked with HumanMale
 expect-log (both hands on SwordLongCommon
+expect-log (blade) on its
 expect-log x heavier, held at the lock point
 expect-log lock t=0.0
 expect-log lock t=1.
@@ -44,6 +45,14 @@ expect-log : OneHanded (one hand on SwordLongCommon
 expect-log a clash needs both hands on the weapon
 expect-no-log blades locked
 player-grab SwordLongCommon hand=both
+
+# 1c. Both hands, but the blow lands on the handle, not blade on blade: an ordinary parry (user 2026-11-24: both hands
+# and the blades meeting). The harness names the touching colliders as the game's collision would.
+mark
+await-log 30 blade flashes
+player-parry on=handle
+expect-log : NotBladeOnBlade (both hands on SwordLongCommon, your
+expect-log (not blade) on its
 
 # 2. Block away from the flash (0.5 m along the blade): locks too since 2026-11-22 (user: the exact point was hit far
 # too rarely; where on the flashing blade the block lands no longer counts)

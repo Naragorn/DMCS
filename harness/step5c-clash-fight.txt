@@ -60,14 +60,15 @@ expect-npc holding false within=1
 screenshot simple-disarm of=npc
 expect-no-log blades locked
 
-# 2. On, no push: round 1 is lost; Lose Outcome Disarm + Hit takes 20 health and both hands let go of the sword (before
+# 2. On, no push (section 1's enemy re-arms and fights on, so each section waits for its own NPC's flash; player-parry
+# blocks the newest NPC, run 2026-11-24 13:43): round 1 is lost; Lose Outcome Disarm + Hit takes 20 health and both hands let go of the sword (before
 # 2026-11-24 only the main hand did: the film showed the sword still in the other hand)
 set-option DMCS "Clash of Might Mode" On
 set-option DMCS "Clash Min Rounds" 2
 set-option DMCS "Clash Max Rounds" 2
 spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
 mark
-await-log 30 blade flashes
+await-log 30 HumanMale1's blade flashes
 # the hit must really cost health here: invincible only outside this lock
 player-invincible false
 player-parry
@@ -94,7 +95,7 @@ player-grab SwordLongCommon hand=both
 set-option DMCS "Clash Difficulty" 0
 set-option DMCS "Clash Win Disarms" true
 mark
-await-log 30 blade flashes
+await-log 30 HumanMale1's blade flashes
 player-parry
 expect-log blades locked with HumanMale
 player-push 0.25 2.3
@@ -113,7 +114,7 @@ screenshot clash-won of=npc
 set-option DMCS "Clash Lose Outcome" "Disarm + Hit"
 spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
 mark
-await-log 30 blade flashes
+await-log 30 HumanMale2's blade flashes
 player-parry
 expect-log blades locked with HumanMale
 player-release
@@ -122,7 +123,7 @@ await-log 3 you let go of your weapon; you take 20 damage
 expect-no-log flies away
 screenshot clash-lost of=npc
 
-# 5. A hard two-handed block at the star still locks (user 2026-11-24: both hands are the only condition; before, a
+# 5. A hard two-handed blade-on-blade block at the star still locks (user 2026-11-24: hands and blades decide; before, a
 # block faster than Clash Max Block Speed bounced off). 5 m/s is above the power parry (3 m/s): the clash takes it.
 # First run on Linux 2026-11-22: section 4's enemy was still fighting and flashed first, while player-parry blocks the
 # newest NPC; so section 4's enemy dies first (the newest NPC is the one hit-npc hits).

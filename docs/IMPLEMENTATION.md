@@ -636,6 +636,32 @@ refusal `OneHanded` without), `step5b` (one hand → `OneHanded`), `step5c` (a 5
 (two hands at the star: clash even at 5 m/s; one hand at 5 m/s: power parry) changed to `SwordLongCommon` in both hands.
 All four pass (2026-11-24). A real two-handed block, push and feel: headset.
 
+## Clash: two hands and blade on blade (2026-11-24)
+
+User after the feature films: "nur beidhändig blocken ist wohl nicht genug. es muss wohl beidhändig sein und beide
+klingen treffen sich". Rule `ClashRules.JudgeBlock(twoHanded, bladesMeet)`: one hand → `OneHanded`; both hands but the
+blades did not meet → `NotBladeOnBlade`; both → clash (Simple and On). Unit-tested over all four combinations.
+
+**Blade on blade, read from the game's collision:** the block event's `CollisionInstance` names the touching collider of
+each weapon (`sourceCollider`/`targetCollider`, set by `CollisionInstance.NewHit`). Each must be one of its weapon's
+blade colliders: the colliders of its slash damagers (`BladeColliders`, the same set the flash already used for the
+blade's middle). Without a collider, the touching `ColliderGroup` counts when all its colliders are blade. The log names
+the parts, e.g. "your Guard (not blade) on its Blade (blade)". The slow-motion is unchanged (it runs before any contact).
+
+**Harness:** BasHarness `player-parry on=blade|handle` names the touching colliders as the game would (the NPC's blade;
+the player's blade or a collider outside it). `step5b` section 1c: two hands on the handle → `NotBladeOnBlade`; section 1
+checks "(blade) on its". In the clash film (real NPC swings into the held sword) 5 real two-handed blocks landed on the
+player's Guard, Handle or Pommel and were refused; 5 blade-on-blade blocks locked. `step5b`, `step5c`, `step6-parry`,
+`clash-film` pass (2026-11-24; step5b failed once in section 1, see below, and passed on the rerun).
+
+**step5b section 1 flake (pre-existing, the push finding below):** a lock with no push won all rounds: the hand sat
+0.20 m forward of the still controller from the lock's start (the hold and the NPC's blow had moved the sword), and the
+push measure counted that offset as pushing. Not changed: whether the measure should count only what the controller
+moves after the lock starts is a design question for the user and the headset.
+
+**step5c:** sections 2-4 now wait for their own NPC's flash: section 1's enemy re-arms and fights on, its flash came
+first and `player-parry` blocked the newest NPC, which had none (run 13:43).
+
 ## Feature films with success and failure (2026-11-24)
 
 User: "von allen features ein video ... was Erfolg und was gescheitert war". One film scenario per feature in

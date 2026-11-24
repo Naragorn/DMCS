@@ -5,15 +5,23 @@ namespace DMCS.Tests;
 
 public class ClashBlockVerdictTests
 {
-    // User 2026-11-24: the only condition for a clash is a two-handed block of the flashing blade. No angle, no speed
-    // (Player.log 2026-11-23: angle and speed refused 50 star blocks, 6 locked).
+    // User 2026-11-24: a clash needs both hands on the weapon and the two blades meeting, blade on blade
+    // (the first rule of the same day, both hands only, also locked on a hit on the hilt or handle).
     [Fact]
-    public void BothHandsOnTheWeapon_LocksTheBlades() =>
-        Assert.Equal(BlockVerdict.Clash, ClashRules.JudgeBlock(twoHanded: true));
+    public void BothHands_BladeOnBlade_LocksTheBlades() =>
+        Assert.Equal(BlockVerdict.Clash, ClashRules.JudgeBlock(twoHanded: true, bladesMeet: true));
 
     [Fact]
-    public void OneHand_IsAnOrdinaryParry() =>
-        Assert.Equal(BlockVerdict.OneHanded, ClashRules.JudgeBlock(twoHanded: false));
+    public void BothHands_ButNotBladeOnBlade_IsAnOrdinaryParry() =>
+        Assert.Equal(BlockVerdict.NotBladeOnBlade, ClashRules.JudgeBlock(twoHanded: true, bladesMeet: false));
+
+    [Fact]
+    public void OneHand_BladeOnBlade_IsAnOrdinaryParry() =>
+        Assert.Equal(BlockVerdict.OneHanded, ClashRules.JudgeBlock(twoHanded: false, bladesMeet: true));
+
+    [Fact]
+    public void OneHand_NotBladeOnBlade_NamesTheHandsFirst() =>
+        Assert.Equal(BlockVerdict.OneHanded, ClashRules.JudgeBlock(twoHanded: false, bladesMeet: false));
 }
 
 public class ClashLockTests

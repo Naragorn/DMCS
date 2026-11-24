@@ -532,25 +532,7 @@ namespace DMCS
         {
             local = Vector3.zero;
             var handle = hand != null && hand.grabbedHandle != null ? hand.grabbedHandle.transform.position : weapon.transform.position;
-            var colliders = new List<Collider>();
-            foreach (var handler in weapon.collisionHandlers)
-            {
-                foreach (var damager in handler.damagers)
-                {
-                    if (damager == null || damager.data?.damageModifierData == null || damager.data.damageModifierData.damageType != DamageType.Slash)
-                    {
-                        continue;
-                    }
-                    if (damager.colliderOnly != null)
-                    {
-                        colliders.Add(damager.colliderOnly);
-                    }
-                    else if (damager.colliderGroup != null)
-                    {
-                        colliders.AddRange(damager.colliderGroup.colliders.Where(c => c != null));
-                    }
-                }
-            }
+            var colliders = BladeColliders(weapon);
             if (colliders.Count == 0)
             {
                 return false;
@@ -570,6 +552,69 @@ namespace DMCS
             }
             local = weapon.transform.InverseTransformPoint(handle + (axis * middle.Value));
             return true;
+        }
+
+        /// <summary>The weapon's blade: the colliders of its slash damagers (a damager's own collider, else its group's).</summary>
+        private static List<Collider> BladeColliders(Item weapon)
+        {
+            var colliders = new List<Collider>();
+            foreach (var handler in weapon.collisionHandlers)
+            {
+                foreach (var damager in handler.damagers)
+                {
+                    if (damager == null || damager.data?.damageModifierData == null || damager.data.damageModifierData.damageType != DamageType.Slash)
+                    {
+                        continue;
+                    }
+                    if (damager.colliderOnly != null)
+                    {
+                        colliders.Add(damager.colliderOnly);
+                    }
+                    else if (damager.colliderGroup != null)
+                    {
+                        colliders.AddRange(damager.colliderGroup.colliders.Where(c => c != null));
+                    }
+                }
+            }
+            return colliders;
+        }
+
+        /// <summary>
+        /// Whether the block was blade on blade: the game's collision names the collider (and its group) of each weapon that
+        /// touched; each must be one of that weapon's blade colliders (BladeColliders). Without a collider the group counts
+        /// when all its colliders are blade. `where` names the touching parts for the log.
+        /// </summary>
+        private static bool BladesMeet(CollisionInstance hit, Item theirs, Item mine, out string where)
+        {
+            var theirPart = Touching(hit, theirs, out var theirName);
+            var myPart = Touching(hit, mine, out var myName);
+            where = "your " + myName + " on its " + theirName;
+            return theirPart && myPart;
+        }
+
+        private static bool Touching(CollisionInstance hit, Item weapon, out string name)
+        {
+            var blade = BladeColliders(weapon);
+            foreach (var collider in new[] { hit.sourceCollider, hit.targetCollider })
+            {
+                if (collider != null && weapon.colliderGroups.Any(g => g != null && g.colliders.Contains(collider)))
+                {
+                    var onBlade = blade.Contains(collider);
+                    name = collider.name + (onBlade ? " (blade)" : " (not blade)");
+                    return onBlade;
+                }
+            }
+            foreach (var group in new[] { hit.sourceColliderGroup, hit.targetColliderGroup })
+            {
+                if (group != null && weapon.colliderGroups.Contains(group))
+                {
+                    var onBlade = group.colliders.Count > 0 && group.colliders.All(c => c == null || blade.Contains(c));
+                    name = "group " + group.name + (onBlade ? " (blade)" : " (not blade)");
+                    return onBlade;
+                }
+            }
+            name = "unknown part";
+            return false;
         }
 
         private static IEnumerable<Vector3> Corners(Collider c)
@@ -693,13 +738,14 @@ namespace DMCS
                 var hand = parryingItem.mainHandler;
                 var twoHanded = parryingItem.IsTwoHanded();
                 var handSpeed = hand != null ? HandSpeeds.Peak(hand.side, Parry.SpeedWindow) : 0f;
-                var verdict = ClashRules.JudgeBlock(twoHanded);
-                // Contact and hand speed only for the log (the headset values): the hands alone decide (user 2026-11-24).
-                var detail = (twoHanded ? "both hands" : "one hand") + " on " + parryingItem.data?.id + ", contact " + F(contactToFlash)
+                var bladesMeet = BladesMeet(hit, flash.Weapon, parryingItem, out var where);
+                var verdict = ClashRules.JudgeBlock(twoHanded, bladesMeet);
+                // Contact and hand speed only for the log (the headset values): hands and blades decide (user 2026-11-24).
+                var detail = (twoHanded ? "both hands" : "one hand") + " on " + parryingItem.data?.id + ", " + where + ", contact " + F(contactToFlash)
                     + " m from the flash, hand " + F(handSpeed) + " m/s";
                 if (verdict != BlockVerdict.Clash)
                 {
-                    Dmcs.Log.Debug(Channel, "you blocked " + flash.NpcName + "'s swing: " + verdict + " (" + detail + "), an ordinary parry; a clash needs both hands on the weapon");
+                    Dmcs.Log.Debug(Channel, "you blocked " + flash.NpcName + "'s swing: " + verdict + " (" + detail + "), an ordinary parry; a clash needs both hands on the weapon and blade on blade");
                     return;
                 }
                 if (!ClashModes.Locks(Mode))
