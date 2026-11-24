@@ -662,6 +662,21 @@ moves after the lock starts is a design question for the user and the headset.
 **step5c:** sections 2-4 now wait for their own NPC's flash: section 1's enemy re-arms and fights on, its flash came
 first and `player-parry` blocked the newest NPC, which had none (run 13:43).
 
+## Clash Min Wind Up default 0.45 s (2026-11-24)
+
+User agreed to the proposal: at 0.4 s two of three swings at the player flashed in the headset logs of 2026-11-22/23
+(130 of 198; 35 of them CounterSwingLeft/HighLeft at 0.40-0.41 s). At 0.45 s the lunge, overhead and CounterSwingRight
+swings stay (about 40 % of swings, derived from those logs). Saved options keep their old value.
+
+**Bug found on the way, fixed for every slider:** step5a failed with the new default: the menu showed 0.2 (the first
+value). The game finds a slider's default with `Equals` in its value list; in the game's runtime (Mono) `0.2 + 5 x 0.05`
+is another float than the literal `0.45f` (Mono does float arithmetic in double precision; 0.45 sits almost exactly
+between two floats), while .NET 8 in the unit tests gets the same float, so no test could see it. `SliderSpec` now takes
+its default from its own value list (the nearest value), computed by the same code as the menu's values. Unit tests:
+every Clash slider default is in its list; an off-grid default snaps. step5a passed after it. Other sliders whose literal
+default missed the list in Mono would have shown their first value; the harness defaults checked in step1-step9 all
+passed before, so none is known.
+
 ## Feature films with success and failure (2026-11-24)
 
 User: "von allen features ein video ... was Erfolg und was gescheitert war". One film scenario per feature in

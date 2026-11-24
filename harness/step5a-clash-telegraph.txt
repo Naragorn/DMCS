@@ -18,7 +18,7 @@ expect-option DMCS "Clash Flash Sound Volume" 0.8
 option-exists DMCS "Clash Flash At Swing Top" category="Clash of Might" type=Boolean interaction=ArrowList save=true
 expect-option DMCS "Clash Flash At Swing Top" true
 expect-option DMCS "Clash Only Swords" true
-expect-option DMCS "Clash Min Wind Up" 0.4
+expect-option DMCS "Clash Min Wind Up" 0.45
 expect-option DMCS "Clash Slow Motion" true
 expect-option DMCS "Clash Slow Motion Scale" 0.3
 expect-option DMCS "Clash Enemy Reach" 2.5

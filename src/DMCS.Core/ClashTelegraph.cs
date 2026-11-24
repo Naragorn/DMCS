@@ -17,7 +17,7 @@ namespace DMCS.Core
         public const bool DefaultSlowMo = true;
 
         /// <summary>Seconds of wind-up from which a swing counts as big (harness probe 2026-11-17: plain swings 0.13–0.37 s, overhead/counter/lunge/step 0.40–0.77 s).</summary>
-        public static readonly SliderSpec MinWindUp = new SliderSpec(MinWindUpName, 0.2f, 0.8f, 0.05f, 0.4f);
+        public static readonly SliderSpec MinWindUp = new SliderSpec(MinWindUpName, 0.2f, 0.8f, 0.05f, 0.45f);
 
         /// <summary>World speed of the clash slow-motion (user 2026-11-17).</summary>
         public static readonly SliderSpec SlowMoScale = new SliderSpec(SlowMoScaleName, 0.1f, 0.8f, 0.05f, 0.3f);

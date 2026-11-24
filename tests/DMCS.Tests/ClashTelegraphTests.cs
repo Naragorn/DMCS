@@ -388,7 +388,8 @@ public class ClashSettingsTests
     {
         Assert.True(ClashSettings.DefaultOnlySwords);
         Assert.True(ClashSettings.DefaultSlowMo);
-        Assert.Equal(0.4f, ClashSettings.MinWindUp.Default);
+        // 0.45 s since 2026-11-24 (headset logs: at 0.4 s two of three swings flashed; 0.45 keeps the lunge and overhead swings)
+        Assert.Equal(0.45f, ClashSettings.MinWindUp.Default);
         Assert.Equal(0.3f, ClashSettings.SlowMoScale.Default);
         Assert.Equal(2.5f, ClashSettings.NpcReach.Default);
     }
@@ -535,4 +536,30 @@ public class ClashSlowMoOwnershipTests
 
     [Fact]
     public void BackToNormalTime_IsNotOurs() => Assert.False(ClashRules.StillOurSlowMotion(false, 1f, 0.3f));
+}
+
+public class ClashSliderDefaultTests
+{
+    // The game finds a slider's default with Equals in its value list and falls back to the first value when it is not
+    // there (SliderValues). 0.45 written as a literal is not 0.2 + 5 x 0.05 in float: the menu showed 0.2 (harness
+    // step5a, 2026-11-24).
+    [Fact]
+    public void EveryClashSliderDefault_IsOneOfItsValues()
+    {
+        foreach (var s in ClashSettings.Sliders)
+        {
+            Assert.True(SliderValues.IndexOf(s.Values(), s.Default) >= 0, s.Name + " default " + s.Default + " is not one of its values");
+        }
+    }
+
+    // The game (Mono) computed 0.2 + 5 x 0.05 to another float than the literal 0.45 (float arithmetic in double
+    // precision), .NET 8 here does not, so the test above cannot catch it. The spec therefore takes its default from its
+    // own value list, computed by the same code as the menu's values: an off-grid default lands on the nearest value.
+    [Fact]
+    public void ASliderSpec_SnapsItsDefaultToTheNearestValue()
+    {
+        var s = new SliderSpec("x", 0.2f, 0.8f, 0.05f, 0.46f);
+
+        Assert.Equal(5, SliderValues.IndexOf(s.Values(), s.Default));
+    }
 }

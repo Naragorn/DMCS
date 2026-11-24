@@ -204,7 +204,7 @@ All options with their defaults. Every slider shows its unit in the menu.
 |---|---|---|---|
 | Clash of Might Mode | Simple | Off, Simple, On | Simple: a block of the flashing blade knocks the enemy's sword away. On: the blades lock and you push over a few rounds |
 | Clash Only Swords | on | | Only enemies with a sword flash; off: any blade that cuts |
-| Clash Min Wind Up | 0.4 s | 0.2–0.8 s | How long an enemy must wind up for its swing to flash |
+| Clash Min Wind Up | 0.45 s | 0.2–0.8 s | How long an enemy must wind up for its swing to flash |
 | Clash Slow Motion | on | | Time slows when your blade is ready to block a flashing swing |
 | Clash Slow Motion Scale | 0.3 | 0.1–0.8 | World speed during it |
 | Clash Enemy Reach | 2.5 m | 1–4 m | How close the enemy must be |

@@ -36,7 +36,7 @@ namespace DMCS.Core
             Min = min;
             Max = max;
             Step = step;
-            Default = @default;
+            Default = Nearest(Values(), @default);
         }
 
         public string Name { get; }
@@ -46,5 +46,26 @@ namespace DMCS.Core
         public float Default { get; }
 
         public float[] Values() => SliderValues.Create(Min, Max, Step);
+
+        /// <summary>
+        /// The value from the list nearest to the wanted default: the game finds the default with Equals, and in its
+        /// runtime (Mono) 0.2 + 5 x 0.05 is another float than the literal 0.45 (harness 2026-11-24: the menu showed the
+        /// first value, 0.2). Taking it from the list makes it the same float the menu holds.
+        /// </summary>
+        private static float Nearest(float[] values, float wanted)
+        {
+            var best = wanted;
+            var gap = float.MaxValue;
+            foreach (var v in values)
+            {
+                var d = Math.Abs(v - wanted);
+                if (d < gap)
+                {
+                    gap = d;
+                    best = v;
+                }
+            }
+            return best;
+        }
     }
 }
