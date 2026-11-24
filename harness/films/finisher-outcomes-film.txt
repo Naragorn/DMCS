@@ -1,0 +1,39 @@
+# Film of the Finisher (not part of the suite): 1 a real stab (BasHarness player-stab, the game's own physics) into the
+# chest of a STANDING enemy (fails: only an ordinary stab wound, it lives), 2 the same stab after a push put it on the
+# ground (success: it dies). Views: beside both and beside the NPC.
+wait-level
+frame-rate 90
+press DMCS "Reset To Defaults"
+set-option DMCS "Debug Logging" true
+set-option DMCS "Adrenaline Enabled" false
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+player-invincible true
+player-eyes
+player-grab SwordShortCommon
+
+spawn-npc HumanMale distance=1.1 angle=0 brain=HumanDummy
+wait 1
+record-start finisher-1-standing fps=60 width=640 height=360 views=side,npc angle=90 distance=2.5
+wait 0.3
+mark
+player-stab Torso speed=2
+wait 3
+record-stop
+expect-no-log finished HumanMale
+hit-npc Torso damage=500 push=0
+wait 2
+
+spawn-npc HumanMale distance=1.1 angle=0 brain=HumanDummy container=CivilianMeleeSword
+hit-npc Torso velocity=1.5 push=3
+expect-npc state Destabilized within=2
+wait 1
+record-start finisher-2-downed fps=60 width=640 height=360 views=side,npc angle=90 distance=2.5
+wait 0.3
+mark
+player-stab Torso speed=2
+await-log 3 finished HumanMale
+wait 3
+record-stop
+expect-npc state Dead
+quit

@@ -1,0 +1,70 @@
+# Film of the adrenaline magic, without and with a full meter (not part of the suite). Spells through the game's own
+# spell code (player-cast). 1 a fireball with an empty meter (fails: an ordinary fireball), 2 a fireball with a full
+# meter (success: it burns to death, its neighbour catches fire), 3 a lightning bolt with a full meter (success: it jumps
+# to the neighbour, the target dies), 4 a gravity push with a full meter (success: both fly, the nearest dies).
+# 5 telekinesis throw with a full meter (success: thrown with force, it dies on impact). View: beside the NPCs.
+wait-level
+frame-rate 90
+press DMCS "Reset To Defaults"
+set-option DMCS "Debug Logging" true
+set-option DMCS "Adrenaline Per Hit" 50
+set-option DMCS "Adrenaline Window" 20
+set-option DMCS "Kneel And Execution" false
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+player-invincible true
+
+spawn-npc HumanMale distance=2.4 angle=28 brain=HumanDummy
+spawn-npc HumanMale distance=2 angle=0 brain=HumanDummy
+record-start magic-1-fire-empty fps=60 width=640 height=360 views=npc,first
+wait 0.5
+player-cast Fire
+wait 4
+record-stop
+hit-npc Torso damage=500 push=0
+wait 3
+
+spawn-npc HumanMale distance=2.4 angle=-28 brain=HumanDummy
+spawn-npc HumanMale distance=2 angle=0 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+expect-log meter full
+record-start magic-2-fire-full fps=60 width=640 height=360 views=npc,first
+wait 0.5
+player-cast Fire
+wait 4
+record-stop
+wait 3
+
+spawn-npc HumanMale distance=2.4 angle=28 brain=HumanDummy
+spawn-npc HumanMale distance=2 angle=0 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+record-start magic-3-lightning-full fps=60 width=640 height=360 views=npc,first
+wait 0.5
+player-cast Lightning
+wait 4
+record-stop
+wait 3
+
+spawn-npc HumanMale distance=2.4 angle=-28 brain=HumanDummy
+spawn-npc HumanMale distance=1.5 angle=0 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+record-start magic-4-gravity-full fps=60 width=640 height=360 views=npc,first
+wait 0.5
+player-cast Gravity
+wait 4
+record-stop
+wait 3
+
+spawn-npc HumanMale distance=2 angle=0 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+wait 1
+record-start magic-5-telekinesis-full fps=60 width=640 height=360 views=npc,first
+wait 0.5
+npc-tk-throw speed=6
+wait 4
+record-stop
+quit

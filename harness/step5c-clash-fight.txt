@@ -60,11 +60,11 @@ expect-npc holding false within=1
 screenshot simple-disarm of=npc
 expect-no-log blades locked
 
-# 2. On, no push: round 1 is lost; Lose Outcome Hit takes 20 health and leaves the sword in hand
+# 2. On, no push: round 1 is lost; Lose Outcome Disarm + Hit takes 20 health and both hands let go of the sword (before
+# 2026-11-24 only the main hand did: the film showed the sword still in the other hand)
 set-option DMCS "Clash of Might Mode" On
 set-option DMCS "Clash Min Rounds" 2
 set-option DMCS "Clash Max Rounds" 2
-set-option DMCS "Clash Lose Outcome" Hit
 spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
 mark
 await-log 30 blade flashes
@@ -79,7 +79,9 @@ await-log 5 the enemy pushed harder in round 1/2
 expect-log you take 20 damage (health
 expect-no-log -> 100.00)
 expect-log blades unlocked (Decided: you lost)
+expect-log your SwordLongCommon flies away (2 hands let go)
 player-invincible true
+player-grab SwordLongCommon hand=both
 
 # 3. On, pushing in each round: won after 2 rounds, its sword flies away, the win cue logs. The harness player's sword
 # does not touch the frozen enemy blade (player-parry is a raised event, the blades stay apart). Before Clash Hold

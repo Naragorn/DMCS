@@ -636,6 +636,34 @@ refusal `OneHanded` without), `step5b` (one hand → `OneHanded`), `step5c` (a 5
 (two hands at the star: clash even at 5 m/s; one hand at 5 m/s: power parry) changed to `SwordLongCommon` in both hands.
 All four pass (2026-11-24). A real two-handed block, push and feel: headset.
 
+## Feature films with success and failure (2026-11-24)
+
+User: "von allen features ein video ... was Erfolg und was gescheitert war". One film scenario per feature in
+`harness/films/` (`clash-film`, `charge-film`, `disarm-film`, `parry-outcomes-film`, `adrenaline-film`,
+`finisher-outcomes-film`, `magic-outcomes-film`, plus the existing `twist-*-film`), each outcome its own recording.
+
+**Clash films use real NPC swings.** The NPC's blade meets the player's held sword by itself and the game raises its own
+block event (rounds 2-4; round 1 raises it with `player-parry`). A harness move of the player's blade into the swing
+(`player-parry meet=`, parked as a BasHarness stash) was dropped: a fast rigid move of both controllers tore the hands
+off the grip (0 of 2 hands holding after it), and under the clash slow-motion the hands follow in game time.
+
+**Bug the lose film found, fixed:** a lost clash with Lose Outcome `Disarm + Hit` released only the lock hand
+(`_lockHand`). Since the two-hand rule the other hand still held the sword, so it stayed in the player's hand and the
+fling pushed a held sword (film: right hand still holding after "your SwordLongCommon flies away"). Now every player hand
+on the weapon lets go; the log says how many ("flies away (2 hands let go)"). `step5c` section 2 checks it (Disarm + Hit,
+was Hit only); passed 2026-11-24.
+
+**Findings, not changed (headset):**
+- A real NPC blow knocked the held sword aside; the still controller then sat 0.12-0.16 m to the side of the hand, which
+  the push measure counts as a sideways push: one lock round was held with no push at all (film run 13:19). The lose
+  film turns Clash Side Push off for that round. Whether this happens in the headset (a real arm follows the sword) is
+  open.
+- In the harness the left hand slipped off the two-handed grip now and then after NPC blows ("no weapon in both hands",
+  `OneHanded` blocks between two-handed ones). The mock hands are not real arms; whether a hard blow loosens a
+  two-handed grip in the headset is open.
+- A second 0.25 m push on top of the first (controller 0.5 m ahead of the 20x heavy sword) made the hand let go, and the
+  clash was lost for letting go (film run 12:53).
+
 ## Clash Hold Style, Rotation and Briefly (2026-11-22)
 
 **User:** build the spring too, with a menu switch between it and the hard hold, and switches for the other two ideas

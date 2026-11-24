@@ -1,0 +1,88 @@
+# Film of Clash of Might: what success and failure look like (not part of the suite). The NPC really swings at the
+# player and its blade meets the player's held sword by itself; the game raises its own block event, as in the headset.
+# (A harness move of the player's blade into the swing was tried 2026-11-24 and dropped: the fast controller move tore
+# the hands off the grip.) So rounds 2-4 wait until a real block of a flashing swing happens; round 1 raises it.
+# 1 one hand (fails: an ordinary parry, the fight goes on), 2 Simple (success: its sword flies), 3 On + pushing
+# (success: won, the enemy staggers), 4 On without pushing (fails: lost, the player's sword is knocked away and the
+# player is hit). NPC names count from 0 (HumanMale0 is the first). Views: beside the two of them, the player's eyes.
+wait-level
+frame-rate 90
+press DMCS "Reset To Defaults"
+set-option DMCS "Debug Logging" true
+set-option DMCS "Adrenaline Enabled" false
+set-option DMCS "Charge Stagger Enabled" false
+# The Parry group off: this film shows only what the clash decides
+set-option DMCS "Parry Enabled" false
+set-option DMCS "Clash Min Wind Up" 0.2
+set-option DMCS "Clash Win Kneel Chance" 0
+player-invincible true
+
+# 1. One hand on the sword: an ordinary parry, the enemy fights on
+player-grab SwordLongCommon
+spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
+wait 1
+mark
+record-start clash-1-onehand fps=60 width=640 height=360 views=side,first
+# A real one-handed block did not come within 90 s in one of two runs (2026-11-24), so here the block event is raised at
+# the flash (player-parry, blades apart); the result is the same ordinary parry.
+await-log 30 HumanMale0's blade flashes
+player-parry
+expect-log you blocked HumanMale0's swing: OneHanded
+wait 3
+record-stop
+expect-no-log blades locked
+hit-npc Torso damage=500 push=0
+wait 2
+
+# 2. Simple (the default mode), both hands: the enemy's sword flies away
+player-grab SwordLongCommon hand=both
+spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
+wait 1
+mark
+record-start clash-2-simple fps=60 width=640 height=360 views=side,first
+await-log 90 its sword flies away (simple clash)
+wait 3
+record-stop
+hit-npc Torso damage=500 push=0
+wait 2
+
+# 3. On, both hands, pushing in both rounds: won, the enemy staggers (Clash Win Disarms off, the default)
+set-option DMCS "Clash of Might Mode" On
+set-option DMCS "Clash Min Rounds" 2
+set-option DMCS "Clash Max Rounds" 2
+set-option DMCS "Clash Difficulty" 0
+player-grab SwordLongCommon hand=both
+spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
+wait 1
+mark
+record-start clash-3-win fps=60 width=640 height=360 views=side,first
+await-log 90 blades locked with HumanMale2 (both hands
+player-push 0.25 2.3 back=false
+await-log 3 round 1/2 held
+# Stay where the first push left the controller (0 m more): a second 0.25 m on top (0.5 m ahead of the 20x heavy sword)
+# made the hand let go, and the clash was lost for letting go (run 2026-11-24 12:53).
+player-push 0 2.3
+await-log 3 blades unlocked (Decided: you won)
+wait 3
+record-stop
+hit-npc Torso damage=500 push=0
+wait 2
+
+# 4. On, both hands, no push: round 1 lost; Disarm + Hit (the default) knocks the player's sword away and hits for 20
+set-option DMCS "Clash Difficulty" 50
+# Side push off for this round: the real NPC blow knocked the held sword aside, the still controller then sat 0.12-0.16 m
+# to the side of the hand, which counts as a sideways push, and the round was held without any push (run 2026-11-24 13:19)
+set-option DMCS "Clash Side Push" false
+player-grab SwordLongCommon hand=both
+spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
+wait 1
+player-invincible false
+mark
+record-start clash-4-lose fps=60 width=640 height=360 views=side,first
+await-log 90 blades locked with HumanMale3 (both hands
+await-log 6 blades unlocked (Decided: you lost)
+expect-log you take 20 damage
+wait 3
+record-stop
+player-invincible true
+quit

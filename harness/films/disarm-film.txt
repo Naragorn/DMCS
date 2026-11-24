@@ -1,0 +1,42 @@
+# Film of Disarm Strike: success and failure (not part of the suite). Hits are raised through Creature.Damage (no
+# visible swing); what shows is the enemy's reaction. 1 hand hit on a standing enemy (fails: not staggered, it keeps
+# its sword), 2 a pushing torso hit staggers it, then the hand hit (success: the sword drops, it freezes in shock).
+# View: beside the NPC.
+wait-level
+frame-rate 90
+press DMCS "Reset To Defaults"
+set-option DMCS "Debug Logging" true
+set-option DMCS "Adrenaline Enabled" false
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+set-option DMCS "Body Hit Drop" false
+set-option DMCS "Disarmed Shock Chance" 100
+set-option DMCS "Disarmed Back Off Chance" 0
+set-option DMCS "Disarmed Cower Chance" 0
+player-invincible true
+spawn-npc HumanMale distance=2 angle=0 brain=HumanDummy
+npc-grab SwordShortCommon
+wait 1
+
+record-start disarm-1-unstaggered fps=60 width=640 height=360 views=npc angle=90 distance=2.5
+wait 0.5
+mark
+hit-npc RightHand
+expect-npc holding true within=0
+expect-log NotStaggered
+wait 2.5
+record-stop
+wait 1
+
+record-start disarm-2-staggered fps=60 width=640 height=360 views=npc angle=90 distance=2.5
+wait 0.5
+hit-npc Torso push=1
+expect-npc staggered true
+wait 0.4
+mark
+hit-npc RightHand
+expect-npc holding false within=0.5
+expect-log [DMCS][Disarm Strike] disarmed
+wait 3
+record-stop
+quit

@@ -1,0 +1,39 @@
+# Film of Charge Stagger: success and failure (not part of the suite). The hit is raised through Creature.Damage
+# (no visible swing, push=-1: the game's own hit reaction does not stagger), so what shows is the enemy's reaction.
+# 1 standing hit (fails: too slow, nothing happens), 2 sprinting hit (success: it staggers), then a second charge hit
+# while staggered (success: it goes to the ground). View: beside the NPC.
+wait-level
+frame-rate 90
+press DMCS "Reset To Defaults"
+set-option DMCS "Debug Logging" true
+set-option DMCS "Adrenaline Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+player-invincible true
+spawn-npc HumanMale distance=4 angle=90 brain=HumanDummy
+wait 1
+
+record-start charge-1-standing fps=60 width=640 height=360 views=npc angle=90 distance=3
+wait 0.5
+mark
+hit-npc Torso
+expect-log TooSlow
+wait 2.5
+record-stop
+
+run 1
+wait 1.5
+expect-player-speed 5
+record-start charge-2-sprint fps=60 width=640 height=360 views=npc angle=90 distance=3
+wait 0.3
+mark
+hit-npc RightArm
+expect-npc stagger Full within=0
+expect-log [DMCS][Charge Stagger] staggered
+wait 1.2
+mark
+hit-npc Torso
+stop-run
+expect-log [DMCS][Charge Stagger] knocked down
+wait 3
+record-stop
+quit

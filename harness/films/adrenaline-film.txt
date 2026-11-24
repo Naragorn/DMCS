@@ -1,0 +1,66 @@
+# Film of the Adrenaline critical and the kneel (not part of the suite). Hits are raised through Creature.Damage (no
+# visible swing); two hits fill the meter. 1 a light hit with a full meter (fails: no critical), 2 a hard hit on the arm
+# (success: slow-motion, the arm comes off, it dies and flies), 3 no hit for 2 s: it kneels, a hit executes it
+# (success), 4 it kneels and is not executed in time (fails: it stands up and fights on). View: beside the NPC.
+wait-level
+frame-rate 90
+press DMCS "Reset To Defaults"
+set-option DMCS "Debug Logging" true
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+set-option DMCS "Adrenaline Per Hit" 50
+set-option DMCS "Adrenaline Window" 20
+set-option DMCS "Critical Min Swing Speed" 6
+set-option DMCS "Kneel And Execution" false
+player-invincible true
+
+spawn-npc HumanMale distance=2.5 angle=0 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+expect-log meter full: window open for 20 s
+wait 1
+record-start adrenaline-1-light fps=60 width=640 height=360 views=npc angle=90 distance=3
+wait 0.5
+mark
+hit-npc LeftArm velocity=3
+expect-log TooLight
+wait 2.5
+record-stop
+
+record-start adrenaline-2-critical fps=60 width=640 height=360 views=npc angle=90 distance=3
+wait 0.5
+mark
+hit-npc LeftArm velocity=8 type=Slash damage=1
+expect-log CRITICAL on
+expect-npc state Dead within=2
+wait 4
+record-stop
+wait 2
+
+set-option DMCS "Kneel And Execution" true
+spawn-npc HumanMale distance=2.5 angle=0 brain=HumanDummy
+hit-npc Torso velocity=8
+hit-npc Torso velocity=8
+record-start adrenaline-3-kneel-executed fps=60 width=640 height=360 views=npc angle=90 distance=3
+mark
+await-log 4 kneels (NoHit)
+wait 2
+hit-npc Torso velocity=8 type=Slash damage=1
+expect-log execution of
+expect-npc state Dead within=2
+wait 4
+record-stop
+wait 2
+
+set-option DMCS "Execution Window" 3
+spawn-npc HumanMale distance=2.5 angle=0 brain=HumanDummy
+hit-npc Torso velocity=8
+hit-npc Torso velocity=8
+record-start adrenaline-4-kneel-missed fps=60 width=640 height=360 views=npc angle=90 distance=3
+mark
+await-log 4 kneels (NoHit)
+await-log 5 was not executed and stands up
+expect-no-log CRITICAL on
+wait 3
+record-stop
+quit

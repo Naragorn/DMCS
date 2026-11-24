@@ -1,0 +1,52 @@
+# Film of the Parry group: three outcomes (not part of the suite). A standing NPC holds a sword; the game's block event
+# is raised (player-parry) right after the player's right controller swept sideways at 0.3 m/s (a held guard: fails, only
+# the game's own parry, nothing from DMCS), 1.5 m/s (counter: it staggers) and 5 m/s (power parry: its sword flies).
+# Views: beside the two of them and the player's own eyes.
+wait-level
+frame-rate 90
+press DMCS "Reset To Defaults"
+set-option DMCS "Debug Logging" true
+set-option DMCS "Charge Stagger Enabled" false
+set-option DMCS "Adrenaline Enabled" false
+set-option DMCS "Clash of Might Mode" Off
+player-invincible true
+player-grab SwordShortCommon
+
+spawn-npc HumanMale distance=1.5 angle=0 brain=HumanDummy
+npc-grab SwordShortCommon
+wait 1
+record-start parry-1-guard fps=60 width=640 height=360 views=side,first
+wait 0.5
+mark
+player-parry swing=0.3
+expect-no-log counter parry on
+expect-no-log power parry on
+wait 2.5
+record-stop
+hit-npc Torso damage=500 push=0
+wait 2
+
+spawn-npc HumanMale distance=1.5 angle=0 brain=HumanDummy
+npc-grab SwordShortCommon
+wait 1
+record-start parry-2-counter fps=60 width=640 height=360 views=side,first
+wait 0.5
+mark
+player-parry swing=1.5
+expect-log counter parry on
+wait 2.5
+record-stop
+hit-npc Torso damage=500 push=0
+wait 2
+
+spawn-npc HumanMale distance=1.5 angle=0 brain=HumanDummy
+npc-grab SwordShortCommon
+wait 1
+record-start parry-3-power fps=60 width=640 height=360 views=side,first
+wait 0.5
+mark
+player-parry swing=5
+expect-log power parry on
+wait 2.5
+record-stop
+quit

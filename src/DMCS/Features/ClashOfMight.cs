@@ -1029,16 +1029,29 @@ namespace DMCS
             }
             EndLock(Lock.Decide(), "you lost");
             var parts = new List<string>();
-            if (disarmPlayer && ClashLoseOutcomes.Disarms(LoseOutcome) && hand != null && hand.grabbedHandle != null && hand.grabbedHandle.item == item)
+            // Every player hand on the weapon lets go: since the clash needs both hands (2026-11-24), releasing only the main
+            // hand left the sword in the other one and the fling pushed a held sword (film 2026-11-24).
+            var released = 0;
+            if (disarmPlayer && ClashLoseOutcomes.Disarms(LoseOutcome) && item != null)
             {
-                hand.TryRelease();
-                if (item != null && item.physicBody != null && npc != null)
+                foreach (var holder in item.handlers.ToList())
+                {
+                    if (holder != null && holder.creature != null && holder.creature.isPlayer)
+                    {
+                        holder.TryRelease();
+                        released++;
+                    }
+                }
+            }
+            if (released > 0)
+            {
+                if (item.physicBody != null && npc != null)
                 {
                     var flight = item.transform.position - npc.transform.position;
                     flight.y = 0.3f * flight.magnitude;
                     item.physicBody.AddForce(flight.normalized * Mathf.Max(DisarmStrike.FlingForce, 2f), ForceMode.VelocityChange);
                 }
-                parts.Add("your " + (item != null ? item.data?.id : "weapon") + " flies away");
+                parts.Add("your " + item.data?.id + " flies away (" + released + (released == 1 ? " hand" : " hands") + " let go)");
             }
             var player = Player.currentCreature;
             if (ClashLoseOutcomes.Hits(LoseOutcome) && LoseDamage > 0f && player != null && !player.isKilled)
