@@ -84,11 +84,12 @@ Dark Messiah's blade lock, made for VR. Three modes in the Mod Menu: **Off**, **
   bursts up and keeps glittering until the swing comes, with a
   warning sound (DMCS's own, modelled on Sekiro's perilous-attack cue, and/or one of Blade & Sorcery's own).
   Plain quick swings and thrusts do not flash.
-- If the enemy is close, your blade is near the flash and you hold it roughly across the swing when the strike
-  comes, time slows down (0.3×) until the swing is over.
+- If the enemy is close and you hold your weapon with both hands when the strike comes, time slows down (0.3×)
+  until the swing is over.
 
-**Simple:** block the flashing blade anywhere along it, without swinging hard into it, and the enemy's sword flies out
-of its hand. A block faster than 2.5 m/s just bounces off, as any parry.
+**Simple:** block the flashing blade with both hands on your weapon and the enemy's sword flies out of its hand. That
+is the only condition: angle, speed and where on the blade do not matter. A one-handed block is an ordinary parry.
+A weapon whose grip takes only one hand cannot clash.
 
 **On, the blade lock:** the same block locks the blades. The enemy freezes in its swing and your weapon turns heavy.
 Your blade stays where the blades met. Then it is strength against strength, over a few rounds (3 to 5 by default):
@@ -119,7 +120,7 @@ How you parry an enemy's attack now matters.
 - **Power parry:** you swing hard into the attack. The enemy's weapon flies out of its hand, and it staggers too.
 
 DMCS reads how fast your hand moved just before the parry: from 1 m/s it is a counter, from 3 m/s a power parry.
-Both values are guesses until tested in VR. A hard parry at the Clash of Might star is a power parry, not a clash.
+Both values are guesses until tested in VR. A two-handed parry at the Clash of Might star is always a clash, however hard.
 
 ### Adrenaline Magic (testing)
 
@@ -207,10 +208,7 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Clash Slow Motion | on | | Time slows when your blade is ready to block a flashing swing |
 | Clash Slow Motion Scale | 0.3 | 0.1–0.8 | World speed during it |
 | Clash Enemy Reach | 2.5 m | 1–4 m | How close the enemy must be |
-| Clash Block Reach | 1.0 m | 0.2–2 m | How close your blade must be to the flash for the slow motion |
-| Clash Block Angle Tolerance | 90° | 10–90° | How far your blade may be off a right angle to the swing (90°: any angle) |
 | Clash Flash At Swing Top | on | | The flash comes when the blade is raised all the way, just before the strike; off: as soon as the wind-up starts (more warning) |
-| Clash Max Block Speed | 2.5 m/s | 0.5–4 m/s | Block the flashing blade slower than this and the blades lock. Faster, and your blade just bounces off |
 | Clash Weapon Weight | 20× | 1–50× | How much heavier your weapon gets while the blades are locked |
 | Clash Hold Blade | on | | Your blade stays where the blades met, even if you swung hard into the block |
 | Clash Hold Style | Spring | Spring, Hard | Spring: your blade gives a little and springs back to that point. Hard: it stops dead |

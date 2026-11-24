@@ -125,7 +125,7 @@ namespace DMCS.Core
     /// in time (at least the counter speed) staggers the enemy, as Dark Messiah's counter; a hard swing into the attack (at
     /// least the power speed) also knocks its weapon away, with no stagger gate (user 2026-11-20: an attacking enemy is
     /// never staggered). The controller, not the weapon: at the event the collision has already slowed the blade, and the
-    /// enemy's swing is part of the impact speed. A power parry is never a clash; below it, Clash of Might decides first.
+    /// enemy's swing is part of the impact speed. Clash of Might decides first: a two-handed block of its flashing blade is the clash's (user 2026-11-24).
     /// </summary>
     public static class ParryRule
     {
@@ -159,9 +159,6 @@ namespace DMCS.Core
             return staggers ? new ParryVerdict(ParryDecision.Counter, true) : new ParryVerdict(ParryDecision.TooSlow, false);
         }
 
-        /// <summary>A parry hard enough for a power parry: Clash of Might leaves it alone (spec section 6).</summary>
-        public static bool TakesOverFromClash(bool enabled, bool powerOn, float handSpeed, float powerMinSpeed) =>
-            enabled && powerOn && handSpeed >= powerMinSpeed;
 
         /// <summary>Decisions not worth a log line (feature off, or not the player parrying an enemy).</summary>
         public static bool IsQuiet(ParryDecision d) => d == ParryDecision.Disabled || d == ParryDecision.NotPlayerParry;

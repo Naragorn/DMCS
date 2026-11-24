@@ -141,16 +141,6 @@ public class ParryRuleTests
         }
     }
 
-    [Theory]
-    [InlineData(true, true, 3f, true)]
-    [InlineData(true, true, 2.9f, false)]
-    [InlineData(false, true, 9f, false)]
-    [InlineData(true, false, 9f, false)]
-    public void APowerParry_IsNeverAClash(bool enabled, bool power, float speed, bool expected)
-    {
-        Assert.Equal(expected, ParryRule.TakesOverFromClash(enabled, power, speed, 3f));
-    }
-
     [Fact]
     public void Settings_AsSpecified()
     {

@@ -1,7 +1,6 @@
 # Step 5a: Clash of Might telegraph. A fighting NPC with a sword attacks the standing player: its big swings (long
-# wind-up) flash at the middle of the blade, plain swings do not; with no blade in the player's hand the slow-motion
-# is refused (BladeTooFar). The slow-motion itself (player blade near the flash, right angle to the swing) is
-# unit-tested only: the harness cannot hold a blade against a real swing. Expects the defaults at the start.
+# wind-up) flash at the middle of the blade, plain swings do not; with no weapon in both hands the slow-motion is
+# refused (OneHanded); with a sword in both hands it starts (user 2026-11-24: both hands are the clash's only condition). Expects the defaults at the start.
 
 wait-level
 press DMCS "Reset To Defaults"
@@ -10,8 +9,6 @@ option-exists DMCS "Clash Min Wind Up" category="Clash of Might" type=Single int
 option-exists DMCS "Clash Slow Motion" category="Clash of Might" type=Boolean interaction=ArrowList save=true
 option-exists DMCS "Clash Slow Motion Scale" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Enemy Reach" category="Clash of Might" type=Single interaction=Slider save=true
-option-exists DMCS "Clash Block Reach" category="Clash of Might" type=Single interaction=Slider save=true
-option-exists DMCS "Clash Block Angle Tolerance" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Flash Sound" category="Clash of Might" type=String interaction=ArrowList save=true
 option-exists DMCS "Clash Flash Game Sound" category="Clash of Might" type=String interaction=ArrowList save=true
 option-exists DMCS "Clash Flash Sound Volume" category="Clash of Might" type=Single interaction=Slider save=true
@@ -25,8 +22,6 @@ expect-option DMCS "Clash Min Wind Up" 0.4
 expect-option DMCS "Clash Slow Motion" true
 expect-option DMCS "Clash Slow Motion Scale" 0.3
 expect-option DMCS "Clash Enemy Reach" 2.5
-expect-option DMCS "Clash Block Reach" 1
-expect-option DMCS "Clash Block Angle Tolerance" 90
 set-option DMCS "Debug Logging" true
 # The NPC's hits on the player would fill the meter and its critical/kneel would end the fight
 set-option DMCS "Adrenaline Enabled" false
@@ -36,7 +31,7 @@ set-option DMCS "Charge Stagger Enabled" false
 # A real NPC fights the player for two minutes: without this the player dies after about a minute (seen 2026-11-17)
 player-invincible true
 
-# 1. Big swings flash, plain swings do not; no blade in hand → no slow-motion
+# 1. Big swings flash, plain swings do not; no weapon in both hands → no slow-motion
 # The default loadout (CivilianMelee) is random and may add a shield, mace or axe; CivilianMeleeSword is only a sword,
 # which the NPC draws from its back (an extra npc-grab gave it a second sword: two blades on the pictures, 2026-11-17).
 spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
@@ -46,7 +41,7 @@ expect-log [DMCS][Clash] HumanMale
 expect-log flashes at the swing top (
 expect-log s), sound DMCS 1 (3.60 s)
 expect-log no slow-motion for
-expect-log BladeTooFar
+expect-log : OneHanded (enemy
 expect-no-log [DMCS][Disarm Strike] disarmed
 expect-no-log slow-motion 0.30x
 screenshot clash-npc of=npc
@@ -88,8 +83,16 @@ wait 20
 expect-log : not a big swing
 expect-no-log : flash
 
-# 3. Feature off: no clash lines at all
+# 2b. A sword in both hands: the next big swing in reach starts the slow-motion (the enemy's swings may also hit the
+# held sword and raise real blocks, so this runs last before the feature goes off)
 set-option DMCS "Clash Min Wind Up" 0.4
+player-grab SwordLongCommon hand=both
+mark
+await-log 30 slow-motion 0.30x
+expect-log (enemy
+expect-log both hands on SwordLongCommon
+
+# 3. Feature off: no clash lines at all
 set-option DMCS "Clash of Might Mode" Off
 mark
 wait 15

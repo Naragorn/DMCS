@@ -1,7 +1,7 @@
-# Step 5b: Clash of Might lock (mode On). A block at the flash point (the game's own block event, raised here with
-# player-parry since the harness cannot swing the player's arm) locks the blades: the NPC freezes in its swing, the
+# Step 5b: Clash of Might lock (mode On). A two-handed block of the flashing blade (the game's own block event, raised
+# here with player-parry since the harness cannot swing the player's arm; the only condition since 2026-11-24) locks the blades: the NPC freezes in its swing, the
 # player's weapon gets heavy, a diagnostic is logged every 0.1 s; without pushing, the first round is lost and both are
-# released (the rounds themselves: step5c). A block away from the flash stays an ordinary parry. The player's sword in the mock hand also meets real swings now and then:
+# released (the rounds themselves: step5c). A one-handed block stays an ordinary parry. The player's sword in the mock hand also meets real swings now and then:
 # those raise the game's own block event too and may lock for real (seen 2026-11-17: contact 0.06 m, 70.9°), so the
 # sections check the verdict of their own block, not the absence of any lock. A real block's feel: headset.
 
@@ -18,16 +18,15 @@ set-option DMCS "Clash Min Wind Up" 0.2
 set-option DMCS "Clash Lose Outcome" Hit
 player-invincible true
 spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
-player-grab SwordShortCommon
+player-grab SwordLongCommon hand=both
 
-# 1. Block at the flash: the blades lock, the NPC freezes, the weapon gets heavy; no push, so round 1 is lost after 2 s.
-# The harness player's sword hangs as the mock hand holds it, at an angle to the swing that the harness cannot set
-# (first run: 64.5°), so the angle tolerance is opened to its maximum (90: any angle) here; section 1b checks the angle refusal.
-set-option DMCS "Clash Block Angle Tolerance" 90
+# 1. Two-handed block of the flashing blade: the blades lock, the NPC freezes, the weapon gets heavy; no push, so round 1
+# is lost after 2 s.
 mark
 await-log 30 blade flashes
 player-parry
 expect-log blades locked with HumanMale
+expect-log (both hands on SwordLongCommon
 expect-log x heavier, held at the lock point
 expect-log lock t=0.0
 expect-log lock t=1.
@@ -36,17 +35,15 @@ expect-log blades unlocked (Decided
 expect-log moves again
 screenshot clash-lock-after of=npc
 
-# 1b. The same block with a tight angle tolerance: at the flash, but not across the swing, an ordinary parry.
-# The block waits for the strike to start: the swing plane (and so the angle) is read in the strike's first frames, and
-# a block before that (the blade still at the swing top) has no angle to check and locks (seen 2026-11-20: "angle n/a").
-set-option DMCS "Clash Block Angle Tolerance" 10
+# 1b. The same block with one hand on the sword: an ordinary parry, whatever the angle or speed (user 2026-11-24)
+player-release hand=left
 mark
 await-log 30 blade flashes
-mark
-await-log 5 's swing
 player-parry
-expect-log : WrongAngle (contact
-set-option DMCS "Clash Block Angle Tolerance" 90
+expect-log : OneHanded (one hand on SwordLongCommon
+expect-log a clash needs both hands on the weapon
+expect-no-log blades locked
+player-grab SwordLongCommon hand=both
 
 # 2. Block away from the flash (0.5 m along the blade): locks too since 2026-11-22 (user: the exact point was hit far
 # too rarely; where on the flashing blade the block lands no longer counts)

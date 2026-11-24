@@ -12,8 +12,6 @@ namespace DMCS.Core
         public const string SlowMoName = "Clash Slow Motion";
         public const string SlowMoScaleName = "Clash Slow Motion Scale";
         public const string NpcReachName = "Clash Enemy Reach";
-        public const string BlockReachName = "Clash Block Reach";
-        public const string BlockAngleToleranceName = "Clash Block Angle Tolerance";
 
         public const bool DefaultOnlySwords = true;
         public const bool DefaultSlowMo = true;
@@ -27,27 +25,11 @@ namespace DMCS.Core
         /// <summary>Metres between the NPC and the player within which the slow-motion can start (a guess).</summary>
         public static readonly SliderSpec NpcReach = new SliderSpec(NpcReachName, 1f, 4f, 0.25f, 2.5f);
 
-        /// <summary>Metres from the flash point to the player's blade within which the slow-motion can start (a guess).</summary>
-        /// <summary>
-        /// How near (m) the player's blade must be to the flash point at the strike's start for the slow-motion. Headset
-        /// 2026-11-22: at 0.6 m the slow-motion hardly came (BladeTooFar on 54 of 63 judged swings); 1.0 m is a guess.
-        /// </summary>
-        public static readonly SliderSpec BlockReach = new SliderSpec(BlockReachName, 0.2f, 2f, 0.1f, 1.0f);
-
-        /// <summary>
-        /// Degrees the player's blade may be off a right angle to the swing; 90 = no angle check. Default 90 (user 2026-11-22:
-        /// the trigger was far too rare; the angle refused 31 of 56 star blocks in the Player.log of that day).
-        /// </summary>
-        public static readonly SliderSpec BlockAngleTolerance = new SliderSpec(BlockAngleToleranceName, 10f, 90f, 5f, 90f);
-
-        /// <summary>Seconds after the strike starts in which the swing plane is read and the slow-motion decided.</summary>
+        /// <summary>Seconds after the strike starts in which the slow-motion is decided.</summary>
         public const float JudgeWindow = 0.1f;
 
         /// <summary>Real seconds a clash slow-motion lasts at most (safety cap; it normally ends with the swing).</summary>
         public const float SlowMoMaxSeconds = 2.5f;
-
-        /// <summary>Minimum speed (m/s) of the NPC's blade for its swing plane to be read.</summary>
-        public const float MinBladeSpeed = 0.3f;
 
         public const string FlashSoundName = "Clash Flash Sound";
         public const string FlashGameSoundName = "Clash Flash Game Sound";
@@ -84,15 +66,6 @@ namespace DMCS.Core
 
         /// <summary>The player's weapon's mass factor during the lock (harness probe: ×20 sags the tip 5 cm held still; a guess).</summary>
         public static readonly SliderSpec WeaponWeight = new SliderSpec(WeaponWeightName, 1f, 50f, 1f, 20f);
-
-        public const string MaxBlockSpeedName = "Clash Max Block Speed";
-
-        /// <summary>
-        /// The parrying hand's real controller speed (m/s, fastest in the Parry group's speed window) from which a block at
-        /// the star is too hard for a clash (user 2026-11-21). Default 2.5 (2026-11-22; first 1.5): star blocks came at
-        /// 0.46–6.65 m/s and 1.5 refused 34 of 56 of them; power parries came from 3.18 m/s. Stays under the power parry (3 m/s).
-        /// </summary>
-        public static readonly SliderSpec MaxBlockSpeed = new SliderSpec(MaxBlockSpeedName, 0.5f, 4f, 0.25f, 2.5f);
 
         public const string HoldBladeName = "Clash Hold Blade";
         public const string HoldSlackName = "Clash Hold Slack";
@@ -131,22 +104,16 @@ namespace DMCS.Core
         /// <summary>Seconds the hold lasts with Hold Briefly: long enough to catch the swing (it peaked about 0.2 s in, 2026-11-20 log).</summary>
         public static readonly SliderSpec HoldTime = new SliderSpec(HoldTimeName, 0.1f, 1f, 0.05f, 0.3f);
 
-        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, BlockReach, BlockAngleTolerance, FlashSoundVolume, MaxBlockSpeed, WeaponWeight, HoldSlack, HoldSpring, HoldSpringDamping, HoldTime };
+        public static IEnumerable<SliderSpec> Sliders => new[] { MinWindUp, SlowMoScale, NpcReach, FlashSoundVolume, WeaponWeight, HoldSlack, HoldSpring, HoldSpringDamping, HoldTime };
     }
 
     public enum BlockVerdict
     {
-        /// <summary>The blades lock: the clash starts.</summary>
+        /// <summary>Both hands on the weapon: the blades lock, the clash starts (user 2026-11-24).</summary>
         Clash,
 
-        /// <summary>The player's blade was not across the swing: an ordinary parry.</summary>
-        WrongAngle,
-
-        /// <summary>
-        /// Across the swing, but swung in too hard (user 2026-11-21): no clash, the blades bounce off each other as in any
-        /// parry.
-        /// </summary>
-        TooFast,
+        /// <summary>One hand on the weapon: an ordinary parry.</summary>
+        OneHanded,
     }
 
     public enum LockEnd
@@ -251,9 +218,12 @@ namespace DMCS.Core
     {
         Go,
         NpcTooFar,
-        BladeTooFar,
-        NoSwingPlane,
-        WrongAngle,
+
+        /// <summary>The player does not hold a weapon with both hands.</summary>
+        OneHanded,
+
+        /// <summary>The judge window ran out before anything was judged.</summary>
+        NotJudged,
     }
 
     /// <summary>Step 5 (Clash of Might) decisions over plain values.</summary>
@@ -277,40 +247,27 @@ namespace DMCS.Core
             starting || Math.Abs(timeScale - ourScale) <= 0.01f;
 
         /// <summary>
-        /// A block of the flashing blade (the NPC's swing hit the player's weapon) across the swing and with the hand slower
-        /// than <paramref name="maxBlockSpeed"/> locks the blades; a block whose swing plane is unknown is decided by the
-        /// speed. Checked in that order: angle, speed. Where on the blade it hit does not count (user 2026-11-22: the exact
-        /// point was hit far too rarely).
+        /// A block of the flashing blade (the NPC's swing hit the player's weapon) locks the blades when the player holds
+        /// that weapon with both hands; with one hand it is an ordinary parry. The only condition (user 2026-11-24): angle,
+        /// hand speed and where on the blade it hit do not count.
         /// </summary>
-        public static BlockVerdict JudgeBlock(float? angleToNormal, float angleTolerance, float handSpeed, float maxBlockSpeed)
-        {
-            if (angleToNormal.HasValue && angleToNormal.Value > angleTolerance)
-            {
-                return BlockVerdict.WrongAngle;
-            }
-            return handSpeed < maxBlockSpeed ? BlockVerdict.Clash : BlockVerdict.TooFast;
-        }
+        public static BlockVerdict JudgeBlock(bool twoHanded) => twoHanded ? BlockVerdict.Clash : BlockVerdict.OneHanded;
 
         public static bool CanFlash(bool onlySwords, bool isSword, bool hasSlashBlade) => hasSlashBlade && (!onlySwords || isSword);
 
         public static bool IsBigSwing(bool isThrust, float windUpSeconds, float minWindUp) => !isThrust && windUpSeconds >= minWindUp;
 
-        /// <summary>Whether the slow-motion starts; angleToNormal = degrees between the player's blade and the swing plane's normal, null = plane not known.</summary>
-        public static SlowMoVerdict JudgeSlowMo(float npcDistance, float npcReach, float bladeToFlash, float blockReach, float? angleToNormal, float tolerance)
+        /// <summary>
+        /// Whether the slow-motion starts at the strike: the NPC within its swing reach of the player and the player
+        /// holding a weapon with both hands, ready for the clash's only condition (user 2026-11-24).
+        /// </summary>
+        public static SlowMoVerdict JudgeSlowMo(float npcDistance, float npcReach, bool twoHanded)
         {
             if (npcDistance > npcReach)
             {
                 return SlowMoVerdict.NpcTooFar;
             }
-            if (!(bladeToFlash <= blockReach))
-            {
-                return SlowMoVerdict.BladeTooFar;
-            }
-            if (!angleToNormal.HasValue)
-            {
-                return SlowMoVerdict.NoSwingPlane;
-            }
-            return angleToNormal.Value <= tolerance ? SlowMoVerdict.Go : SlowMoVerdict.WrongAngle;
+            return twoHanded ? SlowMoVerdict.Go : SlowMoVerdict.OneHanded;
         }
     }
 
@@ -352,24 +309,22 @@ namespace DMCS.Core
     public static class ClashGeometry
     {
         /// <summary>
-        /// Normal of the plane the NPC's blade swings in (its axis and its motion); null when the blade is slower than
-        /// <paramref name="minSpeed"/> or moves along itself (a thrust has no swing plane).
+        /// How far the player's real hands lead the held hands (controller minus hand), as the mean over every hand on the
+        /// weapon. With two hands each is pulled towards its own controller, so a grip wider or narrower than the
+        /// controllers leaves opposite leads that cancel; a push moves both the same way and stays (user 2026-11-24).
         /// </summary>
-        public static Vec3? SwingPlaneNormal(Vec3 bladeAxis, Vec3 bladeVelocity, float minSpeed)
+        public static Vec3 HandLead(IReadOnlyList<Vec3> leads)
         {
-            if (bladeVelocity.Length < minSpeed)
+            if (leads == null || leads.Count == 0)
             {
-                return null;
+                return Vec3.Zero;
             }
-            var normal = Vec3.Cross(bladeAxis.Normalized(), bladeVelocity.Normalized());
-            return normal.Length < 0.3f ? (Vec3?)null : normal.Normalized();
-        }
-
-        /// <summary>Degrees (0–90) between the player's blade and the swing plane's normal, either way round: 0 = right across the swing.</summary>
-        public static float AngleToNormal(Vec3 playerBladeAxis, Vec3 normal)
-        {
-            var cos = Math.Abs(Vec3.Dot(playerBladeAxis.Normalized(), normal.Normalized()));
-            return (float)(Math.Acos(Math.Min(1.0, cos)) * 180.0 / Math.PI);
+            var sum = Vec3.Zero;
+            foreach (var l in leads)
+            {
+                sum = sum + l;
+            }
+            return sum * (1f / leads.Count);
         }
 
         /// <summary>
@@ -475,7 +430,7 @@ namespace DMCS.Core
             return true;
         }
 
-        /// <summary>The window ran out without a slow-motion: the last reason, once (NoSwingPlane when nothing was judged).</summary>
+        /// <summary>The window ran out without a slow-motion: the last reason, once (NotJudged when nothing was judged).</summary>
         public SlowMoVerdict? JudgingOver(TId npc, float now)
         {
             if (!_swings.TryGetValue(npc, out var s) || !s.StrikeAt.HasValue || s.Judged || now - s.StrikeAt.Value <= _window)
@@ -483,7 +438,7 @@ namespace DMCS.Core
                 return null;
             }
             s.Judged = true;
-            return s.Last ?? SlowMoVerdict.NoSwingPlane;
+            return s.Last ?? SlowMoVerdict.NotJudged;
         }
 
         /// <summary>The attack ended or was cancelled: flash off; true when its slow-motion was running.</summary>

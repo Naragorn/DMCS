@@ -44,35 +44,24 @@ public class ClashWeaponRuleTests
 public class ClashSlowMoVerdictTests
 {
     private const float NpcReach = 2.5f;
-    private const float BlockReach = 0.6f;
-    private const float Tolerance = 45f;
 
-    private static SlowMoVerdict Judge(float npc = 1.5f, float blade = 0.3f, float? angle = 10f) =>
-        ClashRules.JudgeSlowMo(npc, NpcReach, blade, BlockReach, angle, Tolerance);
+    // User 2026-11-24: the clash's only condition is a two-handed block, so the slow-motion asks the same of the player:
+    // the enemy within its swing reach and the player's weapon in both hands (Player.log 2026-11-23: the blade distance
+    // refused 50 of 57 judged swings).
+    [Fact]
+    public void InReach_TwoHanded_Go() => Assert.Equal(SlowMoVerdict.Go, ClashRules.JudgeSlowMo(1.5f, NpcReach, twoHanded: true));
 
     [Fact]
-    public void AllConditionsHold_Go() => Assert.Equal(SlowMoVerdict.Go, Judge());
+    public void AtTheReachLimit_StillGo() => Assert.Equal(SlowMoVerdict.Go, ClashRules.JudgeSlowMo(NpcReach, NpcReach, twoHanded: true));
 
     [Fact]
-    public void AtTheLimits_StillGo() => Assert.Equal(SlowMoVerdict.Go, Judge(NpcReach, BlockReach, Tolerance));
+    public void NpcFarAway_NoSlowMo() => Assert.Equal(SlowMoVerdict.NpcTooFar, ClashRules.JudgeSlowMo(2.6f, NpcReach, twoHanded: true));
 
     [Fact]
-    public void NpcFarAway_NoSlowMo() => Assert.Equal(SlowMoVerdict.NpcTooFar, Judge(npc: 2.6f));
+    public void OneHand_NoSlowMo() => Assert.Equal(SlowMoVerdict.OneHanded, ClashRules.JudgeSlowMo(1.5f, NpcReach, twoHanded: false));
 
     [Fact]
-    public void BladeFarFromTheFlash_NoSlowMo() => Assert.Equal(SlowMoVerdict.BladeTooFar, Judge(blade: 0.7f));
-
-    [Fact]
-    public void NoBladeInHand_IsTooFar() => Assert.Equal(SlowMoVerdict.BladeTooFar, Judge(blade: float.PositiveInfinity));
-
-    [Fact]
-    public void SwingPlaneNotKnown_NoSlowMo() => Assert.Equal(SlowMoVerdict.NoSwingPlane, Judge(angle: null));
-
-    [Fact]
-    public void BladeNotAcrossTheSwing_NoSlowMo() => Assert.Equal(SlowMoVerdict.WrongAngle, Judge(angle: 46f));
-
-    [Fact]
-    public void NpcDistance_IsCheckedFirst() => Assert.Equal(SlowMoVerdict.NpcTooFar, Judge(npc: 9f, blade: 9f, angle: 80f));
+    public void NpcDistance_IsCheckedFirst() => Assert.Equal(SlowMoVerdict.NpcTooFar, ClashRules.JudgeSlowMo(9f, NpcReach, twoHanded: false));
 }
 
 // The push in a blade lock (user 2026-11-22: the duel was always lost; Player.log: leads of 0.12–0.24 m counted only
@@ -198,56 +187,36 @@ public class ClashPushDirectionTests
 
 public class ClashGeometryTests
 {
-    private static readonly Vec3 Up = new Vec3(0, 1, 0);
-    private static readonly Vec3 Right = new Vec3(1, 0, 0);
-    private static readonly Vec3 Forward = new Vec3(0, 0, 1);
-
+    // User 2026-11-24: a clash needs both hands. Each hand is pulled towards its own controller, so a grip wider or
+    // narrower than the controllers leaves each hand "behind" its controller in opposite directions (harness 2026-11-24:
+    // 0.25 m with no push at all, every round won). The mean of both hands' leads cancels that tension and keeps a push.
     [Fact]
-    public void OverheadChop_PlaneNormalIsSideways()
+    public void HandLead_TwoHandsPulledApart_Cancel()
     {
-        // Blade points forward, moves down: the swing plane is the vertical forward plane, its normal sideways.
-        var normal = ClashGeometry.SwingPlaneNormal(Forward, new Vec3(0, -3, 0), 0.3f);
+        var lead = ClashGeometry.HandLead(new[] { new Vec3(0.2f, 0, 0), new Vec3(-0.2f, 0, 0) });
 
-        Assert.NotNull(normal);
-        Assert.Equal(1f, System.Math.Abs(normal!.Value.X), 3);
+        Assert.Equal(0f, lead.Length, 4);
     }
 
     [Fact]
-    public void TooSlowBlade_HasNoPlane()
+    public void HandLead_TwoHandsPushingTogether_IsThePush()
     {
-        Assert.Null(ClashGeometry.SwingPlaneNormal(Forward, new Vec3(0, -0.2f, 0), 0.3f));
+        var lead = ClashGeometry.HandLead(new[] { new Vec3(0.2f, 0, 0.1f), new Vec3(-0.2f, 0, 0.1f) });
+
+        Assert.Equal(0.1f, lead.Z, 4);
+        Assert.Equal(0f, lead.X, 4);
     }
 
     [Fact]
-    public void BladeMovingAlongItself_HasNoPlane()
+    public void HandLead_OneHand_IsThatHand()
     {
-        Assert.Null(ClashGeometry.SwingPlaneNormal(Forward, new Vec3(0, 0.1f, 3f), 0.3f));
+        Assert.Equal(0.3f, ClashGeometry.HandLead(new[] { new Vec3(0, 0, 0.3f) }).Z, 4);
     }
 
     [Fact]
-    public void HorizontalBlockAgainstAnOverheadChop_IsARightAngle()
+    public void HandLead_NoHand_IsZero()
     {
-        var normal = ClashGeometry.SwingPlaneNormal(Forward, new Vec3(0, -3, 0), 0.3f)!.Value;
-
-        Assert.Equal(0f, ClashGeometry.AngleToNormal(Right, normal), 2);
-        Assert.Equal(0f, ClashGeometry.AngleToNormal(new Vec3(-1, 0, 0), normal), 2);
-    }
-
-    [Fact]
-    public void BladeParallelToTheSwing_IsNinetyDegreesOff()
-    {
-        var normal = ClashGeometry.SwingPlaneNormal(Forward, new Vec3(0, -3, 0), 0.3f)!.Value;
-
-        Assert.Equal(90f, ClashGeometry.AngleToNormal(Up, normal), 2);
-        Assert.Equal(90f, ClashGeometry.AngleToNormal(Forward, normal), 2);
-    }
-
-    [Fact]
-    public void DiagonalBlade_IsFortyFiveOff()
-    {
-        var normal = ClashGeometry.SwingPlaneNormal(Forward, new Vec3(0, -3, 0), 0.3f)!.Value;
-
-        Assert.Equal(45f, ClashGeometry.AngleToNormal(new Vec3(1, 1, 0), normal), 2);
+        Assert.Equal(0f, ClashGeometry.HandLead(new Vec3[0]).Length, 4);
     }
 
     [Fact]
@@ -323,7 +292,7 @@ public class ClashTelegraphTests
     {
         var t = Struck();
 
-        Assert.False(t.Verdict(1, SlowMoVerdict.WrongAngle, 10.01f));
+        Assert.False(t.Verdict(1, SlowMoVerdict.OneHanded, 10.01f));
         Assert.True(t.IsJudging(1, 10.05f));
         Assert.True(t.Verdict(1, SlowMoVerdict.Go, 10.05f));
     }
@@ -332,17 +301,17 @@ public class ClashTelegraphTests
     public void WindowOver_GivesTheLastReason_Once()
     {
         var t = Struck();
-        t.Verdict(1, SlowMoVerdict.BladeTooFar, 10.01f);
+        t.Verdict(1, SlowMoVerdict.OneHanded, 10.01f);
 
-        Assert.Equal(SlowMoVerdict.BladeTooFar, t.JudgingOver(1, 10.2f));
+        Assert.Equal(SlowMoVerdict.OneHanded, t.JudgingOver(1, 10.2f));
         Assert.Null(t.JudgingOver(1, 10.3f));
         Assert.False(t.IsJudging(1, 10.3f));
     }
 
     [Fact]
-    public void WindowOverWithoutAnyVerdict_IsNoSwingPlane()
+    public void WindowOverWithoutAnyVerdict_IsNotJudged()
     {
-        Assert.Equal(SlowMoVerdict.NoSwingPlane, Struck().JudgingOver(1, 10.2f));
+        Assert.Equal(SlowMoVerdict.NotJudged, Struck().JudgingOver(1, 10.2f));
     }
 
     [Fact]
@@ -421,9 +390,6 @@ public class ClashSettingsTests
         Assert.True(ClashSettings.DefaultSlowMo);
         Assert.Equal(0.4f, ClashSettings.MinWindUp.Default);
         Assert.Equal(0.3f, ClashSettings.SlowMoScale.Default);
-        Assert.Equal(90f, ClashSettings.BlockAngleTolerance.Default);
-        // Headset 2026-11-22: the slow-motion hardly came (BladeTooFar on 54 of 63 swings at 0.6 m). 1.0 m is a guess.
-        Assert.Equal(1.0f, ClashSettings.BlockReach.Default);
         Assert.Equal(2.5f, ClashSettings.NpcReach.Default);
     }
 

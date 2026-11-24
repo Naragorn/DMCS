@@ -217,22 +217,8 @@ namespace DMCS
         [ModOptionSlider]
         public static float NpcReach { get; set; } = ClashSettings.NpcReach.Default;
 
-        [ModOption(name = ClashSettings.BlockReachName, tooltip = "How close (m) your blade must be to the flash for the slow-motion.", valueSourceName = nameof(BlockReachValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 6)]
-        [ModOptionSlider]
-        public static float BlockReach { get; set; } = ClashSettings.BlockReach.Default;
-
-        [ModOption(name = ClashSettings.BlockAngleToleranceName, tooltip = "How far (degrees) your blade may be off a right angle to the enemy's swing. 90: any angle.", valueSourceName = nameof(BlockAngleToleranceValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 7)]
-        [ModOptionSlider]
-        public static float BlockAngleTolerance { get; set; } = ClashSettings.BlockAngleTolerance.Default;
-
         [ModOption(name = ClashSettings.FlashAtTopName, tooltip = "The blade flashes when the enemy has raised it all the way, just before the strike, like sunlight caught on it. Off: as soon as the wind-up starts (more warning).", category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 22)]
         public static bool FlashAtTop { get; set; } = ClashSettings.DefaultFlashAtTop;
-
-        [ModOption(name = ClashSettings.MaxBlockSpeedName, tooltip = "Block the flashing blade faster than this (m/s, your hand) and nothing locks: your blade bounces off as in any parry. Slower, and the blades lock.", valueSourceName = nameof(MaxBlockSpeedValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 9)]
-        [ModOptionSlider]
-        public static float MaxBlockSpeed { get; set; } = ClashSettings.MaxBlockSpeed.Default;
-
-        public static ModOptionFloat[] MaxBlockSpeedValues() => Floats(ClashSettings.MaxBlockSpeed, "0.00", " m/s");
 
         [ModOption(name = ClashSettings.WeaponWeightName, tooltip = "How much heavier your weapon gets while the blades are locked, so you cannot just push through.", valueSourceName = nameof(WeaponWeightValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 10)]
         [ModOptionSlider]
@@ -300,10 +286,6 @@ namespace DMCS
         public static ModOptionFloat[] SlowMoScaleValues() => Floats(ClashSettings.SlowMoScale, "0.00", "x");
 
         public static ModOptionFloat[] NpcReachValues() => Floats(ClashSettings.NpcReach, "0.00", " m");
-
-        public static ModOptionFloat[] BlockReachValues() => Floats(ClashSettings.BlockReach, "0.0", " m");
-
-        public static ModOptionFloat[] BlockAngleToleranceValues() => Floats(ClashSettings.BlockAngleTolerance, "0", "°");
 
         public static void Start()
         {
@@ -607,38 +589,23 @@ namespace DMCS
                 return SlowMoVerdict.NpcTooFar;
             }
             var npcDistance = Vector3.Distance(flash.Npc.transform.position, player.transform.position);
-            var point = flash.Point;
-            var bladeDistance = float.PositiveInfinity;
-            Vector3 bladeAxis = Vector3.zero;
-            foreach (var hand in new[] { player.handLeft, player.handRight })
+            var twoHanded = TwoHandedWeapon(player);
+            flash.LastDetail = "enemy " + F(npcDistance) + " m, " + (twoHanded != null ? "both hands on " + twoHanded.data?.id : "no weapon in both hands");
+            return ClashRules.JudgeSlowMo(npcDistance, NpcReach, twoHanded != null);
+        }
+
+        /// <summary>The item the player holds with both hands (the game's own Item.IsTwoHanded), or null.</summary>
+        private static Item TwoHandedWeapon(Creature player)
+        {
+            foreach (var hand in new[] { player.handRight, player.handLeft })
             {
-                if (!TryPlayerBlade(hand, out var a, out var b))
+                var item = hand != null && hand.grabbedHandle != null ? hand.grabbedHandle.item : null;
+                if (item != null && item.IsTwoHanded())
                 {
-                    continue;
-                }
-                var d = ClashGeometry.DistanceToSegment(V(point), V(a), V(b));
-                if (d < bladeDistance)
-                {
-                    bladeDistance = d;
-                    bladeAxis = b - a;
+                    return item;
                 }
             }
-            float? angle = null;
-            var npcHandle = flash.Hand != null && flash.Hand.grabbedHandle != null ? flash.Hand.grabbedHandle.transform.position : flash.Weapon.transform.position;
-            var velocity = flash.Weapon.GetItemPointVelocity(point, true);
-            var normal = ClashGeometry.SwingPlaneNormal(V(point - npcHandle), V(velocity), ClashSettings.MinBladeSpeed);
-            if (normal.HasValue)
-            {
-                flash.Normal = new Vector3(normal.Value.X, normal.Value.Y, normal.Value.Z);
-            }
-            if (normal.HasValue && bladeAxis != Vector3.zero)
-            {
-                angle = ClashGeometry.AngleToNormal(V(bladeAxis), normal.Value);
-            }
-            var verdict = ClashRules.JudgeSlowMo(npcDistance, NpcReach, bladeDistance, BlockReach, angle, BlockAngleTolerance);
-            flash.LastDetail = "enemy " + F(npcDistance) + " m, blade " + (float.IsInfinity(bladeDistance) ? "none" : F(bladeDistance) + " m")
-                + ", angle " + (angle.HasValue ? F(angle.Value) + "°" : "n/a");
-            return verdict;
+            return null;
         }
 
         /// <summary>The player's held blade as handle → tip; false when the hand holds nothing with a damager.</summary>
@@ -721,34 +688,18 @@ namespace DMCS
                     Dmcs.Log.Debug(Channel, "you blocked " + flash.NpcName + "'s other weapon (" + parriedItem.data?.id + "), not the flashing one: an ordinary parry");
                     return;
                 }
-                if (Parry.TakesOverFromClash(parryingItem, out var handSpeed))
-                {
-                    // Spec section 6: a hard swing into the attack is a power parry, never a clash.
-                    Dmcs.Log.Debug(Channel, "you parried " + flash.NpcName + "'s swing hard (hand " + F(handSpeed) + " m/s): a power parry, not a clash");
-                    return;
-                }
                 var point = flash.Point;
                 var contactToFlash = Vector3.Distance(hit.contactPoint, point);
                 var hand = parryingItem.mainHandler;
-                float? angle = null;
-                if (hand != null && TryPlayerBlade(hand, out var a, out var b))
-                {
-                    var npcHandle = flash.Hand != null && flash.Hand.grabbedHandle != null ? flash.Hand.grabbedHandle.transform.position : flash.Weapon.transform.position;
-                    var now = ClashGeometry.SwingPlaneNormal(V(point - npcHandle), V(flash.Weapon.GetItemPointVelocity(point, true)), ClashSettings.MinBladeSpeed);
-                    var normal = now ?? (flash.Normal.HasValue ? V(flash.Normal.Value) : (Vec3?)null);
-                    if (normal.HasValue)
-                    {
-                        angle = ClashGeometry.AngleToNormal(V(b - a), normal.Value);
-                    }
-                }
-                // The same hand speed the Parry group reads (fastest in its speed window before the event), so the two agree.
-                var verdict = ClashRules.JudgeBlock(angle, BlockAngleTolerance, handSpeed, MaxBlockSpeed);
-                var detail = "contact " + F(contactToFlash) + " m from the flash, angle " + (angle.HasValue ? F(angle.Value) + "°" : "n/a")
-                    + ", hand " + F(handSpeed) + " m/s";
+                var twoHanded = parryingItem.IsTwoHanded();
+                var handSpeed = hand != null ? HandSpeeds.Peak(hand.side, Parry.SpeedWindow) : 0f;
+                var verdict = ClashRules.JudgeBlock(twoHanded);
+                // Contact and hand speed only for the log (the headset values): the hands alone decide (user 2026-11-24).
+                var detail = (twoHanded ? "both hands" : "one hand") + " on " + parryingItem.data?.id + ", contact " + F(contactToFlash)
+                    + " m from the flash, hand " + F(handSpeed) + " m/s";
                 if (verdict != BlockVerdict.Clash)
                 {
-                    var tooFast = verdict == BlockVerdict.TooFast ? ", a clash needs under " + F(MaxBlockSpeed) + " m/s" : "";
-                    Dmcs.Log.Debug(Channel, "you blocked " + flash.NpcName + "'s swing: " + verdict + " (" + detail + tooFast + "), an ordinary parry");
+                    Dmcs.Log.Debug(Channel, "you blocked " + flash.NpcName + "'s swing: " + verdict + " (" + detail + "), an ordinary parry; a clash needs both hands on the weapon");
                     return;
                 }
                 if (!ClashModes.Locks(Mode))
@@ -848,6 +799,11 @@ namespace DMCS
                 Lose("you let go of your weapon", disarmPlayer: false);
                 return;
             }
+            if (_lockHand == null || _lockHand.grabbedHandle == null || _lockHand.grabbedHandle.item != _lockItem)
+            {
+                // One of the two hands let go: the push is read from the hand that still holds the weapon.
+                _lockHand = _lockItem.mainHandler;
+            }
             var now = Time.unscaledTime;
             if (_hold != null)
             {
@@ -890,22 +846,36 @@ namespace DMCS
         }
 
         /// <summary>
-        /// How far the player's real controller (PlayerHand.grip, the target the hand follows) is ahead of the weapon hand
+        /// How far the player's real controllers (PlayerHand.grip, the targets the hands follow; the mean over every hand on
+        /// the weapon, ClashGeometry.HandLead) are ahead of the weapon hands
         /// (RagdollHand.grip, held back by the lock): along the line from the player's head to the lock point (lead), to the
         /// player's right (+) or left (−) square to that line (side; ClashGeometry.PushComponents) and at all (gap).
         /// </summary>
         private static void Measure(out float lead, out float side, out float gap)
         {
             lead = side = gap = 0f;
-            var playerHand = _lockHand != null ? _lockHand.playerHand : null;
-            if (playerHand == null || playerHand.grip == null || _lockHand.grip == null || Player.local == null || Player.local.head == null)
+            if (_lockItem == null || Player.local == null || Player.local.head == null)
             {
                 return;
             }
-            var ahead = playerHand.grip.position - _lockHand.grip.position;
+            // Every player hand on the locked weapon: with two hands their opposite pulls cancel in the mean (HandLead).
+            var leads = new List<Vec3>(2);
+            foreach (var hand in _lockItem.handlers)
+            {
+                var playerHand = hand != null ? hand.playerHand : null;
+                if (playerHand != null && playerHand.grip != null && hand.grip != null && hand.creature != null && hand.creature.isPlayer)
+                {
+                    leads.Add(V(playerHand.grip.position - hand.grip.position));
+                }
+            }
+            if (leads.Count == 0)
+            {
+                return;
+            }
+            var ahead = ClashGeometry.HandLead(leads);
             var head = Player.local.head.transform;
-            (lead, side) = ClashGeometry.PushComponents(V(ahead), V(head.position), V(LockPointNow()), V(head.right));
-            gap = ahead.magnitude;
+            (lead, side) = ClashGeometry.PushComponents(ahead, V(head.position), V(LockPointNow()), V(head.right));
+            gap = ahead.Length;
         }
 
         /// <summary>Where the blades crossed, on the enemy's blade as it is now (the frozen blade still settles a little).</summary>
@@ -1401,7 +1371,6 @@ namespace DMCS
             public string LastDetail { get; set; } = "";
 
             /// <summary>The swing plane's normal from the strike start (null until read).</summary>
-            public Vector3? Normal { get; set; }
 
             public Vector3 Point => Weapon.transform.TransformPoint(Local);
         }

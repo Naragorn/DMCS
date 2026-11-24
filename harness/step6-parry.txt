@@ -2,7 +2,7 @@
 # player-parry (the harness cannot swing a real arm into a real NPC swing), after the player's right controller swept
 # sideways at a set speed (player-parry swing=, BasHarness). A held guard: an ordinary parry. A guard brought up in time
 # (1.5 m/s): the enemy staggers (counter). A hard swing into the attack (5 m/s): its sword flies away (power parry). At
-# the Clash of Might star a slow block is the clash's, a hard one a power parry. Note: player-parry raises only the
+# the Clash of Might star a two-handed block is the clash's however hard (user 2026-11-24), a one-handed hard one a power parry. Note: player-parry raises only the
 # event, so the game's own recoil push (BrainModuleMelee.TryPush Parry, after the event) does not happen here; how the
 # counter's stagger and that push meet: headset. How fast a real guard and a real hard parry are: headset (the defaults
 # 1 and 3 m/s are guesses).
@@ -80,27 +80,36 @@ expect-log : knocked away (hand
 expect-log counter parry on HumanMale
 expect-npc holding false
 
-# 6. Clash of Might (mode On): a slow block at the star locks the blades and is the clash's; a hard one at the star is
-# a power parry, never a clash. A fighting NPC, as step5b; its real swings at the player's sword raise real block
-# events too, so each part checks its own lines. The harness sword's angle to the swing cannot be set: tolerance 90.
+# 6. Clash of Might (mode On): the only condition for a clash is a two-handed block of the flashing blade (user
+# 2026-11-24). Slow or hard, a two-handed block at the star is the clash's; a hard one-handed one stays a power parry.
+# A fighting NPC, as step5b; its real swings at the player's sword raise real block events too, so each part checks its
+# own lines.
 set-option DMCS "Clash of Might Mode" On
 set-option DMCS "Clash Min Wind Up" 0.2
 set-option DMCS "Clash Lose Outcome" Hit
-set-option DMCS "Clash Block Angle Tolerance" 90
 turn-player 90
 spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
-player-grab SwordShortCommon
+player-grab SwordLongCommon hand=both
 mark
 await-log 30 blade flashes
 player-parry
 expect-log blades locked with HumanMale
+expect-log (both hands on SwordLongCommon
 expect-log : TakenByClash (hand 0.
 expect-log blades unlocked (Decided
 expect-log moves again
 mark
 await-log 30 blade flashes
 player-parry swing=5
-expect-log a power parry, not a clash
+expect-log blades locked with HumanMale
+expect-log (both hands on SwordLongCommon
+expect-no-log power parry on HumanMale
+await-log 5 blades unlocked (Decided
+player-release hand=left
+mark
+await-log 30 blade flashes
+player-parry swing=5
+expect-log : OneHanded (one hand on SwordLongCommon
 expect-log power parry on HumanMale
 expect-no-log blades locked
 expect-npc holding false

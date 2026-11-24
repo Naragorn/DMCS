@@ -595,6 +595,47 @@ off. The three locks under 1.5 m/s overshot 0.59, 0.76 and 1.14 m (1.14 m is the
 
 **Harness:** `step5c` section 5 (`player-parry swing=2` → `TooFast`, no lock); not run (built on Windows).
 
+## Clash: two hands, the only condition (2026-11-24)
+
+**User:** "ändern wir clash dass die einzige condition ist dass man beidhändig blockt".
+
+**Why (Player.log 2026-11-23, Windows headset run, Debug Logging on):** the user's saved options still held the old
+values (angle tolerance 45°, max block speed 1.5 m/s; new slider defaults never reach saved options). Of 56 blocks of a
+flashing blade, 29 were refused for the angle (`WrongAngle`, 45–89°) and 21 for the hand speed (`TooFast`, 1.5–7 m/s);
+6 locked (2 won sideways, 3 lost, 1 broken). The slow-motion was refused 50 of 57 times for the blade distance
+(`BladeTooFar`), 7 ran.
+
+**Rule** (`ClashRules.JudgeBlock(twoHanded)`, Core, unit-tested): a block of the flashing blade with the weapon in both
+hands is the clash (Simple: the disarm, On: the lock); one hand is an ordinary parry (`OneHanded`, the Parry group then
+decides its counter or power parry). Both hands = the game's own `Item.IsTwoHanded` (true when any handler's other hand
+holds a handle of the same item; read in the game code 1.3.2, `Item.cs`). Removed: *Clash Block Reach*, *Clash Block
+Angle Tolerance*, *Clash Max Block Speed*, the swing-plane geometry and the "power parry, not a clash" precedence
+(`Parry.TakesOverFromClash`): a hard two-handed block at the star is a clash. The log still names contact distance and
+hand speed for the headset.
+
+**Slow-motion** (`ClashRules.JudgeSlowMo(npcDistance, npcReach, twoHanded)`): the enemy within *Clash Enemy Reach* and the
+player holding any weapon with both hands at the strike's start. Not asked for in these words; derived from "the only
+condition", since the old blade-distance check refused almost every swing.
+
+**During a lock:** letting go with one hand keeps the lock; the push is then read from the hand still holding the weapon.
+Letting go with both is a lost clash, as before.
+
+**Push measure with two hands (found in the first harness run, 2026-11-24):** the push was read from one hand only
+(its controller minus the hand). With two hands on one grip each hand is pulled towards its own controller, so a grip
+narrower or wider than the controllers leaves that hand behind its controller: 0.25 m with no push at all in the harness,
+every round held, the no-push scenarios never lost (step5b, step5c, step6 failed). Fix: the mean lead of every player hand
+on the weapon (`ClashGeometry.HandLead`, unit-tested): the opposite pulls cancel, a push of both hands stays. After it:
+0.00–0.02 m with no push, round 1 lost as designed. A harness push moves only the right controller, so it counts half.
+
+**Consequence:** a weapon whose handle has no length cannot be held in two hands (the game releases the first hand,
+`Handle.OnGrab`: `axisLength == 0` and not `forceAllowTwoHanded`), so it cannot clash. Which of the game's weapons that
+applies to was not checked one by one.
+
+**Harness:** BasHarness `player-grab <item> hand=both` (3ce3993). `step5a` (slow-motion with a sword in both hands,
+refusal `OneHanded` without), `step5b` (one hand → `OneHanded`), `step5c` (a 5 m/s two-handed block still locks), `step6-parry`
+(two hands at the star: clash even at 5 m/s; one hand at 5 m/s: power parry) changed to `SwordLongCommon` in both hands.
+All four pass (2026-11-24). A real two-handed block, push and feel: headset.
+
 ## Clash Hold Style, Rotation and Briefly (2026-11-22)
 
 **User:** build the spring too, with a menu switch between it and the hard hold, and switches for the other two ideas

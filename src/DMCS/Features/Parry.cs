@@ -123,17 +123,6 @@ namespace DMCS
             return creature != null && Windows.IsStaggered(creature.GetInstanceID(), Time.time);
         }
 
-        /// <summary>
-        /// The parry with this item is hard enough for a power parry: Clash of Might asks before it locks, as a power parry
-        /// is never a clash (spec section 6).
-        /// </summary>
-        internal static bool TakesOverFromClash(Item parryingItem, out float handSpeed)
-        {
-            var hand = parryingItem != null ? parryingItem.mainHandler : null;
-            handSpeed = hand != null ? HandSpeeds.Peak(hand.side, SpeedWindow) : 0f;
-            return ParryRule.TakesOverFromClash(Toggle.Enabled, PowerEnabled, handSpeed, PowerSpeed);
-        }
-
         public static void Start()
         {
             Toggle.Changed -= OnToggle;

@@ -5,54 +5,15 @@ namespace DMCS.Tests;
 
 public class ClashBlockVerdictTests
 {
-    private const float Angle = 45f;
-    private const float MaxSpeed = 2.5f;
-    private const float Slow = 0.5f;
-
-    // User 2026-11-22: no exact point any more; any block of the flashing blade can lock (the star marks the swing).
+    // User 2026-11-24: the only condition for a clash is a two-handed block of the flashing blade. No angle, no speed
+    // (Player.log 2026-11-23: angle and speed refused 50 star blocks, 6 locked).
     [Fact]
-    public void AcrossTheSwing_Slow_LocksTheBlades() =>
-        Assert.Equal(BlockVerdict.Clash, ClashRules.JudgeBlock(20f, Angle, Slow, MaxSpeed));
+    public void BothHandsOnTheWeapon_LocksTheBlades() =>
+        Assert.Equal(BlockVerdict.Clash, ClashRules.JudgeBlock(twoHanded: true));
 
     [Fact]
-    public void AtTheAngleLimit_StillLocks() =>
-        Assert.Equal(BlockVerdict.Clash, ClashRules.JudgeBlock(Angle, Angle, Slow, MaxSpeed));
-
-    [Fact]
-    public void AlongTheSwing_IsAnOrdinaryParry() =>
-        Assert.Equal(BlockVerdict.WrongAngle, ClashRules.JudgeBlock(60f, Angle, Slow, MaxSpeed));
-
-    [Fact]
-    public void SwingPlaneUnknown_TheSpeedDecides() =>
-        Assert.Equal(BlockVerdict.Clash, ClashRules.JudgeBlock(null, Angle, Slow, MaxSpeed));
-
-    [Theory]
-    [InlineData(0f)]
-    [InlineData(45f)]
-    [InlineData(90f)]
-    public void Tolerance90_TakesAnyAngle(float angle) =>
-        Assert.Equal(BlockVerdict.Clash, ClashRules.JudgeBlock(angle, 90f, Slow, MaxSpeed));
-
-    // User 2026-11-21: too much swing at the star is no clash (the blade bounces off, nothing happens); less swing locks.
-    [Theory]
-    [InlineData(3f)]
-    [InlineData(MaxSpeed)]
-    public void TooMuchSwing_AcrossTheSwing_IsNoClash(float handSpeed) =>
-        Assert.Equal(BlockVerdict.TooFast, ClashRules.JudgeBlock(20f, Angle, handSpeed, MaxSpeed));
-
-    [Theory]
-    [InlineData(0f)]
-    [InlineData(2.49f)]
-    public void LessSwing_AcrossTheSwing_Locks(float handSpeed) =>
-        Assert.Equal(BlockVerdict.Clash, ClashRules.JudgeBlock(20f, Angle, handSpeed, MaxSpeed));
-
-    [Fact]
-    public void TooMuchSwing_SwingPlaneUnknown_IsNoClash() =>
-        Assert.Equal(BlockVerdict.TooFast, ClashRules.JudgeBlock(null, Angle, 3f, MaxSpeed));
-
-    [Fact]
-    public void TooMuchSwing_AlongTheSwing_StaysWrongAngle() =>
-        Assert.Equal(BlockVerdict.WrongAngle, ClashRules.JudgeBlock(60f, Angle, 3f, MaxSpeed));
+    public void OneHand_IsAnOrdinaryParry() =>
+        Assert.Equal(BlockVerdict.OneHanded, ClashRules.JudgeBlock(twoHanded: false));
 }
 
 public class ClashLockTests
@@ -117,22 +78,6 @@ public class ClashLockSettingsTests
     public void Defaults_AsDesigned()
     {
         Assert.Equal(20f, ClashSettings.WeaponWeight.Default);
-    }
-
-    // Player.log 2026-11-22: 6 of 23 blocked star swings locked with 0.25 m, 45° and 1.5 m/s; 18 of 23 without the point
-    // check, with any angle and under 2.5 m/s.
-    [Fact]
-    public void Trigger_IsGenerous_AnyAngle_AndUnderTwoPointFive()
-    {
-        Assert.Equal(90f, ClashSettings.BlockAngleTolerance.Default);
-        Assert.Equal(2.5f, ClashSettings.MaxBlockSpeed.Default);
-    }
-
-    [Fact]
-    public void MaxBlockSpeed_StaysUnderThePowerParry()
-    {
-        Assert.True(ClashSettings.MaxBlockSpeed.Default < ParrySettings.PowerSpeed.Default);
-        Assert.Contains(ClashSettings.MaxBlockSpeed, ClashSettings.Sliders);
     }
 
     [Fact]

@@ -45,10 +45,9 @@ expect-option DMCS "Adrenaline Per Clash Win" 25
 set-option DMCS "Debug Logging" true
 set-option DMCS "Charge Stagger Enabled" false
 set-option DMCS "Clash Min Wind Up" 0.2
-set-option DMCS "Clash Block Angle Tolerance" 90
 player-invincible true
 spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
-player-grab SwordShortCommon
+player-grab SwordLongCommon hand=both
 
 # 1. Simple (default): a block at the star knocks the enemy's sword away, Clash Win adrenaline
 mark
@@ -116,24 +115,22 @@ await-log 30 blade flashes
 player-parry
 expect-log blades locked with HumanMale
 player-release
+player-release hand=left
 await-log 3 you let go of your weapon; you take 20 damage
 expect-no-log flies away
 screenshot clash-lost of=npc
 
-# 5. Too much swing at the star (user 2026-11-21): a block faster than Clash Max Block Speed (2.5 m/s since 2026-11-22)
-# locks nothing; the swing goes on and the blades bounce off as in any parry. 2.75 m/s stays under the power parry (3 m/s).
+# 5. A hard two-handed block at the star still locks (user 2026-11-24: both hands are the only condition; before, a
+# block faster than Clash Max Block Speed bounced off). 5 m/s is above the power parry (3 m/s): the clash takes it.
 # First run on Linux 2026-11-22: section 4's enemy was still fighting and flashed first, while player-parry blocks the
 # newest NPC; so section 4's enemy dies first (the newest NPC is the one hit-npc hits).
 hit-npc Torso damage=500 push=0
-# The harness sweep at 2.75 m/s reads 2.76-3.06 m/s in DMCS's hand speed (frame timing), which reached the power parry
-# (3 m/s) once; the power parry moves away so only the clash rule decides here.
-set-option DMCS "Power Parry Min Speed" 5
-player-grab SwordShortCommon
+player-grab SwordLongCommon hand=both
 spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
 mark
 # Section 1's enemy may still be fighting too (2026-11-23 it flashed first): wait for this section's NPC (the fourth).
 await-log 30 HumanMale3's blade flashes
-player-parry swing=2.75
-expect-log TooFast (contact
-expect-no-log blades locked
+player-parry swing=5
+expect-log blades locked with HumanMale3 (both hands on SwordLongCommon
+expect-no-log power parry on HumanMale3
 quit
