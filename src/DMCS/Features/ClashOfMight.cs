@@ -126,7 +126,7 @@ namespace DMCS
         [ModOptionSlider]
         public static float EnemyPush { get; set; } = ClashFightSettings.EnemyPush.Default;
 
-        [ModOption(name = ClashFightSettings.DeadZoneName, tooltip = "Lead (m) of your hand that does not count as pushing: the heavy weapon's natural lag.", valueSourceName = nameof(DeadZoneValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 31)]
+        [ModOption(name = ClashFightSettings.DeadZoneName, tooltip = "How far (m) your hands may move since the lock without it counting as a push: hands are never quite still.", valueSourceName = nameof(DeadZoneValues), category = DmcsCategories.ClashOfMight, categoryOrder = DmcsCategories.ClashOfMightOrder, order = 31)]
         [ModOptionSlider]
         public static float DeadZone { get; set; } = ClashFightSettings.DeadZone.Default;
 
@@ -791,6 +791,7 @@ namespace DMCS
             _lockFlash = flash;
             _lockItem = item;
             _lockHand = hand;
+            RememberControllers(item);
             _lockOnEnemyBlade = flash.Weapon.transform.InverseTransformPoint(contact);
             _lockAnimatorSpeed = flash.Npc.animator != null ? flash.Npc.animator.speed : 1f;
             if (flash.Npc.animator != null)
@@ -892,10 +893,12 @@ namespace DMCS
         }
 
         /// <summary>
-        /// How far the player's real controllers (PlayerHand.grip, the targets the hands follow; the mean over every hand on
-        /// the weapon, ClashGeometry.HandLead) are ahead of the weapon hands
-        /// (RagdollHand.grip, held back by the lock): along the line from the player's head to the lock point (lead), to the
-        /// player's right (+) or left (−) square to that line (side; ClashGeometry.PushComponents) and at all (gap).
+        /// The push (user 2026-11-24, "Controller-Weg"): how far the player's real controllers (PlayerHand.grip) moved since
+        /// the blades locked, the mean over every hand on the weapon (ClashGeometry.ControllerTravel): along the line from
+        /// the player's head to the lock point (lead), to the player's right (+) or left (−) square to that line (side;
+        /// ClashGeometry.PushComponents) and at all (gap). Read in the player rig's own space, so walking with the stick does
+        /// not count while a real step does. The in-game hand is no input any more (before: controller minus hand, which
+        /// the weight, the hold and the frozen enemy blade moved by 0.1–0.5 m without the player doing anything).
         /// </summary>
         private static void Measure(out float lead, out float side, out float gap)
         {
@@ -904,24 +907,55 @@ namespace DMCS
             {
                 return;
             }
-            // Every player hand on the locked weapon: with two hands their opposite pulls cancel in the mean (HandLead).
-            var leads = new List<Vec3>(2);
+            var rig = Player.local.transform;
+            var starts = new List<Vec3>(2);
+            var nows = new List<Vec3>(2);
             foreach (var hand in _lockItem.handlers)
             {
                 var playerHand = hand != null ? hand.playerHand : null;
-                if (playerHand != null && playerHand.grip != null && hand.grip != null && hand.creature != null && hand.creature.isPlayer)
+                if (playerHand == null || playerHand.grip == null || hand.creature == null || !hand.creature.isPlayer)
                 {
-                    leads.Add(V(playerHand.grip.position - hand.grip.position));
+                    continue;
                 }
+                var now = rig.InverseTransformPoint(playerHand.grip.position);
+                if (!_lockControllerStart.TryGetValue(hand.side, out var start))
+                {
+                    // A hand that takes the weapon during the lock starts from where it is.
+                    start = now;
+                    _lockControllerStart[hand.side] = start;
+                }
+                starts.Add(V(start));
+                nows.Add(V(now));
             }
-            if (leads.Count == 0)
+            if (nows.Count == 0)
             {
                 return;
             }
-            var ahead = ClashGeometry.HandLead(leads);
+            var localTravel = ClashGeometry.ControllerTravel(starts, nows);
+            var travel = V(rig.TransformVector(new Vector3(localTravel.X, localTravel.Y, localTravel.Z)));
             var head = Player.local.head.transform;
-            (lead, side) = ClashGeometry.PushComponents(ahead, V(head.position), V(LockPointNow()), V(head.right));
-            gap = ahead.Length;
+            (lead, side) = ClashGeometry.PushComponents(travel, V(head.position), V(LockPointNow()), V(head.right));
+            gap = travel.Length;
+        }
+
+        /// <summary>Where each player controller on the locked weapon was when the blades locked, in the rig's own space.</summary>
+        private static readonly Dictionary<Side, Vector3> _lockControllerStart = new Dictionary<Side, Vector3>();
+
+        private static void RememberControllers(Item item)
+        {
+            _lockControllerStart.Clear();
+            if (Player.local == null)
+            {
+                return;
+            }
+            foreach (var hand in item.handlers)
+            {
+                var playerHand = hand != null ? hand.playerHand : null;
+                if (playerHand != null && playerHand.grip != null && hand.creature != null && hand.creature.isPlayer)
+                {
+                    _lockControllerStart[hand.side] = Player.local.transform.InverseTransformPoint(playerHand.grip.position);
+                }
+            }
         }
 
         /// <summary>Where the blades crossed, on the enemy's blade as it is now (the frozen blade still settles a little).</summary>
@@ -949,12 +983,12 @@ namespace DMCS
             }
         }
 
-        /// <summary>Headset diagnostic: the round, the lead and gap of the controller, the enemy's push, who is ahead, the blades' distance.</summary>
+        /// <summary>Headset diagnostic: the round, how far the controllers moved since the lock, the enemy's push, who is ahead, the blades' distance.</summary>
         private static void LogDiagnostic(float now, float lead, float side, float gap)
         {
             var apart = TryPlayerBlade(_lockHand, out var a, out var b) ? ClashGeometry.DistanceToSegment(V(LockPointNow()), V(a), V(b)) : float.NaN;
             Dmcs.Log.Debug(Channel, "lock t=" + F(Lock.Elapsed(now)) + " s, round " + _rounds.Round + "/" + _rounds.Rounds
-                + ": hand ahead " + F(gap) + " m (forward " + F(lead) + " m, side " + F(side) + " m" + (_rounds.PushingSideways ? ", sideways" : "")
+                + ": controllers moved " + F(gap) + " m (forward " + F(lead) + " m, side " + F(side) + " m" + (_rounds.PushingSideways ? ", sideways" : "")
                 + "), enemy push " + F(_rounds.EnemyPush) + " m, sums you "
                 + F3(_rounds.PlayerSum) + " / enemy " + F3(_rounds.EnemySum) + ", advantage " + F(_rounds.Advantage) + ", blades "
                 + (float.IsNaN(apart) ? "n/a" : F(apart) + " m") + " apart");
@@ -1143,6 +1177,7 @@ namespace DMCS
             _lockFlash = null;
             _lockItem = null;
             _lockHand = null;
+            _lockControllerStart.Clear();
             _rounds = null;
         }
 

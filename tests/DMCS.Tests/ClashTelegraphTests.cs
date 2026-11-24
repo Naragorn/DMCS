@@ -187,36 +187,61 @@ public class ClashPushDirectionTests
 
 public class ClashGeometryTests
 {
-    // User 2026-11-24: a clash needs both hands. Each hand is pulled towards its own controller, so a grip wider or
-    // narrower than the controllers leaves each hand "behind" its controller in opposite directions (harness 2026-11-24:
-    // 0.25 m with no push at all, every round won). The mean of both hands' leads cancels that tension and keeps a push.
+    // User 2026-11-24 ("Controller-Weg"): the push is how far the player moved the real controllers since the blades
+    // locked, the mean over every hand on the weapon. The in-game hand is no input any more: the 20x weight, the hold and
+    // the frozen enemy blade moved it 0.1-0.5 m in the first second of every lock (harness and headset logs 2026-11-22/23),
+    // and that read as a push the player never made (a lock won with the controllers standing still, harness 2026-11-24).
     [Fact]
-    public void HandLead_TwoHandsPulledApart_Cancel()
+    public void ControllerTravel_ControllersStandingStill_IsNoPush()
     {
-        var lead = ClashGeometry.HandLead(new[] { new Vec3(0.2f, 0, 0), new Vec3(-0.2f, 0, 0) });
+        var starts = new[] { new Vec3(0.2f, 1.2f, 0.4f), new Vec3(-0.1f, 1.1f, 0.4f) };
 
-        Assert.Equal(0f, lead.Length, 4);
+        Assert.Equal(0f, ClashGeometry.ControllerTravel(starts, starts).Length, 4);
     }
 
     [Fact]
-    public void HandLead_TwoHandsPushingTogether_IsThePush()
+    public void ControllerTravel_BothControllersForward_IsThePush()
     {
-        var lead = ClashGeometry.HandLead(new[] { new Vec3(0.2f, 0, 0.1f), new Vec3(-0.2f, 0, 0.1f) });
+        var starts = new[] { new Vec3(0.2f, 1.2f, 0.4f), new Vec3(-0.1f, 1.1f, 0.4f) };
+        var nows = new[] { new Vec3(0.2f, 1.2f, 0.55f), new Vec3(-0.1f, 1.1f, 0.55f) };
 
-        Assert.Equal(0.1f, lead.Z, 4);
-        Assert.Equal(0f, lead.X, 4);
+        var travel = ClashGeometry.ControllerTravel(starts, nows);
+
+        Assert.Equal(0.15f, travel.Z, 4);
+        Assert.Equal(0f, travel.X, 4);
     }
 
     [Fact]
-    public void HandLead_OneHand_IsThatHand()
+    public void ControllerTravel_OneControllerForward_CountsHalf()
     {
-        Assert.Equal(0.3f, ClashGeometry.HandLead(new[] { new Vec3(0, 0, 0.3f) }).Z, 4);
+        var starts = new[] { new Vec3(0, 0, 0), new Vec3(0, 0, 0) };
+        var nows = new[] { new Vec3(0, 0, 0.2f), new Vec3(0, 0, 0) };
+
+        Assert.Equal(0.1f, ClashGeometry.ControllerTravel(starts, nows).Z, 4);
     }
 
     [Fact]
-    public void HandLead_NoHand_IsZero()
+    public void ControllerTravel_ControllersMovingApart_Cancel()
     {
-        Assert.Equal(0f, ClashGeometry.HandLead(new Vec3[0]).Length, 4);
+        var starts = new[] { new Vec3(0, 0, 0), new Vec3(0, 0, 0) };
+        var nows = new[] { new Vec3(0.1f, 0, 0), new Vec3(-0.1f, 0, 0) };
+
+        Assert.Equal(0f, ClashGeometry.ControllerTravel(starts, nows).Length, 4);
+    }
+
+    [Fact]
+    public void ControllerTravel_NoController_IsZero()
+    {
+        Assert.Equal(0f, ClashGeometry.ControllerTravel(new Vec3[0], new Vec3[0]).Length, 4);
+    }
+
+    [Fact]
+    public void ControllerTravel_UnevenLists_UseThePairsThatExist()
+    {
+        var starts = new[] { new Vec3(0, 0, 0), new Vec3(0, 0, 0) };
+        var nows = new[] { new Vec3(0, 0, 0.3f) };
+
+        Assert.Equal(0.3f, ClashGeometry.ControllerTravel(starts, nows).Z, 4);
     }
 
     [Fact]

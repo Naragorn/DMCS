@@ -104,7 +104,8 @@ expect-log round 2 starts
 player-push 0.25 2.3
 await-log 3 after 2 rounds pushing
 expect-log blades unlocked (Decided: you won)
-expect-log [DMCS][Adrenaline] +25 ClashWin (HumanMale
+# (The ClashWin gain is checked in section 1. Here the meter can already be full from the real blocks before, and a full
+# meter takes no gain: run 2026-11-24 21:34, Disarm +15 filled it to 100 and the +25 was refused.)
 expect-npc holding false within=1
 screenshot clash-won of=npc
 

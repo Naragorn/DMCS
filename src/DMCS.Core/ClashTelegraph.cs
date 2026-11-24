@@ -319,26 +319,29 @@ namespace DMCS.Core
     public static class ClashGeometry
     {
         /// <summary>
-        /// How far the player's real hands lead the held hands (controller minus hand), as the mean over every hand on the
-        /// weapon. With two hands each is pulled towards its own controller, so a grip wider or narrower than the
-        /// controllers leaves opposite leads that cancel; a push moves both the same way and stays (user 2026-11-24).
+        /// The push (user 2026-11-24, "Controller-Weg"): how far the player moved the real controllers since the blades
+        /// locked, the mean of now − start over every hand on the weapon (pairs by index; a missing one is left out). The
+        /// in-game hand is no input: the weight, the hold and the frozen enemy blade moved it 0.1–0.5 m in the first second
+        /// of a lock and that read as a push nobody made. Two controllers moving apart cancel; both forward is the push; one
+        /// forward counts half.
         /// </summary>
-        public static Vec3 HandLead(IReadOnlyList<Vec3> leads)
+        public static Vec3 ControllerTravel(IReadOnlyList<Vec3> starts, IReadOnlyList<Vec3> nows)
         {
-            if (leads == null || leads.Count == 0)
+            var count = Math.Min(starts?.Count ?? 0, nows?.Count ?? 0);
+            if (count == 0)
             {
                 return Vec3.Zero;
             }
             var sum = Vec3.Zero;
-            foreach (var l in leads)
+            for (var i = 0; i < count; i++)
             {
-                sum = sum + l;
+                sum = sum + (nows[i] - starts[i]);
             }
-            return sum * (1f / leads.Count);
+            return sum * (1f / count);
         }
 
         /// <summary>
-        /// How far the player's real hand leads the held hand along the line from the head to the lock point (m): pushing the
+        /// A push vector along the line from the head to the lock point (m): pushing the
         /// crossed blades away from oneself counts, wherever they crossed (above, beside or in front); pulling back counts
         /// against. 2026-11-22: replaces "level towards the enemy's body", which missed most of the user's pushes.
         /// </summary>

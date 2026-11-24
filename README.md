@@ -93,9 +93,10 @@ or a blow that lands on your hilt or handle, is an ordinary parry. A weapon whos
 
 **On, the blade lock:** the same block locks the blades. The enemy freezes in its swing and your weapon turns heavy.
 Your blade stays where the blades met. Then it is strength against strength, over a few rounds (3 to 5 by default):
-- **Push:** with your real hand, press the crossed blades away from you (forward, wherever they met) or to your right
-  or left. The enemy pushes back in a wave, swelling and easing off again; you hold the round if you pushed at least
-  as hard as it did. The next round starts at once.
+- **Push:** move your hands from where they were when the blades locked: away from you (forward, wherever the blades
+  met) or to your right or left. What counts is how far your real hands move, not where the heavy sword ends up.
+  Holding still is no push. The enemy pushes back in a wave, swelling and easing off again; you hold the round if you
+  pushed at least as hard as it did. The next round starts at once.
 - **The star at the blades shows who is ahead:** green and bigger while you are, gold while you are ahead pushing
   sideways, red while the enemy is. Each held round gives a jolt and sparks.
 - **Win** every round: sparks burst, a victory sound plays, three strong beats in your hand. How you pushed decides
@@ -229,7 +230,7 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Clash Max Rounds | 5 | 1–10 | Most rounds of a lock |
 | Clash Fewer Rounds Against Weaker | 1 | 0–5 | Rounds fewer against a smaller or female enemy (at least one stays) |
 | Clash Enemy Push | 0.06 m | 0.01–0.2 m | How far your hand must push past your held weapon to match the enemy's push at its strongest (at difficulty 50) |
-| Clash Push Dead Zone | 0.03 m | 0–0.1 m | Lead that does not count as pushing (the heavy weapon's natural lag) |
+| Clash Push Dead Zone | 0.03 m | 0–0.1 m | How far your hands may move without it counting as a push (hands are never quite still) |
 | Clash Push Phase | 2 s | 0.5–5 s | Length of one push round |
 | Clash Side Push | on | | Pushing to your right or left counts too; a lock won mostly sideways always knocks the enemy's sword to that side |
 | Clash Win Disarms | off | | A lock won pushing forward knocks the enemy's sword away too |

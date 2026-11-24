@@ -662,6 +662,23 @@ moves after the lock starts is a design question for the user and the headset.
 **step5c:** sections 2-4 now wait for their own NPC's flash: section 1's enemy re-arms and fights on, its flash came
 first and `player-parry` blocked the newest NPC, which had none (run 13:43).
 
+## Clash push = controller travel since the lock (2026-11-24)
+
+User choice ("Controller-Weg") after the evidence below. The push was: how far the real controller (`PlayerHand.grip`)
+is ahead of the in-game hand (`RagdollHand.grip`). At the lock that offset is always about 0 (0.00-0.05 m), and within
+the first 0.1-0.8 s it grows to 0.1-0.5 m in any direction while the 20x weight, the hold joint and the frozen enemy
+blade (it settles 4-28 cm) pull the hand: harness locks (13:19 film: forward -0.32 m then side +0.16 m; 13:48 step5b:
+forward +0.20 m from 0.83 s on, a lock won with still controllers) and the headset logs of 2026-11-22/23 (forward
+-0.56 m, side +0.33 m within 0.4-1.9 s). So the measure mostly read physics, not the player. My first proposal (subtract
+the offset at lock start) would have subtracted ~0 and changed nothing; it was dropped.
+
+**Now:** `ClashGeometry.ControllerTravel(starts, nows)`: the mean of (now - start) over every player controller on the
+weapon, start = where it was when the blades locked (a hand that grips later starts where it is then). Read in the
+player rig's own space (`Player.local.transform`), so stick walking does not count while a real step does, then split
+into forward and side as before (`PushComponents`). The dead zone (3 cm) now stands for hands that are never quite
+still. Unit tests: still controllers = no push, both forward = the push, one forward = half, moving apart cancels, none,
+uneven lists. `HandLead` and its tests are gone. The clash film's Side Push workaround for the lose round is removed.
+
 ## Clash Min Wind Up default 0.45 s (2026-11-24)
 
 User agreed to the proposal: at 0.4 s two of three swings at the player flashed in the headset logs of 2026-11-22/23

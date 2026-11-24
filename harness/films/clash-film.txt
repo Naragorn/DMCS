@@ -70,9 +70,8 @@ wait 2
 
 # 4. On, both hands, no push: round 1 lost; Disarm + Hit (the default) knocks the player's sword away and hits for 20
 set-option DMCS "Clash Difficulty" 50
-# Side push off for this round: the real NPC blow knocked the held sword aside, the still controller then sat 0.12-0.16 m
-# to the side of the hand, which counts as a sideways push, and the round was held without any push (run 2026-11-24 13:19)
-set-option DMCS "Clash Side Push" false
+# (Until 2026-11-24 this round needed Clash Side Push off: the push was the controller ahead of the in-game hand, and a
+# blow that knocked the held sword aside read as a sideways push. The push is the controllers' own travel since then.)
 player-grab SwordLongCommon hand=both
 spawn-npc HumanMale distance=1.5 angle=0 container=CivilianMeleeSword
 wait 1
