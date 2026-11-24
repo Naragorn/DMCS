@@ -4,7 +4,7 @@
 wait-level
 
 # Loads
-expect-log [DMCS] v0.3.0 loaded from folder 'DMCS' with 162 mod options
+expect-log [DMCS] v0.4.0-beta.1 loaded from folder 'DMCS' with 162 mod options
 expect-log [DMCS] Settings: Debug Logging=off | Clash of Might=Enabled | Disarm Strike=Enabled | Charge Stagger=Enabled | Adrenaline=Enabled | Parry=Enabled
 expect-log [ModManager][ThunderScript][DMCS] Loaded ThunderScript: DMCS.DmcsScript
 

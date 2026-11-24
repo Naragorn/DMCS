@@ -30,3 +30,6 @@ TestResults/
 
 # harness runs
 artifacts/
+
+# tester zips (tools/package.sh)
+dist/
