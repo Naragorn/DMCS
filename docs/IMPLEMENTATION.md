@@ -722,6 +722,32 @@ was Hit only); passed 2026-11-24.
 - A second 0.25 m push on top of the first (controller 0.5 m ahead of the 20x heavy sword) made the hand let go, and the
   clash was lost for letting go (film run 12:53).
 
+## Clash: a stab never flashes, CounterThrust too (2026-11-25)
+
+The spec says thrusts do not flash. DMCS asked the game's label for that (`AttackMotion.attackMotion == Thrust`). The
+game's own data labels one stab a swing: `CounterThrust` in the one-handed sword stance (`Stance_HumanMelee1hStance.json`,
+game 1.3.2) has `"attackMotion": "Swing"`, but its animation is `Bas.Animation.Attack.Sword1h.Counter.Stab`. With a
+wind-up of 0.76 s it flashes at every Min Wind Up up to 0.76 s, the 0.45 s default too. Seen once in the headset
+(Player.log 2026-11-22 13:17:42: "HumanMale3 winds up CounterThrust (0.76 s) with SwordShortCommon: flash at the swing
+top").
+
+Read in the catalog: 68 attacks in the three melee stances, 8 labelled Thrust. The animation of each of those 8 and of
+CounterThrust is named `Stab…` (Stab, StabLunge, StabLft, StabRgt, StabLeft, StabRight, StabLight, StabHeavy); no other
+animation address contains "Stab".
+
+**Now:** `ClashRules.IsThrust(labelledThrust, animationAddress)`: the game's label, or the animation's own name (the last
+part of its address) starts with "Stab" (any case). The game's label itself is left as it is: what else the game reads
+it for was not checked. The debug log names a thrust: "… stabs CounterThrust (wind-up 0.76 s, animation …): a thrust,
+no star". Unit tests: every flow (the label alone, a stab name, a stab folder with a swing name, no address) and all 68
+attacks of the game: the 8 labelled ones and CounterThrust are thrusts, no swing is. Red first with the label alone (5
+failed: the stab names with a Swing label and CounterThrust's no-star check), then 95/95, full suite 868/868. Harness
+(run 20261125-103839, beside Oblivion functional runs): `step1-a` **PASS** (27 s, v0.4.0-beta.2, 159 options), `step5a`
+**PASS** (214 s): 42 real NPC attacks went through the new check, all swings, none read as a thrust (14 flashed:
+LungeSwingTopToLeft/Right, CounterSwingLeft; 28 did not: SwingLeftToRightStep, SwingRightToLeftStep, SwingCombo, and
+everything while Min Wind Up was 0.8). No thrust came in that run, so the thrust branch ran
+only in the unit tests. The harness cannot pick the NPC's attack, so CounterThrust itself is not seen in game after the
+fix.
+
 ## Clash Hold Style, Rotation and Briefly (2026-11-22)
 
 **User:** build the spring too, with a menu switch between it and the hard hold, and switches for the other two ideas

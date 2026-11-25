@@ -41,6 +41,118 @@ public class ClashWeaponRuleTests
     }
 }
 
+// A thrust never flashes. The game labels each attack Swing or Thrust (AttackMotion.attackMotion), but its own data labels
+// one stab a Swing: CounterThrust (one-handed sword stance, wind-up 0.76 s, animation
+// Bas.Animation.Attack.Sword1h.Counter.Stab). It flashed in the headset (Player.log 2026-11-22 13:17:42). So the
+// animation's own name counts too.
+public class ClashThrustTests
+{
+    private const string CounterThrustAnimation = "Bas.Animation.Attack.Sword1h.Counter.Stab";
+
+    [Theory]
+    [InlineData(true, "Bas.Animation.Attack.Sword1h.Stance2.Stab", true)]
+    [InlineData(true, "Bas.Animation.Attack.Sword1h.Stance1.RtLSwing", true)]
+    [InlineData(true, null, true)]
+    [InlineData(false, CounterThrustAnimation, true)]
+    [InlineData(false, "bas.animation.attack.sword1h.counter.stab", true)]
+    [InlineData(false, "Stab", true)]
+    [InlineData(false, "Bas.Animation.Attack.Sword1h.Counter.SwingRight", false)]
+    [InlineData(false, "Bas.Animation.Stab.Attack.Swing", false)]
+    [InlineData(false, "", false)]
+    [InlineData(false, null, false)]
+    public void IsThrust_LabelledThrust_OrAStabAnimation(bool labelledThrust, string address, bool thrust)
+    {
+        Assert.Equal(thrust, ClashRules.IsThrust(labelledThrust, address));
+    }
+
+    [Fact]
+    public void CounterThrust_NoStar_AtTheDefaultWindUp()
+    {
+        Assert.False(ClashRules.IsBigSwing(ClashRules.IsThrust(false, CounterThrustAnimation), 0.76f, 0.45f));
+    }
+
+    // Every attack of the game 1.3.2 (the three melee stances, Stance_HumanMelee*.json): the eight labelled thrusts and
+    // CounterThrust are thrusts, no swing is.
+    [Theory]
+    [MemberData(nameof(GameAttacks))]
+    public void GameAttacks_1_3_2(string attack, bool labelledThrust, string address, bool thrust)
+    {
+        Assert.True(thrust == ClashRules.IsThrust(labelledThrust, address), attack);
+    }
+
+    public static TheoryData<string, bool, string, bool> GameAttacks => new TheoryData<string, bool, string, bool>
+    {
+        { "1h/SwingRightToLeft", false, "Bas.Animation.Attack.Sword1h.Stance1.RtLSwing", false },
+        { "1h/SwingRightToLeftStep", false, "Bas.Animation.Attack.Sword1h.Stance1.SlashRtLStep", false },
+        { "1h/SwingLeftToRight", false, "Bas.Animation.Attack.Sword1h.Stance1.LtRSwing", false },
+        { "1h/SwingLeftToRightStep", false, "Bas.Animation.Attack.Sword1h.Stance1.LtRSwingStep", false },
+        { "1h/SwingCombo", false, "Bas.Animation.Attack.Sword1h.Stance1.Combo", false },
+        { "1h/Thrust", true, "Bas.Animation.Attack.Sword1h.Stance2.Stab", true },
+        { "1h/LungeThrust", true, "Bas.Animation.Attack.Sword1h.Stance2.StabLunge", true },
+        { "1h/SwingTopToLeft", false, "Bas.Animation.Attack.Sword1h.Stance3.TtLSwing", false },
+        { "1h/SwingTopToLeftStep", false, "Bas.Animation.Attack.Sword1h.Stance3.TtLSwingStep", false },
+        { "1h/LungeSwingTopToLeft", false, "Bas.Animation.Attack.Sword1h.Stance3.TtLSwingLunge", false },
+        { "1h/SwingTopToRight", false, "Bas.Animation.Attack.Sword1h.Stance3.TtRSwing", false },
+        { "1h/LungeSwingTopToRight", false, "Bas.Animation.Attack.Sword1h.Stance3.TtRSwingLunge", false },
+        { "1h/CounterSwingRight", false, "Bas.Animation.Attack.Sword1h.Counter.RightSlash", false },
+        { "1h/CounterSwingLeft", false, "Bas.Animation.Attack.Sword1h.Counter.LeftSlash", false },
+        { "1h/CounterSwingHighRight", false, "Bas.Animation.Attack.Sword1h.Counter.HighRight", false },
+        { "1h/CounterSwingHighLeft", false, "Bas.Animation.Attack.Sword1h.Counter.HighLeft", false },
+        { "1h/CounterThrust", false, "Bas.Animation.Attack.Sword1h.Counter.Stab", true },
+        { "1h/RiposteHighRight", false, "Bas.Animation.Attack.Sword1h.Riposte.HighRight", false },
+        { "1h/RiposteHighLeft", false, "Bas.Animation.Attack.Sword1h.Riposte.HighLeft", false },
+        { "1h/RiposteRight", false, "Bas.Animation.Attack.Sword1h.Riposte.Right", false },
+        { "1h/RiposteLeft", false, "Bas.Animation.Attack.Sword1h.Riposte.Left", false },
+        { "1h/RiposteLowRight", false, "Bas.Animation.Attack.Sword1h.Riposte.LowRight", false },
+        { "1h/RiposteLowLeft", false, "Bas.Animation.Attack.Sword1h.Riposte.LowLeft", false },
+        { "DualWield/MidLeftSwing", false, "Bas.Animation.Attack.DualWield.MidLft", false },
+        { "DualWield/MidRightSwing", false, "Bas.Animation.Attack.DualWield.MidRgt", false },
+        { "DualWield/LowLeftSwing", false, "Bas.Animation.Attack.DualWield.LowLft", false },
+        { "DualWield/LowRightSwing", false, "Bas.Animation.Attack.DualWield.LowRgt", false },
+        { "DualWield/ThrustLeft", true, "Bas.Animation.Attack.DualWield.StabLft", true },
+        { "DualWield/ThrustRight", true, "Bas.Animation.Attack.DualWield.StabRgt", true },
+        { "DualWield/HighLeftSwing", false, "Bas.Animation.Attack.DualWield.HighLft", false },
+        { "DualWield/HighRightSwing", false, "Bas.Animation.Attack.DualWield.HighRgt", false },
+        { "DualWield/CrossSlash", false, "Bas.Animation.Attack.DualWield.CrossSlash", false },
+        { "DualWield/ChainMidLeftSwing", false, "Bas.Animation.Attack.DualWield.Counter.MidLeft", false },
+        { "DualWield/ChainMidRightSwing", false, "Bas.Animation.Attack.DualWield.Counter.MidRight", false },
+        { "DualWield/ChainLowLeftSwing", false, "Bas.Animation.Attack.DualWield.Counter.LowLeft", false },
+        { "DualWield/ChainLowRightSwing", false, "Bas.Animation.Attack.DualWield.Counter.LowRight", false },
+        { "DualWield/ChainThrustLeft", true, "Bas.Animation.Attack.DualWield.Counter.StabLeft", true },
+        { "DualWield/ChainThrustRight", true, "Bas.Animation.Attack.DualWield.Counter.StabRight", true },
+        { "DualWield/ChainHighLeftSwing", false, "Bas.Animation.Attack.DualWield.Counter.HighLeft", false },
+        { "DualWield/ChainHighRightSwing", false, "Bas.Animation.Attack.DualWield.Counter.HighRight", false },
+        { "DualWield/ChainCrossSlash", false, "Bas.Animation.Attack.DualWield.Counter.Cross", false },
+        { "DualWield/RiposteHighRight", false, "Bas.Animation.Attack.DualWield.Riposte.HighRgt", false },
+        { "DualWield/RiposteHighLeft", false, "Bas.Animation.Attack.DualWield.Riposte.HighLft", false },
+        { "DualWield/RiposteRight", false, "Bas.Animation.Attack.DualWield.Riposte.Rgt", false },
+        { "DualWield/RiposteLeft", false, "Bas.Animation.Attack.DualWield.Riposte.Lft", false },
+        { "DualWield/RiposteLowRight", false, "Bas.Animation.Attack.DualWield.Riposte.LowRgt", false },
+        { "DualWield/RiposteLowLeft", false, "Bas.Animation.Attack.DualWield.Riposte.LowLft", false },
+        { "Shield/SwingLeftToRightLight", false, "Bas.Animation.Attack.Shield.Stance1.LtRLight", false },
+        { "Shield/SwingRightToLeftLight", false, "Bas.Animation.Attack.Shield.Stance1.RtLLight", false },
+        { "Shield/SwingLeftToRight", false, "Bas.Animation.Attack.Shield.Stance1.LtR", false },
+        { "Shield/SwingRightToLeft", false, "Bas.Animation.Attack.Shield.Stance1.RtL", false },
+        { "Shield/ThrustLight", true, "Bas.Animation.Attack.Shield.Stance2.StabLight", true },
+        { "Shield/ThrustHeavy", true, "Bas.Animation.Attack.Shield.Stance2.StabHeavy", true },
+        { "Shield/OverheardSwingLeftToRightLight", false, "Bas.Animation.Attack.Shield.Stance3.LtRLight", false },
+        { "Shield/OverheardSwingRightToLeftLight", false, "Bas.Animation.Attack.Shield.Stance3.RtLLight", false },
+        { "Shield/OverheardSwingLeftToRight", false, "Bas.Animation.Attack.Shield.Stance3.LtR", false },
+        { "Shield/OverheardSwingRightToLeft", false, "Bas.Animation.Attack.Shield.Stance3.RtL", false },
+        { "Shield/PushCloseLight", false, "Bas.Animation.Attack.Shield.PushCharge", false },
+        { "Shield/PushMidAverage", false, "Bas.Animation.Attack.Shield.PushCharge", false },
+        { "Shield/PushFarHeavy", false, "Bas.Animation.Attack.Shield.PushCharge", false },
+        { "Shield/ChainPushMidAverage", false, "Bas.Animation.Attack.Shield.PushCharge", false },
+        { "Shield/ChainPushFarHeavy", false, "Bas.Animation.Attack.Shield.PushCharge", false },
+        { "Shield/RiposteRight", false, "Bas.Animation.Attack.Shield.Riposte.Rgt", false },
+        { "Shield/RiposteLeft", false, "Bas.Animation.Attack.Shield.Riposte.Lft", false },
+        { "Shield/RiposteHighRight", false, "Bas.Animation.Attack.Shield.Riposte.HighRgt", false },
+        { "Shield/RiposteHighLeft", false, "Bas.Animation.Attack.Shield.Riposte.HighLft", false },
+        { "Shield/RiposteLowRight", false, "Bas.Animation.Attack.Shield.Riposte.LowRgt", false },
+        { "Shield/RiposteLowLeft", false, "Bas.Animation.Attack.Shield.Riposte.LowLft", false },
+    };
+}
+
 public class ClashSlowMoVerdictTests
 {
     private const float NpcReach = 2.5f;

@@ -268,6 +268,23 @@ namespace DMCS.Core
         public static bool IsBigSwing(bool isThrust, float windUpSeconds, float minWindUp) => !isThrust && windUpSeconds >= minWindUp;
 
         /// <summary>
+        /// A thrust never flashes: the game labels it so, or its animation's own name (the last part of its address) starts
+        /// with "Stab". The game's data labels one stab a swing (1.3.2: CounterThrust in the one-handed sword stance,
+        /// animation Bas.Animation.Attack.Sword1h.Counter.Stab, wind-up 0.76 s; it flashed in the headset 2026-11-22). The
+        /// game's nine stabs all have such a name, no swing has.
+        /// </summary>
+        public static bool IsThrust(bool labelledThrust, string animationAddress)
+        {
+            if (labelledThrust)
+            {
+                return true;
+            }
+            var address = animationAddress ?? "";
+            var name = address.Substring(address.LastIndexOf('.') + 1);
+            return name.StartsWith("Stab", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
         /// Whether the slow-motion starts at the strike: the NPC within its swing reach of the player and the player
         /// holding a weapon with both hands, ready for the clash's only condition (user 2026-11-24).
         /// </summary>

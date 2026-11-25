@@ -472,12 +472,14 @@ namespace DMCS
             }
             var side = attack.attackSide == Interactable.HandSide.Left ? Side.Left : Side.Right;
             var windUp = attack.GetRealStartTime(melee.GetBrainSpeedMultiplier(side));
-            var thrust = attack.attackMotion == ItemModuleAI.AttackType.Thrust;
+            var thrust = ClashRules.IsThrust(attack.attackMotion == ItemModuleAI.AttackType.Thrust, attack.address);
             var weapon = attacker.equipment?.GetHeldItem(side);
             var name = attacker.name;
             if (!ClashRules.IsBigSwing(thrust, windUp, MinWindUp))
             {
-                Dmcs.Log.Debug(Channel, name + " swings " + attack.id + " (wind-up " + F(windUp) + " s): not a big swing");
+                Dmcs.Log.Debug(Channel, thrust
+                    ? name + " stabs " + attack.id + " (wind-up " + F(windUp) + " s, animation " + attack.address + "): a thrust, no star"
+                    : name + " swings " + attack.id + " (wind-up " + F(windUp) + " s): not a big swing");
                 return;
             }
             if (weapon == null)
