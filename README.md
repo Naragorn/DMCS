@@ -7,7 +7,7 @@ and build up adrenaline for a brutal finishing blow.
 
 Every mechanic can be switched on and off and tuned in the in-game Mod Menu, and changes apply at once, mid-fight.
 
-> **Beta (0.4.0-beta.1).** Every mechanic is tested automatically inside the running game. Only one person has played
+> **Beta (0.4.0-beta.2).** Every mechanic is tested automatically inside the running game. Only one person has played
 > it in VR so far, so the default values are still guesses. Feedback on how it feels is very welcome; see
 > `BETA-TESTING.md` for what to test and how to report.
 

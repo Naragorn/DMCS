@@ -5,7 +5,7 @@ namespace DMCS
     /// <summary>Process-wide mod state shared by all features.</summary>
     public static class Dmcs
     {
-        public const string Version = "0.4.0-beta.1";
+        public const string Version = "0.4.0-beta.2";
 
         /// <summary>Writes to the Unity log (Player.log / in-game console).</summary>
         public static readonly DmcsLog Log = new DmcsLog(UnityEngine.Debug.Log);
