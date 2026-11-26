@@ -722,6 +722,27 @@ was Hit only); passed 2026-11-24.
 - A second 0.25 m push on top of the first (controller 0.5 m ahead of the 20x heavy sword) made the hand let go, and the
   clash was lost for letting go (film run 12:53).
 
+## Advanced tab (2026-11-26)
+
+User 2026-11-22 (headset checklist): "viel zu viele Einstellmöglichkeiten". 2026-11-26: the fine-tuning values go into a
+tab of their own; the user has seen the game show each category as a tab in the mod's page (not read in the game code).
+
+- New category `DmcsCategories.Advanced` ("Advanced"), category order 9, after Skill Tree. 59 of the 159 options moved;
+  every option keeps its name, so saved values carry over (`Options.opt` stores `modName` + `parameterName` + index, read
+  in the user's own file). Order inside the tab: the old group's category order × 100 + the old order, so it lists
+  General, Clash, Disarm, Charge, Adrenaline, Magic, Parry in menu order.
+- Moved: Body Hit Min Hand Speed; Clash Enemy Reach, Weapon Weight, the seven hold values (style, slack, spring
+  strength/damping, rotation, briefly, time), Flash At Swing Top, Enemy Push, Push Dead Zone, Push Phase; Disarmed
+  Shock/Back Off/Cower Time, Disarm Fling Force, Body Hit Drop Chance Female/Smaller, Smaller By; the six Charge preset
+  values; Adrenaline Meter Max, the eight per-source gains, Dodge Min Speed, Catch Max Air Time, the Hyperfocus and Slow
+  Time scales, Critical Knockback, Execution Window, Kneel After No Hit/Light Hits, Kneel Max Distance, Vignette Hue,
+  Streaks, Streak Length, Frame Rate; the eight Magic values; Counter Stagger Duration, Parry Speed Window.
+- Visible outside Advanced: 100 rows. The rest of the cleanup proposal (merges, removals) waits for the user's review.
+- Tests: `ModOptionMetadataTests.Advanced_HoldsTheFineTuning_InTheOrderOfTheFeatureGroups` (all 59 in order),
+  `Advanced_IsTheLastTab`, the per-group lists without the moved ones, `DmcsCategoriesTests` (order 9). Red 8 failing,
+  green 871/871. The harness scenarios' `option-exists … category=` lines point at "Advanced" (27 lines); no harness run
+  (user: "dafür kein harness run"), so the game's own reading of the new category and how the tab looks are not checked.
+
 ## Clash: a stab never flashes, CounterThrust too (2026-11-25)
 
 The spec says thrusts do not flash. DMCS asked the game's label for that (`AttackMotion.attackMotion == Thrust`). The

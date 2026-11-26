@@ -10,17 +10,17 @@ frame-rate 90
 press DMCS "Reset To Defaults"
 option-exists DMCS "Adrenaline Magic Enabled" category="Adrenaline Magic" display=Enabled type=Boolean interaction=ArrowList save=true
 option-exists DMCS "Magic Fire" category="Adrenaline Magic" type=Boolean interaction=ArrowList save=true
-option-exists DMCS "Magic Fire Radius" category="Adrenaline Magic" type=Single interaction=Slider save=true
-option-exists DMCS "Magic Fire Spread Heat" category="Adrenaline Magic" type=Single interaction=Slider save=true
+option-exists DMCS "Magic Fire Radius" category="Advanced" type=Single interaction=Slider save=true
+option-exists DMCS "Magic Fire Spread Heat" category="Advanced" type=Single interaction=Slider save=true
 option-exists DMCS "Magic Lightning" category="Adrenaline Magic" type=Boolean interaction=ArrowList save=true
-option-exists DMCS "Magic Lightning Radius" category="Adrenaline Magic" type=Single interaction=Slider save=true
-option-exists DMCS "Magic Lightning Shock" category="Adrenaline Magic" type=Single interaction=Slider save=true
+option-exists DMCS "Magic Lightning Radius" category="Advanced" type=Single interaction=Slider save=true
+option-exists DMCS "Magic Lightning Shock" category="Advanced" type=Single interaction=Slider save=true
 option-exists DMCS "Magic Gravity" category="Adrenaline Magic" type=Boolean interaction=ArrowList save=true
-option-exists DMCS "Magic Gravity Radius" category="Adrenaline Magic" type=Single interaction=Slider save=true
-option-exists DMCS "Magic Gravity Force" category="Adrenaline Magic" type=Single interaction=Slider save=true
+option-exists DMCS "Magic Gravity Radius" category="Advanced" type=Single interaction=Slider save=true
+option-exists DMCS "Magic Gravity Force" category="Advanced" type=Single interaction=Slider save=true
 option-exists DMCS "Magic Telekinesis" category="Adrenaline Magic" type=Boolean interaction=ArrowList save=true
-option-exists DMCS "Magic Telekinesis Throw" category="Adrenaline Magic" type=Single interaction=Slider save=true
-option-exists DMCS "Magic Telekinesis Impact Time" category="Adrenaline Magic" type=Single interaction=Slider save=true
+option-exists DMCS "Magic Telekinesis Throw" category="Advanced" type=Single interaction=Slider save=true
+option-exists DMCS "Magic Telekinesis Impact Time" category="Advanced" type=Single interaction=Slider save=true
 expect-option DMCS "Magic Telekinesis" true
 expect-option DMCS "Magic Telekinesis Throw" 3
 expect-option DMCS "Magic Telekinesis Impact Time" 3

@@ -190,7 +190,8 @@ Blade & Sorcery's own sounds).
 
 ## Mod Menu
 
-All options with their defaults. Every slider shows its unit in the menu.
+All options with their defaults. Every slider shows its unit in the menu. Each group has its own tab; the fine-tuning
+values of every group sit in the last tab, **Advanced** (their names and saved values are the same as before).
 
 **General**
 
@@ -198,7 +199,6 @@ All options with their defaults. Every slider shows its unit in the menu.
 |---|---|---|
 | Debug Logging | off | Writes stagger, disarm and meter events to `Player.log` (for bug reports) |
 | Reset To Defaults | – | Sets every DMCS option back to its default |
-| Body Hit Min Hand Speed | 1.5 m/s | How fast your real hand must move for a touch of your hand or arm to count as a punch (0 = every touch). Keeps enemies from disarming themselves by running into your hand |
 
 **Clash of Might**
 
@@ -209,17 +209,7 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Clash Min Wind Up | 0.45 s | 0.2–0.8 s | How long an enemy must wind up for its swing to flash |
 | Clash Slow Motion | on | | Time slows when your blade is ready to block a flashing swing |
 | Clash Slow Motion Scale | 0.3 | 0.1–0.8 | World speed during it |
-| Clash Enemy Reach | 2.5 m | 1–4 m | How close the enemy must be |
-| Clash Flash At Swing Top | on | | The flash comes when the blade is raised all the way, just before the strike; off: as soon as the wind-up starts (more warning) |
-| Clash Weapon Weight | 20× | 1–50× | How much heavier your weapon gets while the blades are locked |
 | Clash Hold Blade | on | | Your blade stays where the blades met, even if you swung hard into the block |
-| Clash Hold Style | Spring | Spring, Hard | Spring: your blade gives a little and springs back to that point. Hard: it stops dead |
-| Clash Hold Slack | 0.02 m | 0–0.1 m | How far your held blade moves freely around that point before the hold catches it |
-| Clash Hold Spring Strength | 3 | 1–10 | Spring only: how firmly it pulls your blade back (higher is firmer) |
-| Clash Hold Spring Damping | 0.5 | 0–1 | Spring only: 0 bounces a while, 1 settles without a bounce |
-| Clash Hold Rotation | off | | Your held blade also cannot turn around that point |
-| Clash Hold Briefly | off | | Hold your blade only for the first moment, to catch your swing; then only its weight holds it |
-| Clash Hold Time | 0.3 s | 0.1–1 s | How long the hold lasts with Clash Hold Briefly |
 | Clash Flash Sound | DMCS 1 | Off, DMCS 1–4 | The warning sound. DMCS 1: a deep boom with a metallic ring, after Sekiro's perilous-attack cue. DMCS 2: the same, short. DMCS 3: darker and longer. DMCS 4: bright, cuts through the fight |
 | Clash Flash Game Sound | Off | Off, Metal Hit, Focus Ready, Gravity Pulse | One of the game's own sounds on top (Metal Hit also sparks) |
 | Clash Flash Sound Volume | 0.8 | 0–1 | Volume of the DMCS sound |
@@ -230,9 +220,6 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Clash Min Rounds | 3 | 1–10 | Fewest rounds of a lock (each lock picks a random number between min and max) |
 | Clash Max Rounds | 5 | 1–10 | Most rounds of a lock |
 | Clash Fewer Rounds Against Weaker | 1 | 0–5 | Rounds fewer against a smaller or female enemy (at least one stays) |
-| Clash Enemy Push | 0.06 m | 0.01–0.2 m | How far your hand must push past your held weapon to match the enemy's push at its strongest (at difficulty 50) |
-| Clash Push Dead Zone | 0.03 m | 0–0.1 m | How far your hands may move without it counting as a push (hands are never quite still) |
-| Clash Push Phase | 2 s | 0.5–5 s | Length of one push round |
 | Clash Side Push | on | | Pushing to your right or left counts too; a lock won mostly sideways always knocks the enemy's sword to that side |
 | Clash Win Disarms | off | | A lock won pushing forward knocks the enemy's sword away too |
 | Clash Win Kneel Chance | 25 % | 0–100 % | Chance a beaten enemy kneels for an execution instead of staggering |
@@ -253,11 +240,8 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Disarm Drops Both Hands | on | | Off: only the hit hand lets go |
 | Disarm Chance | 100 % | 0–100 % | Chance that a hand hit disarms |
 | Disarmed Shock Chance | 50 | 0–100 | How often a disarmed enemy freezes in shock, against the other two reactions |
-| Disarmed Shock Time | 2 s | 1–15 s | How long it stays frozen |
 | Disarmed Back Off Chance | 50 | 0–100 | How often it backs away from you |
-| Disarmed Back Off Time | 2 s | 1–15 s | How long it backs away |
 | Disarmed Cower Chance | 50 | 0–100 | How often it cowers in fear (a hit ends it) |
-| Disarmed Cower Time | 5 s | 1–15 s | How long it cowers. After any reaction it goes to pick up a weapon |
 | Disarm Stays Permanent | off | | A disarmed enemy never re-arms and stands still after its reaction |
 | Body Hit Drop | on | | Body hits on staggered enemies can disarm too |
 | Body Hit Drop Chance | 25 % | 0–100 % | Chance of the first body hit in a stagger |
@@ -265,30 +249,18 @@ All options with their defaults. Every slider shows its unit in the menu.
 | Loosened Grip Spark | on | | Sparks when a body hit does not disarm |
 | Loosened Grip Haptics | on | | Pulse in your hand when a body hit does not disarm |
 | Shields Can Be Disarmed | off | | Shields can be knocked away too |
-| Disarm Fling Force | 3 m/s | 0–10 m/s | How far a knocked-out weapon flies (0 = it just drops) |
-| Body Hit Drop Chance Female | 25 % | 0–100 % | First body hit chance for female enemies |
-| Body Hit Drop Chance Smaller | 25 % | 0–100 % | First body hit chance for enemies shorter than you |
-| Smaller By | 0 cm | 0–50 cm | How much shorter an enemy must be for the chance above |
 | Twist Disarm | on | | A wrist twist on a staggered enemy's weapon knocks it out (with *Disarm Requires Stagger* off: any enemy) |
 | Twist Disarm Chance | 100 % | 0–100 % | Chance a fast enough twist disarms |
 | Twist Min Roll Speed | 400°/s | 100–1500°/s | How fast your blade must roll around itself when it meets the enemy's weapon |
 
-The highest chance that fits the enemy applies. Base 0 % with a female chance of 25 % means only female enemies drop
-on body hits.
 
 **Charge Stagger**
 
 | Option | Default (Gamey) | Realistic | Range | What it does |
 |---|---|---|---|---|
 | Enabled | on | | | Hits while running stagger |
-| Charge Stagger Preset | Gamey | | Gamey, Realistic, Custom | Sets the six values below |
-| Charge Stagger Chance | 100 % | 75 % | 0–100 % | Chance that a charge hit staggers |
-| Charge Speed Threshold | 4 m/s | 5.5 m/s | 1–8 m/s | How fast you must run (walking ≈ 2.8, full sprint ≈ 6) |
-| Charge Speed Window | 0.5 s | 0.15 s | 0–1 s | How long before the hit your top speed still counts |
-| Charge Min Swing Speed | 1 m/s | 3 m/s | 0–10 m/s | How fast the hit itself must be |
+| Charge Stagger Preset | Gamey | | Gamey, Realistic, Custom | Sets the six Charge values in the Advanced tab |
 | Charge Thrown And Spells Count | on | | | Thrown weapons and spells stagger too |
-| Charge Stagger Strength | Full | Medium | Light, Medium, Full, Knock Down | How hard the enemy is staggered |
-| Charge Stagger Duration | 2.5 s | 1.25 s | 0.5–5 s | How long the enemy counts as staggered (for disarms); how long a knocked-down enemy stays down |
 | Charge Second Hit Knocks Down | on | | | A charge hit on a staggered enemy throws it down |
 
 **Adrenaline**
@@ -296,40 +268,22 @@ on body hits.
 | Option | Default | Range | What it does |
 |---|---|---|---|
 | Enabled | on | | The meter and everything below |
-| Adrenaline Meter Max | 100 | 50–300 | Points for a full meter |
 | Adrenaline Window | 12 s | 2–30 s | How long a full meter waits for your critical |
 | Adrenaline Decay | off | | The meter drains over time |
 | Adrenaline Decay Per Second | 2 | 0–20 | How fast it drains |
 | Adrenaline Decay Delay | 0 s | 0–30 s | Seconds after the last gain before it drains |
-| Adrenaline Per Hit | 5 | 0–50 | Points per hit you land |
-| Adrenaline Per Block Or Parry | 10 | 0–50 | Points per enemy attack you stop |
-| Adrenaline Per Damage Taken | 5 | 0–50 | Points per hit you take |
 | Damage Taken Lowers Adrenaline | on | | Hits you take drain instead of fill |
-| Adrenaline Per Charge Stagger | 15 | 0–50 | Points per charge stagger |
-| Adrenaline Per Disarm | 15 | 0–50 | Points per disarm |
-| Adrenaline Per Dodge | 10 | 0–50 | Points per enemy swing you dodge |
-| Dodge Min Speed | 2 m/s | 0.5–6 m/s | How fast your head must move for a dodge |
-| Adrenaline Per Catch | 10 | 0–50 | Points per knocked-out weapon caught in the air |
-| Catch Max Air Time | 3 s | 0.5–5 s | How long after the disarm a catch still counts |
-| Adrenaline Per Clash Win | 25 | 0–50 | Points for a won Clash of Might (also the simple one) |
 | Critical Time Mode | Hyperfocus | Hyperfocus, Slow Time | Hyperfocus: the world slows, you don't. Slow Time: you slow too |
-| Critical Hyperfocus Time Scale | 0.1 | 0.05–0.5 | World speed in Hyperfocus |
 | Critical Hyperfocus Duration | 3 s | 0.5–10 s | How long Hyperfocus lasts |
-| Critical Slow Time Scale | 0.5 | 0.25–0.75 | Speed in Slow Time |
 | Critical Slow Time Duration | 3 s | 0.5–10 s | How long Slow Time lasts |
 | Critical Needs Hard Swing | on | | Only a hard hit is the critical |
 | Critical Min Swing Speed | 3 m/s | 0–10 m/s | How hard "hard" is |
 | Critical Thrown And Spells | off | | Thrown weapons and spells can be the critical |
 | Critical Kills | on | | The critical always kills |
 | Critical Dismember | on | | The critical cuts off the hit head, arm or leg |
-| Critical Knockback | 8 m/s | 0–20 m/s | How hard the critical throws the enemy |
 | Critical Battle Cry | on | | You shout on the critical |
 | Chest Stab Kneels | on | | A critical chest stab makes the enemy kneel and die |
-| Execution Window | 5 s | 1–15 s | How long a kneeling enemy waits for the finish |
 | Kneel And Execution | on | | A full meter without hard hits makes the enemy kneel |
-| Kneel After No Hit | 2 s | 0.5–5 s | Seconds without a hit before it kneels |
-| Kneel After Light Hits | 2 | 1–10 | Light hits before it kneels |
-| Kneel Max Distance | 3 m | 1–15 m | Only an enemy this near you kneels |
 | Double Fatality | off | | A full meter holds two fatalities: after the first, a fresh window waits for the second |
 | Kneel Death Chance | 0 % | 0–100 % | Chance it dies instead of standing up again |
 | Adrenaline Ready Sound | on | | Sound when the meter is full |
@@ -344,14 +298,10 @@ on body hits.
 | Adrenaline Vignette | on | | Red streaks at the edge of your view |
 | Adrenaline Vignette Style | DMCS 3 | DMCS 1–4, Dark Messiah | 1 flames, 2 streaks, 3 patchy streaks, 4 closest to Dark Messiah |
 | Adrenaline Vignette Intensity | 1 | 0–1 | Brightness |
-| Adrenaline Vignette Hue | 6° | 0–40° | 0 = red, 40 = orange |
-| Adrenaline Vignette Streaks | 70 | 2–100 | Streaks per frame |
-| Adrenaline Vignette Streak Length | 0.4 | 0.1–0.6 | How far they reach in |
 | Adrenaline Vignette Size | 50° | 30–70° | Smaller = further into view |
-| Adrenaline Vignette Frame Rate | 25 fps | 5–60 fps | How fast they flicker |
 | Adrenaline Vignette Flare | on | | The streaks flare up on the critical |
 
-Picking a DMCS vignette style sets *Streaks*, *Streak Length* and *Hue* to how that version was made.
+Picking a DMCS vignette style sets *Streaks*, *Streak Length* and *Hue* (in Advanced) to how that version was made.
 
 **Parry**
 
@@ -360,11 +310,9 @@ Picking a DMCS vignette style sets *Streaks*, *Streak Length* and *Hue* to how t
 | Enabled | on | | Counter Parry and Power Parry |
 | Counter Parry | on | | A guard brought up just in time staggers the enemy |
 | Counter Guard Speed | 1 m/s | 0.25–4 m/s | How fast your hand must move just before the parry for a counter |
-| Counter Stagger Duration | 1.5 s | 0.5–5 s | How long a countered enemy counts as staggered (time to disarm it) |
 | Power Parry | on | | A hard swing into the attack knocks the enemy's weapon away |
 | Power Parry Min Speed | 3 m/s | 1–10 m/s | How fast your hand must swing for a power parry |
 | Power Parry Chance | 100 % | 0–100 % | Chance a power parry disarms |
-| Parry Speed Window | 0.2 s | 0.05–0.5 s | How long before the parry your hand's speed counts |
 
 **Adrenaline Magic**
 
@@ -372,17 +320,9 @@ Picking a DMCS vignette style sets *Streaks*, *Streak Length* and *Hue* to how t
 |---|---|---|---|
 | Enabled | on | | With a full meter, your next spell that hits is the critical. Needs Adrenaline on |
 | Magic Fire | on | | A fireball burns the enemy up; those around catch fire |
-| Magic Fire Radius | 3 m | 0–10 m | How far around the burning enemy others catch fire |
-| Magic Fire Spread Heat | 50 | 0–100 | How much heat they get (100 = they burn up too) |
 | Magic Lightning | on | | The bolt jumps to every enemy around; the one hit dies |
-| Magic Lightning Radius | 5 m | 0–15 m | How far the bolt jumps |
-| Magic Lightning Shock | 4 s | 0.5–10 s | How long the others are shocked |
 | Magic Gravity | on | | A push flings every enemy around you away; the nearest one it hit dies |
-| Magic Gravity Radius | 4 m | 0–15 m | How far around you enemies are flung |
-| Magic Gravity Force | 12 m/s | 2–30 m/s | How hard they are flung |
 | Magic Telekinesis | on | | Telekinesis grabs standing enemies while the meter is full; a thrown one dies on impact |
-| Magic Telekinesis Throw | 3× | 1–6× | How much harder a thrown enemy flies |
-| Magic Telekinesis Impact Time | 3 s | 0.5–10 s | How long after the throw an impact still kills |
 
 **Finisher**
 
@@ -400,6 +340,107 @@ Picking a DMCS vignette style sets *Streaks*, *Streak Length* and *Hue* to how t
 | Adrenaline Needs Skill | off | The same for Adrenaline |
 | Parry Needs Skill | off | The same for Counter Parry and Power Parry (skill "Counter Parry") |
 | Double Fatality Needs Skill | off | Double Fatality works only once you have bought its skill (Body tree, tier 3) |
+
+**Advanced** (fine-tuning, by group)
+
+*General*
+
+| Option | Default | What it does |
+|---|---|---|
+| Body Hit Min Hand Speed | 1.5 m/s | How fast your real hand must move for a touch of your hand or arm to count as a punch (0 = every touch). Keeps enemies from disarming themselves by running into your hand |
+
+*Clash of Might*
+
+| Option | Default | Range | What it does |
+|---|---|---|---|
+| Clash Enemy Reach | 2.5 m | 1–4 m | How close the enemy must be |
+| Clash Flash At Swing Top | on | | The flash comes when the blade is raised all the way, just before the strike; off: as soon as the wind-up starts (more warning) |
+| Clash Weapon Weight | 20× | 1–50× | How much heavier your weapon gets while the blades are locked |
+| Clash Hold Style | Spring | Spring, Hard | Spring: your blade gives a little and springs back to that point. Hard: it stops dead |
+| Clash Hold Slack | 0.02 m | 0–0.1 m | How far your held blade moves freely around that point before the hold catches it |
+| Clash Hold Spring Strength | 3 | 1–10 | Spring only: how firmly it pulls your blade back (higher is firmer) |
+| Clash Hold Spring Damping | 0.5 | 0–1 | Spring only: 0 bounces a while, 1 settles without a bounce |
+| Clash Hold Rotation | off | | Your held blade also cannot turn around that point |
+| Clash Hold Briefly | off | | Hold your blade only for the first moment, to catch your swing; then only its weight holds it |
+| Clash Hold Time | 0.3 s | 0.1–1 s | How long the hold lasts with Clash Hold Briefly |
+| Clash Enemy Push | 0.06 m | 0.01–0.2 m | How far your hand must push past your held weapon to match the enemy's push at its strongest (at difficulty 50) |
+| Clash Push Dead Zone | 0.03 m | 0–0.1 m | How far your hands may move without it counting as a push (hands are never quite still) |
+| Clash Push Phase | 2 s | 0.5–5 s | Length of one push round |
+
+*Disarm Strike*
+
+| Option | Default | Range | What it does |
+|---|---|---|---|
+| Disarmed Shock Time | 2 s | 1–15 s | How long a disarmed enemy stays frozen in shock |
+| Disarmed Back Off Time | 2 s | 1–15 s | How long a disarmed enemy backs away |
+| Disarmed Cower Time | 5 s | 1–15 s | How long a disarmed enemy cowers. After any reaction it goes to pick up a weapon |
+| Disarm Fling Force | 3 m/s | 0–10 m/s | How far a knocked-out weapon flies (0 = it just drops) |
+| Body Hit Drop Chance Female | 25 % | 0–100 % | First body hit chance for female enemies |
+| Body Hit Drop Chance Smaller | 25 % | 0–100 % | First body hit chance for enemies shorter than you |
+| Smaller By | 0 cm | 0–50 cm | How much shorter an enemy must be for the chance above |
+
+The highest chance that fits the enemy applies. Base 0 % with a female chance of 25 % means only female enemies drop
+on body hits.
+
+*Charge Stagger*
+
+| Option | Default (Gamey) | Realistic | Range | What it does |
+|---|---|---|---|---|
+| Charge Stagger Chance | 100 % | 75 % | 0–100 % | Chance that a charge hit staggers |
+| Charge Speed Threshold | 4 m/s | 5.5 m/s | 1–8 m/s | How fast you must run (walking ≈ 2.8, full sprint ≈ 6) |
+| Charge Speed Window | 0.5 s | 0.15 s | 0–1 s | How long before the hit your top speed still counts |
+| Charge Min Swing Speed | 1 m/s | 3 m/s | 0–10 m/s | How fast the hit itself must be |
+| Charge Stagger Strength | Full | Medium | Light, Medium, Full, Knock Down | How hard the enemy is staggered |
+| Charge Stagger Duration | 2.5 s | 1.25 s | 0.5–5 s | How long the enemy counts as staggered (for disarms); how long a knocked-down enemy stays down |
+
+The Charge Stagger Preset (in the Charge Stagger tab) sets these six values; changing one shows *Custom*.
+
+*Adrenaline*
+
+| Option | Default | Range | What it does |
+|---|---|---|---|
+| Adrenaline Meter Max | 100 | 50–300 | Points for a full meter |
+| Adrenaline Per Hit | 5 | 0–50 | Points per hit you land |
+| Adrenaline Per Block Or Parry | 10 | 0–50 | Points per enemy attack you stop |
+| Adrenaline Per Damage Taken | 5 | 0–50 | Points per hit you take |
+| Adrenaline Per Charge Stagger | 15 | 0–50 | Points per charge stagger |
+| Adrenaline Per Disarm | 15 | 0–50 | Points per disarm |
+| Adrenaline Per Dodge | 10 | 0–50 | Points per enemy swing you dodge |
+| Dodge Min Speed | 2 m/s | 0.5–6 m/s | How fast your head must move for a dodge |
+| Adrenaline Per Catch | 10 | 0–50 | Points per knocked-out weapon caught in the air |
+| Catch Max Air Time | 3 s | 0.5–5 s | How long after the disarm a catch still counts |
+| Adrenaline Per Clash Win | 25 | 0–50 | Points for a won Clash of Might (also the simple one) |
+| Critical Hyperfocus Time Scale | 0.1 | 0.05–0.5 | World speed in Hyperfocus |
+| Critical Slow Time Scale | 0.5 | 0.25–0.75 | Speed in Slow Time |
+| Critical Knockback | 8 m/s | 0–20 m/s | How hard the critical throws the enemy |
+| Execution Window | 5 s | 1–15 s | How long a kneeling enemy waits for the finish |
+| Kneel After No Hit | 2 s | 0.5–5 s | Seconds without a hit before it kneels |
+| Kneel After Light Hits | 2 | 1–10 | Light hits before it kneels |
+| Kneel Max Distance | 3 m | 1–15 m | Only an enemy this near you kneels |
+| Adrenaline Vignette Hue | 6° | 0–40° | 0 = red, 40 = orange |
+| Adrenaline Vignette Streaks | 70 | 2–100 | Streaks per frame |
+| Adrenaline Vignette Streak Length | 0.4 | 0.1–0.6 | How far they reach in |
+| Adrenaline Vignette Frame Rate | 25 fps | 5–60 fps | How fast they flicker |
+
+*Adrenaline Magic*
+
+| Option | Default | Range | What it does |
+|---|---|---|---|
+| Magic Fire Radius | 3 m | 0–10 m | How far around the burning enemy others catch fire |
+| Magic Fire Spread Heat | 50 | 0–100 | How much heat they get (100 = they burn up too) |
+| Magic Lightning Radius | 5 m | 0–15 m | How far the bolt jumps |
+| Magic Lightning Shock | 4 s | 0.5–10 s | How long the others are shocked |
+| Magic Gravity Radius | 4 m | 0–15 m | How far around you enemies are flung |
+| Magic Gravity Force | 12 m/s | 2–30 m/s | How hard they are flung |
+| Magic Telekinesis Throw | 3× | 1–6× | How much harder a thrown enemy flies |
+| Magic Telekinesis Impact Time | 3 s | 0.5–10 s | How long after the throw an impact still kills |
+
+*Parry*
+
+| Option | Default | Range | What it does |
+|---|---|---|---|
+| Counter Stagger Duration | 1.5 s | 0.5–5 s | How long a countered enemy counts as staggered (time to disarm it) |
+| Parry Speed Window | 0.2 s | 0.05–0.5 s | How long before the parry your hand's speed counts |
 
 ## Reporting bugs
 

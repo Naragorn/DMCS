@@ -43,33 +43,33 @@ namespace DMCS
         [ModOption(name = AdrenalineMagicSettings.FireName, tooltip = "A fireball burns the enemy up at once; enemies around it catch fire.", category = DmcsCategories.AdrenalineMagic, categoryOrder = DmcsCategories.AdrenalineMagicOrder, order = 1)]
         public static bool FireEnabled { get; set; } = AdrenalineMagicSettings.DefaultFire;
 
-        [ModOption(name = "Magic Fire Radius", tooltip = "How far (m) around the burning enemy others catch fire. 0 = only the one hit.", valueSourceName = nameof(FireRadiusValues), category = DmcsCategories.AdrenalineMagic, categoryOrder = DmcsCategories.AdrenalineMagicOrder, order = 2)]
+        [ModOption(name = "Magic Fire Radius", tooltip = "How far (m) around the burning enemy others catch fire. 0 = only the one hit.", valueSourceName = nameof(FireRadiusValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.AdrenalineMagicOrder * 100 + 2)]
         [ModOptionSlider]
         public static float FireRadius { get; set; } = AdrenalineMagicSettings.FireRadius.Default;
 
-        [ModOption(name = "Magic Fire Spread Heat", tooltip = "How much heat the enemies around get (the game's burn: 100 = they burn up too).", valueSourceName = nameof(FireSpreadHeatValues), category = DmcsCategories.AdrenalineMagic, categoryOrder = DmcsCategories.AdrenalineMagicOrder, order = 3)]
+        [ModOption(name = "Magic Fire Spread Heat", tooltip = "How much heat the enemies around get (the game's burn: 100 = they burn up too).", valueSourceName = nameof(FireSpreadHeatValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.AdrenalineMagicOrder * 100 + 3)]
         [ModOptionSlider]
         public static float FireSpreadHeat { get; set; } = AdrenalineMagicSettings.FireSpreadHeat.Default;
 
         [ModOption(name = AdrenalineMagicSettings.LightningName, tooltip = "A lightning bolt jumps to every enemy around and shocks them all; the one hit dies.", category = DmcsCategories.AdrenalineMagic, categoryOrder = DmcsCategories.AdrenalineMagicOrder, order = 4)]
         public static bool LightningEnabled { get; set; } = AdrenalineMagicSettings.DefaultLightning;
 
-        [ModOption(name = "Magic Lightning Radius", tooltip = "How far (m) the bolt jumps from the enemy hit.", valueSourceName = nameof(LightningRadiusValues), category = DmcsCategories.AdrenalineMagic, categoryOrder = DmcsCategories.AdrenalineMagicOrder, order = 5)]
+        [ModOption(name = "Magic Lightning Radius", tooltip = "How far (m) the bolt jumps from the enemy hit.", valueSourceName = nameof(LightningRadiusValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.AdrenalineMagicOrder * 100 + 5)]
         [ModOptionSlider]
         public static float LightningRadius { get; set; } = AdrenalineMagicSettings.LightningRadius.Default;
 
-        [ModOption(name = "Magic Lightning Shock", tooltip = "How long (s) the enemies around are shocked.", valueSourceName = nameof(LightningShockValues), category = DmcsCategories.AdrenalineMagic, categoryOrder = DmcsCategories.AdrenalineMagicOrder, order = 6)]
+        [ModOption(name = "Magic Lightning Shock", tooltip = "How long (s) the enemies around are shocked.", valueSourceName = nameof(LightningShockValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.AdrenalineMagicOrder * 100 + 6)]
         [ModOptionSlider]
         public static float LightningShock { get; set; } = AdrenalineMagicSettings.LightningShock.Default;
 
         [ModOption(name = AdrenalineMagicSettings.GravityName, tooltip = "A gravity push flings every enemy around you away; the nearest one it hit dies.", category = DmcsCategories.AdrenalineMagic, categoryOrder = DmcsCategories.AdrenalineMagicOrder, order = 7)]
         public static bool GravityEnabled { get; set; } = AdrenalineMagicSettings.DefaultGravity;
 
-        [ModOption(name = "Magic Gravity Radius", tooltip = "How far (m) around you enemies are flung.", valueSourceName = nameof(GravityRadiusValues), category = DmcsCategories.AdrenalineMagic, categoryOrder = DmcsCategories.AdrenalineMagicOrder, order = 8)]
+        [ModOption(name = "Magic Gravity Radius", tooltip = "How far (m) around you enemies are flung.", valueSourceName = nameof(GravityRadiusValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.AdrenalineMagicOrder * 100 + 8)]
         [ModOptionSlider]
         public static float GravityRadius { get; set; } = AdrenalineMagicSettings.GravityRadius.Default;
 
-        [ModOption(name = "Magic Gravity Force", tooltip = "How hard (m/s) the enemies are flung away from you.", valueSourceName = nameof(GravityForceValues), category = DmcsCategories.AdrenalineMagic, categoryOrder = DmcsCategories.AdrenalineMagicOrder, order = 9)]
+        [ModOption(name = "Magic Gravity Force", tooltip = "How hard (m/s) the enemies are flung away from you.", valueSourceName = nameof(GravityForceValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.AdrenalineMagicOrder * 100 + 9)]
         [ModOptionSlider]
         public static float GravityForce { get; set; } = AdrenalineMagicSettings.GravityForce.Default;
 
@@ -88,11 +88,11 @@ namespace DMCS
         [ModOption(name = AdrenalineMagicSettings.TelekinesisName, tooltip = "With a full meter your telekinesis grabs even a standing enemy; throw it hard and the impact kills it.", category = DmcsCategories.AdrenalineMagic, categoryOrder = DmcsCategories.AdrenalineMagicOrder, order = 10)]
         public static bool TelekinesisEnabled { get; set; } = AdrenalineMagicSettings.DefaultTelekinesis;
 
-        [ModOption(name = "Magic Telekinesis Throw", tooltip = "How much harder (×) a thrown enemy flies.", valueSourceName = nameof(TelekinesisThrowValues), category = DmcsCategories.AdrenalineMagic, categoryOrder = DmcsCategories.AdrenalineMagicOrder, order = 11)]
+        [ModOption(name = "Magic Telekinesis Throw", tooltip = "How much harder (×) a thrown enemy flies.", valueSourceName = nameof(TelekinesisThrowValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.AdrenalineMagicOrder * 100 + 11)]
         [ModOptionSlider]
         public static float TelekinesisThrow { get; set; } = AdrenalineMagicSettings.TelekinesisThrow.Default;
 
-        [ModOption(name = "Magic Telekinesis Impact Time", tooltip = "Seconds after the throw in which the thrown enemy's impact kills it.", valueSourceName = nameof(TelekinesisImpactTimeValues), category = DmcsCategories.AdrenalineMagic, categoryOrder = DmcsCategories.AdrenalineMagicOrder, order = 12)]
+        [ModOption(name = "Magic Telekinesis Impact Time", tooltip = "Seconds after the throw in which the thrown enemy's impact kills it.", valueSourceName = nameof(TelekinesisImpactTimeValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.AdrenalineMagicOrder * 100 + 12)]
         [ModOptionSlider]
         public static float TelekinesisImpactTime { get; set; } = AdrenalineMagicSettings.TelekinesisImpactTime.Default;
 

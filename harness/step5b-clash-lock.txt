@@ -7,7 +7,7 @@
 
 wait-level
 press DMCS "Reset To Defaults"
-option-exists DMCS "Clash Weapon Weight" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Weapon Weight" category="Advanced" type=Single interaction=Slider save=true
 expect-option DMCS "Clash Weapon Weight" 20
 set-option DMCS "Debug Logging" true
 set-option DMCS "Adrenaline Enabled" false

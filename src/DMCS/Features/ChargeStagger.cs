@@ -61,7 +61,7 @@ namespace DMCS
         /// </summary>
         [ModOption(
             name = ChargeStaggerSettings.PresetName,
-            tooltip = "Gamey: easy charges, full stagger every time. Realistic: a real sprint and a committed swing, shorter stagger, not always. Adjust any value below to make it Custom.",
+            tooltip = "Gamey: easy charges, full stagger every time. Realistic: a real sprint and a committed swing, shorter stagger, not always. Change any Charge value in the Advanced tab to make it Custom.",
             valueSourceName = nameof(PresetValues),
             category = DmcsCategories.ChargeStagger,
             categoryOrder = DmcsCategories.ChargeStaggerOrder,
@@ -89,9 +89,9 @@ namespace DMCS
             name = ChargeStaggerSettings.ChanceName,
             tooltip = "Chance (%) that a charge hit staggers.",
             valueSourceName = nameof(ChanceOptionValues),
-            category = DmcsCategories.ChargeStagger,
-            categoryOrder = DmcsCategories.ChargeStaggerOrder,
-            order = 2)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.ChargeStaggerOrder * 100 + 2)]
         [ModOptionSlider]
         public static int Chance
         {
@@ -103,9 +103,9 @@ namespace DMCS
             name = ChargeStaggerSettings.SpeedThresholdName,
             tooltip = "Minimum running speed (m/s) for a hit to count as a charge. Walking is about 2.8, a full sprint about 6.",
             valueSourceName = nameof(SpeedThresholdValues),
-            category = DmcsCategories.ChargeStagger,
-            categoryOrder = DmcsCategories.ChargeStaggerOrder,
-            order = 3)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.ChargeStaggerOrder * 100 + 3)]
         [ModOptionSlider]
         public static float SpeedThreshold
         {
@@ -117,9 +117,9 @@ namespace DMCS
             name = ChargeStaggerSettings.SpeedWindowName,
             tooltip = "How far back (seconds) before the hit your top speed still counts. A charge slows down on contact.",
             valueSourceName = nameof(SpeedWindowValues),
-            category = DmcsCategories.ChargeStagger,
-            categoryOrder = DmcsCategories.ChargeStaggerOrder,
-            order = 4)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.ChargeStaggerOrder * 100 + 4)]
         [ModOptionSlider]
         public static float SpeedWindow
         {
@@ -131,9 +131,9 @@ namespace DMCS
             name = ChargeStaggerSettings.MinSwingSpeedName,
             tooltip = "How fast (m/s) the weapon, fist or projectile must hit. Higher needs a committed swing.",
             valueSourceName = nameof(MinSwingSpeedValues),
-            category = DmcsCategories.ChargeStagger,
-            categoryOrder = DmcsCategories.ChargeStaggerOrder,
-            order = 5)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.ChargeStaggerOrder * 100 + 5)]
         [ModOptionSlider]
         public static float MinSwingSpeed
         {
@@ -153,9 +153,9 @@ namespace DMCS
             name = ChargeStaggerSettings.StrengthName,
             tooltip = "How hard the enemy is staggered: the game's light, medium or full stagger, or knocked to the ground.",
             valueSourceName = nameof(StrengthValues),
-            category = DmcsCategories.ChargeStagger,
-            categoryOrder = DmcsCategories.ChargeStaggerOrder,
-            order = 7)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.ChargeStaggerOrder * 100 + 7)]
         public static string Strength
         {
             get => _strength;
@@ -166,9 +166,9 @@ namespace DMCS
             name = ChargeStaggerSettings.DurationName,
             tooltip = "Seconds the enemy counts as staggered (for Disarm Strike and the knock-down). A knocked-down enemy stays down this long.",
             valueSourceName = nameof(DurationValues),
-            category = DmcsCategories.ChargeStagger,
-            categoryOrder = DmcsCategories.ChargeStaggerOrder,
-            order = 8)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.ChargeStaggerOrder * 100 + 8)]
         [ModOptionSlider]
         public static float Duration
         {

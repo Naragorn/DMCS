@@ -13,11 +13,11 @@ option-exists DMCS "Disarm Drops Both Hands" category="Disarm Strike" type=Boole
 option-exists DMCS "Disarm Chance" category="Disarm Strike" type=Int32 interaction=Slider save=true
 option-exists DMCS "Disarm Stays Permanent" category="Disarm Strike" type=Boolean save=true
 option-exists DMCS "Disarmed Shock Chance" category="Disarm Strike" type=Int32 interaction=Slider save=true
-option-exists DMCS "Disarmed Shock Time" category="Disarm Strike" type=Single interaction=Slider save=true
+option-exists DMCS "Disarmed Shock Time" category="Advanced" type=Single interaction=Slider save=true
 option-exists DMCS "Disarmed Back Off Chance" category="Disarm Strike" type=Int32 interaction=Slider save=true
-option-exists DMCS "Disarmed Back Off Time" category="Disarm Strike" type=Single interaction=Slider save=true
+option-exists DMCS "Disarmed Back Off Time" category="Advanced" type=Single interaction=Slider save=true
 option-exists DMCS "Disarmed Cower Chance" category="Disarm Strike" type=Int32 interaction=Slider save=true
-option-exists DMCS "Disarmed Cower Time" category="Disarm Strike" type=Single interaction=Slider save=true
+option-exists DMCS "Disarmed Cower Time" category="Advanced" type=Single interaction=Slider save=true
 expect-option DMCS "Disarm Requires Stagger" true
 expect-option DMCS "Disarm Include Forearm" false
 expect-option DMCS "Disarm Drops Both Hands" true

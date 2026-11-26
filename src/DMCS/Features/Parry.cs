@@ -63,9 +63,9 @@ namespace DMCS
             name = ParrySettings.StaggerDurationName,
             tooltip = "Seconds a countered enemy counts as staggered: time for a hand hit or a twist to disarm it.",
             valueSourceName = nameof(StaggerDurationValues),
-            category = DmcsCategories.Parry,
-            categoryOrder = DmcsCategories.ParryOrder,
-            order = 3)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.ParryOrder * 100 + 3)]
         [ModOptionSlider]
         public static float StaggerDuration { get; set; } = ParrySettings.StaggerDuration.Default;
 
@@ -101,9 +101,9 @@ namespace DMCS
             name = ParrySettings.SpeedWindowName,
             tooltip = "Seconds before the parry in which your hand's fastest speed counts.",
             valueSourceName = nameof(SpeedWindowValues),
-            category = DmcsCategories.Parry,
-            categoryOrder = DmcsCategories.ParryOrder,
-            order = 7)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.ParryOrder * 100 + 7)]
         [ModOptionSlider]
         public static float SpeedWindow { get; set; } = ParrySettings.SpeedWindow.Default;
 

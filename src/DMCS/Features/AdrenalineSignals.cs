@@ -145,15 +145,15 @@ namespace DMCS
         [ModOptionSlider]
         public static float VignetteIntensity { get; set; } = AdrenalineSettings.VignetteIntensity.Default;
 
-        [ModOption(name = AdrenalineSettings.VignetteHueName, tooltip = "Colour of the streaks: 0 = red, 40 = orange.", valueSourceName = nameof(HueValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 48)]
+        [ModOption(name = AdrenalineSettings.VignetteHueName, tooltip = "Colour of the streaks: 0 = red, 40 = orange.", valueSourceName = nameof(HueValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.AdrenalineOrder * 100 + 48)]
         [ModOptionSlider]
         public static float VignetteHue { get; set; } = AdrenalineSettings.VignetteHue.Default;
 
-        [ModOption(name = AdrenalineSettings.VignetteStreaksName, tooltip = "How many streaks each frame has.", valueSourceName = nameof(StreakValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 49)]
+        [ModOption(name = AdrenalineSettings.VignetteStreaksName, tooltip = "How many streaks each frame has.", valueSourceName = nameof(StreakValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.AdrenalineOrder * 100 + 49)]
         [ModOptionSlider]
         public static int VignetteStreaks { get; set; } = AdrenalineSettings.DefaultVignetteStreaks;
 
-        [ModOption(name = AdrenalineSettings.VignetteLengthName, tooltip = "How far the streaks reach in from the edge.", valueSourceName = nameof(LengthValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 50)]
+        [ModOption(name = AdrenalineSettings.VignetteLengthName, tooltip = "How far the streaks reach in from the edge.", valueSourceName = nameof(LengthValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.AdrenalineOrder * 100 + 50)]
         [ModOptionSlider]
         public static float VignetteLength { get; set; } = AdrenalineSettings.VignetteLength.Default;
 
@@ -173,7 +173,7 @@ namespace DMCS
             }
         }
 
-        [ModOption(name = AdrenalineSettings.VignetteFrameRateName, tooltip = "How fast the streaks flicker (frames per second).", valueSourceName = nameof(FrameRateValues), category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 52)]
+        [ModOption(name = AdrenalineSettings.VignetteFrameRateName, tooltip = "How fast the streaks flicker (frames per second).", valueSourceName = nameof(FrameRateValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.AdrenalineOrder * 100 + 52)]
         [ModOptionSlider]
         public static float VignetteFrameRate { get; set; } = AdrenalineSettings.VignetteFrameRate.Default;
 

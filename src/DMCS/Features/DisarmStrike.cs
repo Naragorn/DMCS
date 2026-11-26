@@ -94,7 +94,7 @@ namespace DMCS
         [ModOptionSlider]
         public static int ShockChance { get; set; } = DisarmStrikeSettings.DefaultShockChance;
 
-        [ModOption(name = DisarmStrikeSettings.ShockTimeName, tooltip = "Seconds a shocked enemy stands frozen.", valueSourceName = nameof(ShockTimeValues), category = DmcsCategories.DisarmStrike, categoryOrder = DmcsCategories.DisarmStrikeOrder, order = 6)]
+        [ModOption(name = DisarmStrikeSettings.ShockTimeName, tooltip = "Seconds a shocked enemy stands frozen.", valueSourceName = nameof(ShockTimeValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.DisarmStrikeOrder * 100 + 6)]
         [ModOptionSlider]
         public static float ShockTime { get; set; } = DisarmStrikeSettings.ShockTime.Default;
 
@@ -102,7 +102,7 @@ namespace DMCS
         [ModOptionSlider]
         public static int BackOffChance { get; set; } = DisarmStrikeSettings.DefaultBackOffChance;
 
-        [ModOption(name = DisarmStrikeSettings.BackOffTimeName, tooltip = "Seconds a disarmed enemy keeps backing away.", valueSourceName = nameof(BackOffTimeValues), category = DmcsCategories.DisarmStrike, categoryOrder = DmcsCategories.DisarmStrikeOrder, order = 8)]
+        [ModOption(name = DisarmStrikeSettings.BackOffTimeName, tooltip = "Seconds a disarmed enemy keeps backing away.", valueSourceName = nameof(BackOffTimeValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.DisarmStrikeOrder * 100 + 8)]
         [ModOptionSlider]
         public static float BackOffTime { get; set; } = DisarmStrikeSettings.BackOffTime.Default;
 
@@ -110,7 +110,7 @@ namespace DMCS
         [ModOptionSlider]
         public static int CowerChance { get; set; } = DisarmStrikeSettings.DefaultCowerChance;
 
-        [ModOption(name = DisarmStrikeSettings.CowerTimeName, tooltip = "Seconds a disarmed enemy cowers.", valueSourceName = nameof(CowerTimeValues), category = DmcsCategories.DisarmStrike, categoryOrder = DmcsCategories.DisarmStrikeOrder, order = 10)]
+        [ModOption(name = DisarmStrikeSettings.CowerTimeName, tooltip = "Seconds a disarmed enemy cowers.", valueSourceName = nameof(CowerTimeValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.DisarmStrikeOrder * 100 + 10)]
         [ModOptionSlider]
         public static float CowerTime { get; set; } = DisarmStrikeSettings.CowerTime.Default;
 
@@ -178,9 +178,9 @@ namespace DMCS
             name = DisarmStrikeSettings.FlingForceName,
             tooltip = "How hard a weapon knocked out of the hand flies away in the hit's direction (m/s). 0: it just drops.",
             valueSourceName = nameof(FlingForceValues),
-            category = DmcsCategories.DisarmStrike,
-            categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 18)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.DisarmStrikeOrder * 100 + 18)]
         [ModOptionSlider]
         public static float FlingForce { get; set; } = DisarmStrikeSettings.FlingForce.Default;
 
@@ -188,9 +188,9 @@ namespace DMCS
             name = DisarmStrikeSettings.FemaleChanceName,
             tooltip = "First body hit drop chance (%) for female enemies. The highest chance that fits the enemy applies.",
             valueSourceName = nameof(ChanceOptionValues),
-            category = DmcsCategories.DisarmStrike,
-            categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 19)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.DisarmStrikeOrder * 100 + 19)]
         [ModOptionSlider]
         public static int FemaleChance { get; set; } = DisarmStrikeSettings.DefaultFemaleChance;
 
@@ -198,19 +198,19 @@ namespace DMCS
             name = DisarmStrikeSettings.SmallerChanceName,
             tooltip = "First body hit drop chance (%) for enemies shorter than you (by at least the margin below). The highest chance that fits the enemy applies.",
             valueSourceName = nameof(ChanceOptionValues),
-            category = DmcsCategories.DisarmStrike,
-            categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 20)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.DisarmStrikeOrder * 100 + 20)]
         [ModOptionSlider]
         public static int SmallerChance { get; set; } = DisarmStrikeSettings.DefaultSmallerChance;
 
         [ModOption(
             name = DisarmStrikeSettings.SmallerMarginName,
-            tooltip = "How much shorter than you (cm) an enemy must be for the smaller chance. 0: any shorter.",
+            tooltip = "Disarm Strike: how much shorter than you (cm) an enemy must be for Body Hit Drop Chance Smaller. 0: any shorter.",
             valueSourceName = nameof(SmallerMarginValues),
-            category = DmcsCategories.DisarmStrike,
-            categoryOrder = DmcsCategories.DisarmStrikeOrder,
-            order = 21)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.DisarmStrikeOrder * 100 + 21)]
         [ModOptionSlider]
         public static float SmallerMargin { get; set; } = DisarmStrikeSettings.SmallerMargin.Default;
 

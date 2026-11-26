@@ -12,10 +12,10 @@ option-exists DMCS "Drop Chance Per Extra Hit" category="Disarm Strike" type=Int
 option-exists DMCS "Loosened Grip Spark" category="Disarm Strike" type=Boolean save=true
 option-exists DMCS "Loosened Grip Haptics" category="Disarm Strike" type=Boolean save=true
 option-exists DMCS "Shields Can Be Disarmed" category="Disarm Strike" type=Boolean save=true
-option-exists DMCS "Disarm Fling Force" category="Disarm Strike" type=Single interaction=Slider save=true
-option-exists DMCS "Body Hit Drop Chance Female" category="Disarm Strike" type=Int32 interaction=Slider save=true
-option-exists DMCS "Body Hit Drop Chance Smaller" category="Disarm Strike" type=Int32 interaction=Slider save=true
-option-exists DMCS "Smaller By" category="Disarm Strike" type=Single interaction=Slider save=true
+option-exists DMCS "Disarm Fling Force" category="Advanced" type=Single interaction=Slider save=true
+option-exists DMCS "Body Hit Drop Chance Female" category="Advanced" type=Int32 interaction=Slider save=true
+option-exists DMCS "Body Hit Drop Chance Smaller" category="Advanced" type=Int32 interaction=Slider save=true
+option-exists DMCS "Smaller By" category="Advanced" type=Single interaction=Slider save=true
 expect-option DMCS "Body Hit Drop" true
 expect-option DMCS "Body Hit Drop Chance" 25
 expect-option DMCS "Drop Chance Per Extra Hit" 25

@@ -15,9 +15,9 @@ option-exists DMCS "Clash Female Strength Reduction" category="Clash of Might" t
 option-exists DMCS "Clash Min Rounds" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Max Rounds" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Fewer Rounds Against Weaker" category="Clash of Might" type=Single interaction=Slider save=true
-option-exists DMCS "Clash Enemy Push" category="Clash of Might" type=Single interaction=Slider save=true
-option-exists DMCS "Clash Push Dead Zone" category="Clash of Might" type=Single interaction=Slider save=true
-option-exists DMCS "Clash Push Phase" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Enemy Push" category="Advanced" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Push Dead Zone" category="Advanced" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Push Phase" category="Advanced" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Win Disarms" category="Clash of Might" type=Boolean interaction=ArrowList save=true
 option-exists DMCS "Clash Side Push" category="Clash of Might" type=Boolean interaction=ArrowList save=true
 option-exists DMCS "Clash Win Kneel Chance" category="Clash of Might" type=Single interaction=Slider save=true

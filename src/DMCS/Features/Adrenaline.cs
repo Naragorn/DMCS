@@ -51,9 +51,9 @@ namespace DMCS
             name = AdrenalineSettings.MeterMaxName,
             tooltip = "Points the meter needs to be full.",
             valueSourceName = nameof(MeterMaxValues),
-            category = DmcsCategories.Adrenaline,
-            categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 1)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.AdrenalineOrder * 100 + 1)]
         [ModOptionSlider]
         public static float MeterMax
         {
@@ -107,9 +107,9 @@ namespace DMCS
             name = AdrenalineSettings.GainHitName,
             tooltip = "Points for each hit you land on an enemy (weapon, fist, kick, thrown, spell).",
             valueSourceName = nameof(GainValues),
-            category = DmcsCategories.Adrenaline,
-            categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 6)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.AdrenalineOrder * 100 + 6)]
         [ModOptionSlider]
         public static int GainHit { get; set; } = AdrenalineSettings.DefaultGainHit;
 
@@ -117,9 +117,9 @@ namespace DMCS
             name = AdrenalineSettings.GainBlockParryName,
             tooltip = "Points for each enemy attack you stop with your weapon or shield.",
             valueSourceName = nameof(GainValues),
-            category = DmcsCategories.Adrenaline,
-            categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 7)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.AdrenalineOrder * 100 + 7)]
         [ModOptionSlider]
         public static int GainBlockParry { get; set; } = AdrenalineSettings.DefaultGainBlockParry;
 
@@ -127,9 +127,9 @@ namespace DMCS
             name = AdrenalineSettings.GainDamageTakenName,
             tooltip = "Points for each hit an enemy lands on you (taken off or added, see the next option).",
             valueSourceName = nameof(GainValues),
-            category = DmcsCategories.Adrenaline,
-            categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 8)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.AdrenalineOrder * 100 + 8)]
         [ModOptionSlider]
         public static int GainDamageTaken { get; set; } = AdrenalineSettings.DefaultGainDamageTaken;
 
@@ -145,9 +145,9 @@ namespace DMCS
             name = AdrenalineSettings.GainChargeStaggerName,
             tooltip = "Points for each enemy you stagger with a charge.",
             valueSourceName = nameof(GainValues),
-            category = DmcsCategories.Adrenaline,
-            categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 10)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.AdrenalineOrder * 100 + 10)]
         [ModOptionSlider]
         public static int GainChargeStagger { get; set; } = AdrenalineSettings.DefaultGainChargeStagger;
 
@@ -155,9 +155,9 @@ namespace DMCS
             name = AdrenalineSettings.GainDisarmName,
             tooltip = "Points for each enemy you disarm.",
             valueSourceName = nameof(GainValues),
-            category = DmcsCategories.Adrenaline,
-            categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 11)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.AdrenalineOrder * 100 + 11)]
         [ModOptionSlider]
         public static int GainDisarm { get; set; } = AdrenalineSettings.DefaultGainDisarm;
 
@@ -165,9 +165,9 @@ namespace DMCS
             name = AdrenalineSettings.GainDodgeName,
             tooltip = "Points for each enemy attack that misses you while you move away fast (needs the headset to judge).",
             valueSourceName = nameof(GainValues),
-            category = DmcsCategories.Adrenaline,
-            categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 12)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.AdrenalineOrder * 100 + 12)]
         [ModOptionSlider]
         public static int GainDodge { get; set; } = AdrenalineSettings.DefaultGainDodge;
 
@@ -175,9 +175,9 @@ namespace DMCS
             name = AdrenalineSettings.DodgeMinSpeedName,
             tooltip = "How fast your head must move sideways or back (m/s) while an attack misses, to count as a dodge.",
             valueSourceName = nameof(DodgeMinSpeedValues),
-            category = DmcsCategories.Adrenaline,
-            categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 13)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.AdrenalineOrder * 100 + 13)]
         [ModOptionSlider]
         public static float DodgeMinSpeed { get; set; } = AdrenalineSettings.DodgeMinSpeed.Default;
 
@@ -185,9 +185,9 @@ namespace DMCS
             name = AdrenalineSettings.GainCatchName,
             tooltip = "Points for catching a weapon you knocked out of an enemy's hand before it hits the ground.",
             valueSourceName = nameof(GainValues),
-            category = DmcsCategories.Adrenaline,
-            categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 14)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.AdrenalineOrder * 100 + 14)]
         [ModOptionSlider]
         public static int GainCatch { get; set; } = AdrenalineSettings.DefaultGainCatch;
 
@@ -195,9 +195,9 @@ namespace DMCS
             name = AdrenalineSettings.CatchMaxAirTimeName,
             tooltip = "Seconds after the disarm a catch still counts (besides: it must not have touched the ground).",
             valueSourceName = nameof(CatchMaxAirTimeValues),
-            category = DmcsCategories.Adrenaline,
-            categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 15)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.AdrenalineOrder * 100 + 15)]
         [ModOptionSlider]
         public static float CatchMaxAirTime { get; set; } = AdrenalineSettings.CatchMaxAirTime.Default;
 
@@ -205,9 +205,9 @@ namespace DMCS
             name = AdrenalineSettings.GainClashWinName,
             tooltip = "Points for winning a Clash of Might (also the simple one: blocking at the star).",
             valueSourceName = nameof(GainValues),
-            category = DmcsCategories.Adrenaline,
-            categoryOrder = DmcsCategories.AdrenalineOrder,
-            order = 16)]
+            category = DmcsCategories.Advanced,
+            categoryOrder = DmcsCategories.AdvancedOrder,
+            order = DmcsCategories.AdrenalineOrder * 100 + 16)]
         [ModOptionSlider]
         public static int GainClashWin { get; set; } = AdrenalineSettings.DefaultGainClashWin;
 

@@ -129,6 +129,88 @@ public class ModOptionMetadataTests
     }
 
     [Fact]
+    public void Advanced_HoldsTheFineTuning_InTheOrderOfTheFeatureGroups()
+    {
+        // User 2026-11-26: fine-tuning values move to their own tab (category) at the end, so the feature tabs stay short.
+        // Names stay the same: the game saves values keyed by (mod folder, option name), so saved values carry over.
+        var group = Options.Value.Where(o => o.Category == DmcsCategories.Advanced).OrderBy(o => o.Order).ToList();
+
+        Assert.Equal(
+            new[]
+            {
+                (PlayerStrikeRule.MinHandSpeedName, "System.Single", "Slider"),
+                (ClashSettings.NpcReachName, "System.Single", "Slider"),
+                (ClashSettings.WeaponWeightName, "System.Single", "Slider"),
+                (ClashSettings.HoldStyleName, "System.String", "ArrowList"),
+                (ClashSettings.HoldSlackName, "System.Single", "Slider"),
+                (ClashSettings.HoldSpringName, "System.Single", "Slider"),
+                (ClashSettings.HoldSpringDampingName, "System.Single", "Slider"),
+                (ClashSettings.HoldRotationName, "System.Boolean", "ArrowList"),
+                (ClashSettings.HoldBrieflyName, "System.Boolean", "ArrowList"),
+                (ClashSettings.HoldTimeName, "System.Single", "Slider"),
+                (ClashSettings.FlashAtTopName, "System.Boolean", "ArrowList"),
+                (ClashFightSettings.EnemyPushName, "System.Single", "Slider"),
+                (ClashFightSettings.DeadZoneName, "System.Single", "Slider"),
+                (ClashFightSettings.PushPhaseName, "System.Single", "Slider"),
+                (DisarmStrikeSettings.ShockTimeName, "System.Single", "Slider"),
+                (DisarmStrikeSettings.BackOffTimeName, "System.Single", "Slider"),
+                (DisarmStrikeSettings.CowerTimeName, "System.Single", "Slider"),
+                (DisarmStrikeSettings.FlingForceName, "System.Single", "Slider"),
+                (DisarmStrikeSettings.FemaleChanceName, "System.Int32", "Slider"),
+                (DisarmStrikeSettings.SmallerChanceName, "System.Int32", "Slider"),
+                (DisarmStrikeSettings.SmallerMarginName, "System.Single", "Slider"),
+                (ChargeStaggerSettings.ChanceName, "System.Int32", "Slider"),
+                (ChargeStaggerSettings.SpeedThresholdName, "System.Single", "Slider"),
+                (ChargeStaggerSettings.SpeedWindowName, "System.Single", "Slider"),
+                (ChargeStaggerSettings.MinSwingSpeedName, "System.Single", "Slider"),
+                (ChargeStaggerSettings.StrengthName, "System.String", "ArrowList"),
+                (ChargeStaggerSettings.DurationName, "System.Single", "Slider"),
+                (AdrenalineSettings.MeterMaxName, "System.Single", "Slider"),
+                (AdrenalineSettings.GainHitName, "System.Int32", "Slider"),
+                (AdrenalineSettings.GainBlockParryName, "System.Int32", "Slider"),
+                (AdrenalineSettings.GainDamageTakenName, "System.Int32", "Slider"),
+                (AdrenalineSettings.GainChargeStaggerName, "System.Int32", "Slider"),
+                (AdrenalineSettings.GainDisarmName, "System.Int32", "Slider"),
+                (AdrenalineSettings.GainDodgeName, "System.Int32", "Slider"),
+                (AdrenalineSettings.DodgeMinSpeedName, "System.Single", "Slider"),
+                (AdrenalineSettings.GainCatchName, "System.Int32", "Slider"),
+                (AdrenalineSettings.CatchMaxAirTimeName, "System.Single", "Slider"),
+                (AdrenalineSettings.GainClashWinName, "System.Int32", "Slider"),
+                (AdrenalineSettings.HyperfocusScaleName, "System.Single", "Slider"),
+                (AdrenalineSettings.SlowTimeScaleName, "System.Single", "Slider"),
+                (AdrenalineSettings.KnockbackName, "System.Single", "Slider"),
+                (AdrenalineSettings.ExecutionWindowName, "System.Single", "Slider"),
+                (AdrenalineSettings.KneelAfterNoHitName, "System.Single", "Slider"),
+                (AdrenalineSettings.KneelAfterLightHitsName, "System.Int32", "Slider"),
+                (AdrenalineSettings.KneelMaxDistance.Name, "System.Single", "Slider"),
+                (AdrenalineSettings.VignetteHueName, "System.Single", "Slider"),
+                (AdrenalineSettings.VignetteStreaksName, "System.Int32", "Slider"),
+                (AdrenalineSettings.VignetteLengthName, "System.Single", "Slider"),
+                (AdrenalineSettings.VignetteFrameRateName, "System.Single", "Slider"),
+                (AdrenalineMagicSettings.FireRadius.Name, "System.Single", "Slider"),
+                (AdrenalineMagicSettings.FireSpreadHeat.Name, "System.Single", "Slider"),
+                (AdrenalineMagicSettings.LightningRadius.Name, "System.Single", "Slider"),
+                (AdrenalineMagicSettings.LightningShock.Name, "System.Single", "Slider"),
+                (AdrenalineMagicSettings.GravityRadius.Name, "System.Single", "Slider"),
+                (AdrenalineMagicSettings.GravityForce.Name, "System.Single", "Slider"),
+                (AdrenalineMagicSettings.TelekinesisThrow.Name, "System.Single", "Slider"),
+                (AdrenalineMagicSettings.TelekinesisImpactTime.Name, "System.Single", "Slider"),
+                (ParrySettings.StaggerDurationName, "System.Single", "Slider"),
+                (ParrySettings.SpeedWindowName, "System.Single", "Slider"),
+            },
+            group.Select(o => (o.Name, o.DataType, o.InteractionType)));
+        Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));
+        Assert.All(group.Where(o => o.DataType != "System.Boolean"), o => Assert.False(string.IsNullOrEmpty(o.ValueSource), o.Name + " needs a value list"));
+        Assert.Equal(59, group.Count);
+    }
+
+    [Fact]
+    public void Advanced_IsTheLastTab()
+    {
+        Assert.True(Options.Value.Where(o => o.Category != DmcsCategories.Advanced).All(o => o.CategoryOrder < DmcsCategories.AdvancedOrder));
+    }
+
+    [Fact]
     public void ChargeStagger_ExposesItsSettings_InOrder_WithSlidersForNumbersAndDropdownsForChoices()
     {
         var group = Options.Value.Where(o => o.Category == DmcsCategories.ChargeStagger).OrderBy(o => o.Order).ToList();
@@ -138,13 +220,7 @@ public class ModOptionMetadataTests
             {
                 (DmcsCategories.ChargeStagger + " Enabled", "System.Boolean", "ArrowList"),
                 (ChargeStaggerSettings.PresetName, "System.String", "ArrowList"),
-                (ChargeStaggerSettings.ChanceName, "System.Int32", "Slider"),
-                (ChargeStaggerSettings.SpeedThresholdName, "System.Single", "Slider"),
-                (ChargeStaggerSettings.SpeedWindowName, "System.Single", "Slider"),
-                (ChargeStaggerSettings.MinSwingSpeedName, "System.Single", "Slider"),
                 (ChargeStaggerSettings.RangedCountsName, "System.Boolean", "ArrowList"),
-                (ChargeStaggerSettings.StrengthName, "System.String", "ArrowList"),
-                (ChargeStaggerSettings.DurationName, "System.Single", "Slider"),
                 (ChargeStaggerSettings.SecondKnocksDownName, "System.Boolean", "ArrowList"),
             },
             group.Select(o => (o.Name, o.DataType, o.InteractionType)));
@@ -165,20 +241,10 @@ public class ModOptionMetadataTests
                 (ClashSettings.MinWindUpName, "System.Single", "Slider"),
                 (ClashSettings.SlowMoName, "System.Boolean", "ArrowList"),
                 (ClashSettings.SlowMoScaleName, "System.Single", "Slider"),
-                (ClashSettings.NpcReachName, "System.Single", "Slider"),
-                (ClashSettings.WeaponWeightName, "System.Single", "Slider"),
                 (ClashSettings.HoldBladeName, "System.Boolean", "ArrowList"),
-                (ClashSettings.HoldStyleName, "System.String", "ArrowList"),
-                (ClashSettings.HoldSlackName, "System.Single", "Slider"),
-                (ClashSettings.HoldSpringName, "System.Single", "Slider"),
-                (ClashSettings.HoldSpringDampingName, "System.Single", "Slider"),
-                (ClashSettings.HoldRotationName, "System.Boolean", "ArrowList"),
-                (ClashSettings.HoldBrieflyName, "System.Boolean", "ArrowList"),
-                (ClashSettings.HoldTimeName, "System.Single", "Slider"),
                 (ClashSettings.FlashSoundName, "System.String", "ArrowList"),
                 (ClashSettings.FlashGameSoundName, "System.String", "ArrowList"),
                 (ClashSettings.FlashSoundVolumeName, "System.Single", "Slider"),
-                (ClashSettings.FlashAtTopName, "System.Boolean", "ArrowList"),
                 (ClashFightSettings.DifficultyName, "System.Single", "Slider"),
                 (ClashFightSettings.ScalesWithHeightName, "System.Boolean", "ArrowList"),
                 (ClashFightSettings.ScalesWithGenderName, "System.Boolean", "ArrowList"),
@@ -186,9 +252,6 @@ public class ModOptionMetadataTests
                 (ClashFightSettings.MinRoundsName, "System.Single", "Slider"),
                 (ClashFightSettings.MaxRoundsName, "System.Single", "Slider"),
                 (ClashFightSettings.FewerRoundsName, "System.Single", "Slider"),
-                (ClashFightSettings.EnemyPushName, "System.Single", "Slider"),
-                (ClashFightSettings.DeadZoneName, "System.Single", "Slider"),
-                (ClashFightSettings.PushPhaseName, "System.Single", "Slider"),
                 (ClashFightSettings.SidePushName, "System.Boolean", "ArrowList"),
                 (ClashFightSettings.WinDisarmsName, "System.Boolean", "ArrowList"),
                 (ClashFightSettings.WinKneelChanceName, "System.Single", "Slider"),
@@ -218,11 +281,8 @@ public class ModOptionMetadataTests
                 (DisarmStrikeSettings.DropBothHandsName, "System.Boolean", "ArrowList"),
                 (DisarmStrikeSettings.ChanceName, "System.Int32", "Slider"),
                 (DisarmStrikeSettings.ShockChanceName, "System.Int32", "Slider"),
-                (DisarmStrikeSettings.ShockTimeName, "System.Single", "Slider"),
                 (DisarmStrikeSettings.BackOffChanceName, "System.Int32", "Slider"),
-                (DisarmStrikeSettings.BackOffTimeName, "System.Single", "Slider"),
                 (DisarmStrikeSettings.CowerChanceName, "System.Int32", "Slider"),
-                (DisarmStrikeSettings.CowerTimeName, "System.Single", "Slider"),
                 (DisarmStrikeSettings.StayDisarmedName, "System.Boolean", "ArrowList"),
                 (DisarmStrikeSettings.BodyHitDropName, "System.Boolean", "ArrowList"),
                 (DisarmStrikeSettings.BodyHitDropChanceName, "System.Int32", "Slider"),
@@ -230,10 +290,6 @@ public class ModOptionMetadataTests
                 (DisarmStrikeSettings.LoosenedSparkName, "System.Boolean", "ArrowList"),
                 (DisarmStrikeSettings.LoosenedHapticsName, "System.Boolean", "ArrowList"),
                 (DisarmStrikeSettings.ShieldsName, "System.Boolean", "ArrowList"),
-                (DisarmStrikeSettings.FlingForceName, "System.Single", "Slider"),
-                (DisarmStrikeSettings.FemaleChanceName, "System.Int32", "Slider"),
-                (DisarmStrikeSettings.SmallerChanceName, "System.Int32", "Slider"),
-                (DisarmStrikeSettings.SmallerMarginName, "System.Single", "Slider"),
                 (TwistSettings.EnabledName, "System.Boolean", "ArrowList"),
                 (TwistSettings.ChanceName, "System.Single", "Slider"),
                 (TwistSettings.MinRollSpeedName, "System.Single", "Slider"),
@@ -253,11 +309,9 @@ public class ModOptionMetadataTests
                 (ParrySettings.EnabledName, "System.Boolean", "ArrowList"),
                 (ParrySettings.CounterName, "System.Boolean", "ArrowList"),
                 (ParrySettings.CounterSpeedName, "System.Single", "Slider"),
-                (ParrySettings.StaggerDurationName, "System.Single", "Slider"),
                 (ParrySettings.PowerName, "System.Boolean", "ArrowList"),
                 (ParrySettings.PowerSpeedName, "System.Single", "Slider"),
                 (ParrySettings.PowerChanceName, "System.Single", "Slider"),
-                (ParrySettings.SpeedWindowName, "System.Single", "Slider"),
             },
             group.Select(o => (o.Name, o.DataType, o.InteractionType)));
         Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));
@@ -273,40 +327,22 @@ public class ModOptionMetadataTests
             new[]
             {
                 (DmcsCategories.Adrenaline + " Enabled", "System.Boolean", "ArrowList"),
-                (AdrenalineSettings.MeterMaxName, "System.Single", "Slider"),
                 (AdrenalineSettings.WindowDurationName, "System.Single", "Slider"),
                 (AdrenalineSettings.DecayEnabledName, "System.Boolean", "ArrowList"),
                 (AdrenalineSettings.DecayPerSecondName, "System.Single", "Slider"),
                 (AdrenalineSettings.DecayDelayName, "System.Single", "Slider"),
-                (AdrenalineSettings.GainHitName, "System.Int32", "Slider"),
-                (AdrenalineSettings.GainBlockParryName, "System.Int32", "Slider"),
-                (AdrenalineSettings.GainDamageTakenName, "System.Int32", "Slider"),
                 (AdrenalineSettings.DamageTakenLowersName, "System.Boolean", "ArrowList"),
-                (AdrenalineSettings.GainChargeStaggerName, "System.Int32", "Slider"),
-                (AdrenalineSettings.GainDisarmName, "System.Int32", "Slider"),
-                (AdrenalineSettings.GainDodgeName, "System.Int32", "Slider"),
-                (AdrenalineSettings.DodgeMinSpeedName, "System.Single", "Slider"),
-                (AdrenalineSettings.GainCatchName, "System.Int32", "Slider"),
-                (AdrenalineSettings.CatchMaxAirTimeName, "System.Single", "Slider"),
-                (AdrenalineSettings.GainClashWinName, "System.Int32", "Slider"),
                 (AdrenalineSettings.CriticalTimeModeName, "System.String", "ArrowList"),
-                (AdrenalineSettings.HyperfocusScaleName, "System.Single", "Slider"),
                 (AdrenalineSettings.HyperfocusDurationName, "System.Single", "Slider"),
-                (AdrenalineSettings.SlowTimeScaleName, "System.Single", "Slider"),
                 (AdrenalineSettings.SlowTimeDurationName, "System.Single", "Slider"),
                 (AdrenalineSettings.NeedsHardSwingName, "System.Boolean", "ArrowList"),
                 (AdrenalineSettings.MinSwingSpeedName, "System.Single", "Slider"),
                 (AdrenalineSettings.RangedCountsName, "System.Boolean", "ArrowList"),
                 (AdrenalineSettings.KillsName, "System.Boolean", "ArrowList"),
                 (AdrenalineSettings.DismemberName, "System.Boolean", "ArrowList"),
-                (AdrenalineSettings.KnockbackName, "System.Single", "Slider"),
                 (AdrenalineSettings.BattleCryName, "System.Boolean", "ArrowList"),
                 (AdrenalineSettings.ChestStabKneelsName, "System.Boolean", "ArrowList"),
-                (AdrenalineSettings.ExecutionWindowName, "System.Single", "Slider"),
                 (AdrenalineSettings.KneelEnabledName, "System.Boolean", "ArrowList"),
-                (AdrenalineSettings.KneelAfterNoHitName, "System.Single", "Slider"),
-                (AdrenalineSettings.KneelAfterLightHitsName, "System.Int32", "Slider"),
-                (AdrenalineSettings.KneelMaxDistance.Name, "System.Single", "Slider"),
                 (AdrenalineSettings.KneelDeathChanceName, "System.Int32", "Slider"),
                 (AdrenalineSettings.ReadySoundName, "System.Boolean", "ArrowList"),
                 (AdrenalineSettings.ReadySoundStyleName, "System.String", "ArrowList"),
@@ -320,11 +356,7 @@ public class ModOptionMetadataTests
                 (AdrenalineSettings.VignetteName, "System.Boolean", "ArrowList"),
                 (AdrenalineSettings.VignetteStyleName, "System.String", "ArrowList"),
                 (AdrenalineSettings.VignetteIntensityName, "System.Single", "Slider"),
-                (AdrenalineSettings.VignetteHueName, "System.Single", "Slider"),
-                (AdrenalineSettings.VignetteStreaksName, "System.Int32", "Slider"),
-                (AdrenalineSettings.VignetteLengthName, "System.Single", "Slider"),
                 (AdrenalineSettings.VignetteSizeName, "System.Single", "Slider"),
-                (AdrenalineSettings.VignetteFrameRateName, "System.Single", "Slider"),
                 (AdrenalineSettings.VignetteFlareName, "System.Boolean", "ArrowList"),
                 (AdrenalineSettings.DoubleFatalityName, "System.Boolean", "ArrowList"),
             },
@@ -348,10 +380,10 @@ public class ModOptionMetadataTests
     }
 
     [Fact]
-    public void Categories_AreExactlyGeneral_TheFeatures_AdrenalineMagic_AndSkillTree()
+    public void Categories_AreExactlyGeneral_TheFeatures_AdrenalineMagic_SkillTree_AndAdvanced()
     {
         var categories = Options.Value.Select(o => o.Category).Distinct().OrderBy(c => c).ToArray();
-        var expected = new[] { DmcsCategories.General, DmcsCategories.SkillTree, DmcsCategories.AdrenalineMagic, DmcsCategories.Finisher }.Concat(DmcsCategories.Features).OrderBy(c => c).ToArray();
+        var expected = new[] { DmcsCategories.General, DmcsCategories.SkillTree, DmcsCategories.AdrenalineMagic, DmcsCategories.Finisher, DmcsCategories.Advanced }.Concat(DmcsCategories.Features).OrderBy(c => c).ToArray();
 
         Assert.Equal(expected, categories);
     }
@@ -409,17 +441,9 @@ public class ModOptionMetadataTests
             {
                 (AdrenalineMagicSettings.EnabledName, "System.Boolean", "ArrowList"),
                 (AdrenalineMagicSettings.FireName, "System.Boolean", "ArrowList"),
-                (AdrenalineMagicSettings.FireRadius.Name, "System.Single", "Slider"),
-                (AdrenalineMagicSettings.FireSpreadHeat.Name, "System.Single", "Slider"),
                 (AdrenalineMagicSettings.LightningName, "System.Boolean", "ArrowList"),
-                (AdrenalineMagicSettings.LightningRadius.Name, "System.Single", "Slider"),
-                (AdrenalineMagicSettings.LightningShock.Name, "System.Single", "Slider"),
                 (AdrenalineMagicSettings.GravityName, "System.Boolean", "ArrowList"),
-                (AdrenalineMagicSettings.GravityRadius.Name, "System.Single", "Slider"),
-                (AdrenalineMagicSettings.GravityForce.Name, "System.Single", "Slider"),
                 (AdrenalineMagicSettings.TelekinesisName, "System.Boolean", "ArrowList"),
-                (AdrenalineMagicSettings.TelekinesisThrow.Name, "System.Single", "Slider"),
-                (AdrenalineMagicSettings.TelekinesisImpactTime.Name, "System.Single", "Slider"),
             },
             group.Select(o => (o.Name, o.DataType, o.InteractionType)));
         Assert.All(group, o => Assert.True(o.SaveValue, o.Name + " must be saved"));

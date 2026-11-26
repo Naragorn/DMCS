@@ -8,14 +8,14 @@ option-exists DMCS "Clash Only Swords" category="Clash of Might" type=Boolean in
 option-exists DMCS "Clash Min Wind Up" category="Clash of Might" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Slow Motion" category="Clash of Might" type=Boolean interaction=ArrowList save=true
 option-exists DMCS "Clash Slow Motion Scale" category="Clash of Might" type=Single interaction=Slider save=true
-option-exists DMCS "Clash Enemy Reach" category="Clash of Might" type=Single interaction=Slider save=true
+option-exists DMCS "Clash Enemy Reach" category="Advanced" type=Single interaction=Slider save=true
 option-exists DMCS "Clash Flash Sound" category="Clash of Might" type=String interaction=ArrowList save=true
 option-exists DMCS "Clash Flash Game Sound" category="Clash of Might" type=String interaction=ArrowList save=true
 option-exists DMCS "Clash Flash Sound Volume" category="Clash of Might" type=Single interaction=Slider save=true
 expect-option DMCS "Clash Flash Sound" "DMCS 1"
 expect-option DMCS "Clash Flash Game Sound" Off
 expect-option DMCS "Clash Flash Sound Volume" 0.8
-option-exists DMCS "Clash Flash At Swing Top" category="Clash of Might" type=Boolean interaction=ArrowList save=true
+option-exists DMCS "Clash Flash At Swing Top" category="Advanced" type=Boolean interaction=ArrowList save=true
 expect-option DMCS "Clash Flash At Swing Top" true
 expect-option DMCS "Clash Only Swords" true
 expect-option DMCS "Clash Min Wind Up" 0.45

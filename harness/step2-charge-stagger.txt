@@ -11,13 +11,13 @@ press DMCS "Reset To Defaults"
 
 # Menu: the settings, with ranges and the Gamey defaults
 option-exists DMCS "Charge Stagger Preset" category="Charge Stagger" type=String interaction=ArrowList tooltip="Gamey"
-option-exists DMCS "Charge Stagger Chance" category="Charge Stagger" type=Int32 interaction=Slider save=true
-option-exists DMCS "Charge Speed Threshold" category="Charge Stagger" type=Single interaction=Slider save=true tooltip="m/s"
-option-exists DMCS "Charge Speed Window" category="Charge Stagger" type=Single interaction=Slider save=true
-option-exists DMCS "Charge Min Swing Speed" category="Charge Stagger" type=Single interaction=Slider save=true
+option-exists DMCS "Charge Stagger Chance" category="Advanced" type=Int32 interaction=Slider save=true
+option-exists DMCS "Charge Speed Threshold" category="Advanced" type=Single interaction=Slider save=true tooltip="m/s"
+option-exists DMCS "Charge Speed Window" category="Advanced" type=Single interaction=Slider save=true
+option-exists DMCS "Charge Min Swing Speed" category="Advanced" type=Single interaction=Slider save=true
 option-exists DMCS "Charge Thrown And Spells Count" category="Charge Stagger" type=Boolean save=true
-option-exists DMCS "Charge Stagger Strength" category="Charge Stagger" type=String interaction=ArrowList save=true
-option-exists DMCS "Charge Stagger Duration" category="Charge Stagger" type=Single interaction=Slider save=true
+option-exists DMCS "Charge Stagger Strength" category="Advanced" type=String interaction=ArrowList save=true
+option-exists DMCS "Charge Stagger Duration" category="Advanced" type=Single interaction=Slider save=true
 option-exists DMCS "Charge Second Hit Knocks Down" category="Charge Stagger" type=Boolean save=true
 expect-option DMCS "Charge Stagger Preset" Gamey
 expect-option DMCS "Charge Stagger Chance" 100

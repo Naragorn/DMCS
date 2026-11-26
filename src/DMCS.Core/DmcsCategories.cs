@@ -19,6 +19,13 @@ namespace DMCS.Core
         /// <summary>Not a feature: one "Needs Skill" toggle per feature (the skill tree gate, 2026-11-20).</summary>
         public const string SkillTree = "Skill Tree";
 
+        /// <summary>
+        /// Fine-tuning values of every feature, a tab of its own at the end (user 2026-11-26: the feature tabs had far too
+        /// many settings). Each moved option keeps its name, so saved values carry over; its order is the feature's
+        /// category order x 100 plus its old order, so the tab lists the features in menu order.
+        /// </summary>
+        public const string Advanced = "Advanced";
+
         public const int GeneralOrder = 0;
         public const int ClashOfMightOrder = 1;
         public const int DisarmStrikeOrder = 2;
@@ -28,6 +35,7 @@ namespace DMCS.Core
         public const int ParryOrder = 6;
         public const int FinisherOrder = 7;
         public const int SkillTreeOrder = 8;
+        public const int AdvancedOrder = 9;
 
         /// <summary>
         /// The game's own "Enabled" text (Texts/Text_*.json, group "Default", id "Enabled").
@@ -54,6 +62,7 @@ namespace DMCS.Core
                 case Parry: return ParryOrder;
                 case Finisher: return FinisherOrder;
                 case SkillTree: return SkillTreeOrder;
+                case Advanced: return AdvancedOrder;
                 default: return -1;
             }
         }
