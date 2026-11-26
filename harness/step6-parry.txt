@@ -13,11 +13,11 @@ frame-rate 90
 press DMCS "Reset To Defaults"
 option-exists DMCS "Counter Parry" category=Parry type=Boolean interaction=ArrowList save=true
 option-exists DMCS "Counter Guard Speed" category=Parry type=Single interaction=Slider save=true
-option-exists DMCS "Counter Stagger Duration" category=Parry type=Single interaction=Slider save=true
+option-exists DMCS "Counter Stagger Duration" category=Advanced type=Single interaction=Slider save=true
 option-exists DMCS "Power Parry" category=Parry type=Boolean interaction=ArrowList save=true
 option-exists DMCS "Power Parry Min Speed" category=Parry type=Single interaction=Slider save=true
 option-exists DMCS "Power Parry Chance" category=Parry type=Single interaction=Slider save=true
-option-exists DMCS "Parry Speed Window" category=Parry type=Single interaction=Slider save=true
+option-exists DMCS "Parry Speed Window" category=Advanced type=Single interaction=Slider save=true
 expect-option DMCS "Parry Enabled" true
 expect-option DMCS "Counter Parry" true
 expect-option DMCS "Counter Guard Speed" 1

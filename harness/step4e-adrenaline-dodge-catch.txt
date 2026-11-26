@@ -6,10 +6,10 @@
 
 wait-level
 press DMCS "Reset To Defaults"
-option-exists DMCS "Adrenaline Per Dodge" category=Adrenaline type=Int32 interaction=Slider save=true
-option-exists DMCS "Dodge Min Speed" category=Adrenaline type=Single interaction=Slider save=true
-option-exists DMCS "Adrenaline Per Catch" category=Adrenaline type=Int32 interaction=Slider save=true
-option-exists DMCS "Catch Max Air Time" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Adrenaline Per Dodge" category=Advanced type=Int32 interaction=Slider save=true
+option-exists DMCS "Dodge Min Speed" category=Advanced type=Single interaction=Slider save=true
+option-exists DMCS "Adrenaline Per Catch" category=Advanced type=Int32 interaction=Slider save=true
+option-exists DMCS "Catch Max Air Time" category=Advanced type=Single interaction=Slider save=true
 expect-option DMCS "Adrenaline Per Dodge" 10
 expect-option DMCS "Dodge Min Speed" 2
 expect-option DMCS "Adrenaline Per Catch" 10

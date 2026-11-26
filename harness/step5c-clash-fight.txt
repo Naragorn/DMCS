@@ -27,7 +27,7 @@ option-exists DMCS "Clash Haptics Strength" category="Clash of Might" type=Singl
 option-exists DMCS "Clash Dark Messiah Sounds" category="Clash of Might" type=Boolean interaction=ArrowList save=true
 option-exists DMCS "Clash Duel Star" category="Clash of Might" type=Boolean interaction=ArrowList save=true
 option-exists DMCS "Clash Outcome Cues" category="Clash of Might" type=Boolean interaction=ArrowList save=true
-option-exists DMCS "Adrenaline Per Clash Win" category=Adrenaline type=Int32 interaction=Slider save=true
+option-exists DMCS "Adrenaline Per Clash Win" category=Advanced type=Int32 interaction=Slider save=true
 expect-option DMCS "Clash of Might Mode" Simple
 expect-option DMCS "Clash Difficulty" 50
 expect-option DMCS "Clash Difficulty Scales With Height" true

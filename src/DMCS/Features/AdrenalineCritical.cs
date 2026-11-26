@@ -77,7 +77,7 @@ namespace DMCS
         [ModOption(name = AdrenalineSettings.KillsName, tooltip = "The critical always kills, like Dark Messiah's fatality.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 25)]
         public static bool Kills { get; set; } = AdrenalineSettings.DefaultKills;
 
-        [ModOption(name = AdrenalineSettings.DismemberName, tooltip = "The critical cuts off the hit head, arm or leg (where the game allows it).", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 26)]
+        [ModOption(name = AdrenalineSettings.DismemberName, tooltip = "A critical with a cutting edge (a slash) cuts off the hit head, arm or leg (where the game allows it). Blunt hits, stabs, fists and kicks kill without a cut.", category = DmcsCategories.Adrenaline, categoryOrder = DmcsCategories.AdrenalineOrder, order = 26)]
         public static bool Dismember { get; set; } = AdrenalineSettings.DefaultDismember;
 
         [ModOption(name = AdrenalineSettings.KnockbackName, tooltip = "How hard (m/s) the critical throws the enemy along the hit. 0 = no throw.", valueSourceName = nameof(KnockbackValues), category = DmcsCategories.Advanced, categoryOrder = DmcsCategories.AdvancedOrder, order = DmcsCategories.AdrenalineOrder * 100 + 27)]
@@ -197,10 +197,15 @@ namespace DMCS
             }
             StartTime();
             Restore(target);
-            if (Dismember && part != null)
+            var slash = hit.damageStruct.damageType == DamageType.Slash;
+            if (CriticalRule.Cuts(Dismember, part != null, slash))
             {
                 var cut = part.SafeSlice();
                 Dmcs.Log.Debug(Channel, cut ? "cut off " + partName : "no cut (" + partName + ": the game refused)");
+            }
+            else if (Dismember && part != null)
+            {
+                Dmcs.Log.Debug(Channel, "no cut (" + hit.damageStruct.damageType + " hit, only a slash cuts)");
             }
             if (Kills && !target.isKilled)
             {

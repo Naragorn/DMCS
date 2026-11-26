@@ -50,7 +50,7 @@ expect-no-log body hit
 
 # 1b. Staggered, 100 %, but the player's hand only was run into (no controller swing): no strike, nothing drops.
 # Found 2026-11-17: a fighting NPC swinging into the standing player's hand disarmed itself this way.
-option-exists DMCS "Body Hit Min Hand Speed" category=General type=Single interaction=Slider save=true
+option-exists DMCS "Body Hit Min Hand Speed" category=Advanced type=Single interaction=Slider save=true
 expect-option DMCS "Body Hit Min Hand Speed" 1.5
 hit-npc Torso push=1
 expect-npc staggered true

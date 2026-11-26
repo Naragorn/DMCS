@@ -12,8 +12,8 @@ option-exists DMCS "Adrenaline Heartbeat" category=Adrenaline type=Boolean save=
 option-exists DMCS "Adrenaline Haptics" category=Adrenaline type=Boolean save=true
 option-exists DMCS "Adrenaline Weapon Glow" category=Adrenaline type=Boolean save=true
 option-exists DMCS "Adrenaline Vignette" category=Adrenaline type=Boolean save=true
-option-exists DMCS "Adrenaline Vignette Streaks" category=Adrenaline type=Int32 interaction=Slider save=true
-option-exists DMCS "Adrenaline Vignette Frame Rate" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Adrenaline Vignette Streaks" category=Advanced type=Int32 interaction=Slider save=true
+option-exists DMCS "Adrenaline Vignette Frame Rate" category=Advanced type=Single interaction=Slider save=true
 option-exists DMCS "Adrenaline Vignette Flare" category=Adrenaline type=Boolean save=true
 expect-option DMCS "Adrenaline Ready Sound Volume" 0.6
 expect-option DMCS "Adrenaline Heartbeat Volume" 0.5

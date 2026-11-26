@@ -6,16 +6,16 @@ wait-level
 # Start from the defaults even if an earlier scenario failed before its own reset (saved options carry over)
 press DMCS "Reset To Defaults"
 option-exists DMCS "Critical Time Mode" category=Adrenaline type=String save=true
-option-exists DMCS "Critical Hyperfocus Time Scale" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Critical Hyperfocus Time Scale" category=Advanced type=Single interaction=Slider save=true
 option-exists DMCS "Critical Hyperfocus Duration" category=Adrenaline type=Single interaction=Slider save=true
-option-exists DMCS "Critical Slow Time Scale" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Critical Slow Time Scale" category=Advanced type=Single interaction=Slider save=true
 option-exists DMCS "Critical Slow Time Duration" category=Adrenaline type=Single interaction=Slider save=true
 option-exists DMCS "Critical Needs Hard Swing" category=Adrenaline type=Boolean save=true
 option-exists DMCS "Critical Min Swing Speed" category=Adrenaline type=Single interaction=Slider save=true
 option-exists DMCS "Critical Thrown And Spells" category=Adrenaline type=Boolean save=true
 option-exists DMCS "Critical Kills" category=Adrenaline type=Boolean save=true
 option-exists DMCS "Critical Dismember" category=Adrenaline type=Boolean save=true
-option-exists DMCS "Critical Knockback" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Critical Knockback" category=Advanced type=Single interaction=Slider save=true
 option-exists DMCS "Critical Battle Cry" category=Adrenaline type=Boolean save=true
 option-exists DMCS "Chest Stab Kneels" category=Adrenaline type=Boolean save=true
 expect-option DMCS "Critical Time Mode" Hyperfocus
@@ -138,6 +138,28 @@ mark
 hit-npc RightArm velocity=8 type=Slash damage=1
 expect-log CRITICAL on HumanMale
 expect-no-log double fatality
+wait 4
+
+# 6. Only a slash cuts (user 2026-11-26): a blunt hit and a punch are criticals that kill without a cut
+spawn-npc HumanMale distance=2.4 angle=20 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+mark
+hit-npc Head velocity=8 type=Blunt damage=1
+expect-log CRITICAL on HumanMale
+expect-log no cut (Blunt hit, only a slash cuts)
+expect-no-log cut off
+expect-log killed
+wait 4
+spawn-npc HumanMale distance=2.4 angle=-20 brain=HumanDummy
+hit-npc Torso velocity=2
+hit-npc Torso velocity=2
+mark
+hit-npc Head velocity=8 by=hand
+expect-log CRITICAL on HumanMale
+expect-log only a slash cuts
+expect-no-log cut off
+expect-log killed
 wait 4
 
 press DMCS "Reset To Defaults"

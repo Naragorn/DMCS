@@ -280,7 +280,7 @@ values of every group sit in the last tab, **Advanced** (their names and saved v
 | Critical Min Swing Speed | 3 m/s | 0–10 m/s | How hard "hard" is |
 | Critical Thrown And Spells | off | | Thrown weapons and spells can be the critical |
 | Critical Kills | on | | The critical always kills |
-| Critical Dismember | on | | The critical cuts off the hit head, arm or leg |
+| Critical Dismember | on | | A critical with a cutting edge cuts off the hit head, arm or leg. Blunt hits, stabs, fists and kicks kill without a cut |
 | Critical Battle Cry | on | | You shout on the critical |
 | Chest Stab Kneels | on | | A critical chest stab makes the enemy kneel and die |
 | Kneel And Execution | on | | A full meter without hard hits makes the enemy kneel |

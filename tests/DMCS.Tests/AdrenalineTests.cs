@@ -449,6 +449,18 @@ public class CriticalRuleTests
     {
         Assert.Equal(expected, CriticalRule.IsChestStab(torso, penetrating, pierce));
     }
+
+    // User 2026-11-26 (Windows log of the day: a fist and a blunt hit took heads off): only a cutting edge cuts, as in
+    // Dark Messiah, where the sword's fatality dismembers and the staff's does not.
+    [Theory]
+    [InlineData(true, true, true, true)]     // a slash with Critical Dismember on cuts
+    [InlineData(false, true, true, false)]   // Critical Dismember off
+    [InlineData(true, false, true, false)]   // no hit part known
+    [InlineData(true, true, false, false)]   // blunt, pierce, a fist or a kick: no cut, the critical still kills
+    public void OnlyASlashCutsALimbOff(bool dismember, bool hasPart, bool slash, bool expected)
+    {
+        Assert.Equal(expected, CriticalRule.Cuts(dismember, hasPart, slash));
+    }
 }
 
 public class KneelClipsTests

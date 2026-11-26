@@ -5,17 +5,17 @@
 wait-level
 # Start from the defaults even if an earlier scenario failed before its own reset (saved options carry over)
 press DMCS "Reset To Defaults"
-option-exists DMCS "Adrenaline Meter Max" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Adrenaline Meter Max" category=Advanced type=Single interaction=Slider save=true
 option-exists DMCS "Adrenaline Window" category=Adrenaline type=Single interaction=Slider save=true
 option-exists DMCS "Adrenaline Decay" category=Adrenaline type=Boolean save=true
 option-exists DMCS "Damage Taken Lowers Adrenaline" category=Adrenaline type=Boolean save=true
 option-exists DMCS "Adrenaline Decay Per Second" category=Adrenaline type=Single interaction=Slider save=true
 option-exists DMCS "Adrenaline Decay Delay" category=Adrenaline type=Single interaction=Slider save=true
-option-exists DMCS "Adrenaline Per Hit" category=Adrenaline type=Int32 interaction=Slider save=true
-option-exists DMCS "Adrenaline Per Block Or Parry" category=Adrenaline type=Int32 interaction=Slider save=true
-option-exists DMCS "Adrenaline Per Damage Taken" category=Adrenaline type=Int32 interaction=Slider save=true
-option-exists DMCS "Adrenaline Per Charge Stagger" category=Adrenaline type=Int32 interaction=Slider save=true
-option-exists DMCS "Adrenaline Per Disarm" category=Adrenaline type=Int32 interaction=Slider save=true
+option-exists DMCS "Adrenaline Per Hit" category=Advanced type=Int32 interaction=Slider save=true
+option-exists DMCS "Adrenaline Per Block Or Parry" category=Advanced type=Int32 interaction=Slider save=true
+option-exists DMCS "Adrenaline Per Damage Taken" category=Advanced type=Int32 interaction=Slider save=true
+option-exists DMCS "Adrenaline Per Charge Stagger" category=Advanced type=Int32 interaction=Slider save=true
+option-exists DMCS "Adrenaline Per Disarm" category=Advanced type=Int32 interaction=Slider save=true
 expect-option DMCS "Adrenaline Meter Max" 100
 expect-option DMCS "Adrenaline Window" 12
 expect-option DMCS "Adrenaline Decay" false

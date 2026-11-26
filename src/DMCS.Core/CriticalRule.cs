@@ -99,6 +99,13 @@ namespace DMCS.Core
         {
             return hitTorso && (penetrating || pierceDamage);
         }
+
+        /// <summary>
+        /// Whether the critical cuts the hit part off: only a slash, the hit of a cutting edge (user 2026-11-26; the
+        /// Windows log of that day had a fist and a blunt critical take heads off). As Dark Messiah: a sword's fatality
+        /// beheads or dismembers, a staff's breaks the neck. Blunt, pierce, fist and kick criticals still kill and throw.
+        /// </summary>
+        public static bool Cuts(bool dismember, bool hasPart, bool slash) => dismember && hasPart && slash;
     }
 
     /// <summary>The death-animation direction the game picks from the hit (AnimationData.Clip.Direction).</summary>

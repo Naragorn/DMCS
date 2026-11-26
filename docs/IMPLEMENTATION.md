@@ -722,6 +722,17 @@ was Hit only); passed 2026-11-24.
 - A second 0.25 m push on top of the first (controller 0.5 m ahead of the 20x heavy sword) made the hand let go, and the
   clash was lost for letting go (film run 12:53).
 
+## Critical: only a slash cuts (2026-11-26)
+
+Windows headset log 2026-11-26: two criticals cut a head off without a blade, 13:02:21 a blunt hit with a held weapon
+(the execution of a kneeling enemy) and 13:06:57 a punch (`PlayerBody`). Cause: `AdrenalineCritical.Execute` cut the hit
+part whenever Critical Dismember was on, whatever the damage type. Fix: `CriticalRule.Cuts(dismember, hasPart, slash)`,
+a cut only for `DamageType.Slash`; otherwise the log says "no cut (<type> hit, only a slash cuts)". Kill and throw stay.
+Dark Messiah does the same: the sword's fatality beheads or dismembers, the staff's breaks the neck (GameSpot hands-on
+2006; Neoseeker item FAQ v1.1). Tests: `CriticalRuleTests.OnlyASlashCutsALimbOff` (red 1, green 875/875). Harness run
+20261126-150102: step1-a PASS, step4b PASS with a new case 6 (a blunt head hit and a punch: critical, kill, no cut;
+the slash cases still cut LeftArm, RightLeg, RightArm). Not shown: a real blunt or fist critical in the headset.
+
 ## Advanced tab (2026-11-26)
 
 User 2026-11-22 (headset checklist): "viel zu viele Einstellmöglichkeiten". 2026-11-26: the fine-tuning values go into a

@@ -5,10 +5,10 @@
 wait-level
 # Start from the defaults even if an earlier scenario failed before its own reset (saved options carry over)
 press DMCS "Reset To Defaults"
-option-exists DMCS "Execution Window" category=Adrenaline type=Single interaction=Slider save=true
+option-exists DMCS "Execution Window" category=Advanced type=Single interaction=Slider save=true
 option-exists DMCS "Kneel And Execution" category=Adrenaline type=Boolean save=true
-option-exists DMCS "Kneel After No Hit" category=Adrenaline type=Single interaction=Slider save=true
-option-exists DMCS "Kneel After Light Hits" category=Adrenaline type=Int32 interaction=Slider save=true
+option-exists DMCS "Kneel After No Hit" category=Advanced type=Single interaction=Slider save=true
+option-exists DMCS "Kneel After Light Hits" category=Advanced type=Int32 interaction=Slider save=true
 option-exists DMCS "Kneel Death Chance" category=Adrenaline type=Int32 interaction=Slider save=true
 expect-option DMCS "Execution Window" 5
 expect-option DMCS "Kneel And Execution" true
