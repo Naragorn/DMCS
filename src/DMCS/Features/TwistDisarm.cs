@@ -34,7 +34,7 @@ namespace DMCS
             EventManager.OnItemGrab += OnItemGrab;
             EventManager.OnItemRelease += OnItemRelease;
             _hooked = true;
-            var player = Player.currentCreature;
+            var player = CurrentPlayer.Body;
             if (player != null)
             {
                 Watch(player.handLeft?.grabbedHandle?.item);

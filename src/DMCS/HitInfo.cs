@@ -74,7 +74,7 @@ namespace DMCS
 
         public static HitSource SourceOf(CollisionInstance hit)
         {
-            var player = Player.currentCreature;
+            var player = CurrentPlayer.Body;
             if (player == null)
             {
                 return HitSource.NotPlayer;

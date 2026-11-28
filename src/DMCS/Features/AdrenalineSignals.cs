@@ -497,7 +497,7 @@ namespace DMCS
             {
                 return;
             }
-            var player = Player.currentCreature;
+            var player = CurrentPlayer.Body;
             if (player == null)
             {
                 return;
@@ -509,7 +509,7 @@ namespace DMCS
         private static void StartGlows()
         {
             EndGlows();
-            var player = Player.currentCreature;
+            var player = CurrentPlayer.Body;
             var data = Catalog.GetData<EffectData>(GlowEffectId);
             if (player == null || data == null)
             {

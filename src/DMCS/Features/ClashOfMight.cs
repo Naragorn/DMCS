@@ -630,7 +630,7 @@ namespace DMCS
 
         private static SlowMoVerdict Judge(Flash flash)
         {
-            var player = Player.currentCreature;
+            var player = CurrentPlayer.Body;
             if (player == null)
             {
                 return SlowMoVerdict.NpcTooFar;
@@ -700,7 +700,7 @@ namespace DMCS
                 return;
             }
             _timeOwned = false;
-            var playerDead = Player.currentCreature == null || Player.currentCreature.isKilled;
+            var playerDead = CurrentPlayer.Body == null || CurrentPlayer.Body.isKilled;
             // Only end our own slow-motion: the player's Focus, a critical or the game's death slow-motion may have taken over.
             var starting = TimeManager.slowMotionState == TimeManager.SlowMotionState.Starting;
             if (playerDead || (!force && !ClashRules.StillOurSlowMotion(starting, Time.timeScale, _timeScale)))
@@ -807,7 +807,7 @@ namespace DMCS
             }
             // After the weight: the spring is sized on the mass the blade has during the lock.
             var held = Hold(item, flash.Weapon, contact);
-            var player = Player.currentCreature;
+            var player = CurrentPlayer.Body;
             var npcHeight = flash.Npc.GetHeight();
             var playerHeight = player != null ? player.GetHeight() : 0f;
             var female = flash.Npc.data != null && flash.Npc.data.gender == CreatureData.Gender.Female;
@@ -1135,7 +1135,7 @@ namespace DMCS
                 }
                 parts.Add("your " + item.data?.id + " flies away (" + released + (released == 1 ? " hand" : " hands") + " let go)");
             }
-            var player = Player.currentCreature;
+            var player = CurrentPlayer.Body;
             if (ClashLoseOutcomes.Hits(LoseOutcome) && LoseDamage > 0f && player != null && !player.isKilled)
             {
                 var before = player.currentHealth;
@@ -1147,7 +1147,7 @@ namespace DMCS
 
         internal static Vector3 AwayFromPlayer(Creature npc)
         {
-            var player = Player.currentCreature;
+            var player = CurrentPlayer.Body;
             if (npc == null || player == null)
             {
                 return Vector3.up;

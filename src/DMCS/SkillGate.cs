@@ -92,7 +92,7 @@ namespace DMCS
         /// <summary>At level load: reads the player's skills and logs whether the game's catalog has DMCS's skills.</summary>
         public static void OnLevelLoaded()
         {
-            ReadPlayer(Player.currentCreature, "level loaded");
+            ReadPlayer(CurrentPlayer.Body, "level loaded");
             Dmcs.Log.Info("Skill tree: " + string.Join(", ", DmcsSkills.All.Select(Describe)));
         }
 
@@ -115,7 +115,7 @@ namespace DMCS
             {
                 // The player may have bought the skill before the gate was switched on: read it now.
                 var skill = DmcsSkills.ForFeature(toggle.Name);
-                var player = Player.currentCreature;
+                var player = CurrentPlayer.Body;
                 if (skill != null && player != null)
                 {
                     toggle.SetHasSkill(player.HasSkill(skill.Id));

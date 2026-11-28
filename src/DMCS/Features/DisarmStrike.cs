@@ -496,14 +496,14 @@ namespace DMCS
             {
                 case DisarmReaction.BackOff:
                     var move = instance?.GetModule<BrainModuleMove>(false);
-                    if (move == null || instance.tree == null || Player.currentCreature == null)
+                    if (move == null || instance.tree == null || CurrentPlayer.Body == null)
                     {
                         break;
                     }
                     // Its behaviour tree pauses (as BrainModuleFear.Panic does) while DMCS walks it backwards, facing the player.
                     instance.tree.Reset();
                     instance.updateTree = false;
-                    move.TurnTo(Player.currentCreature.transform, BackOffTurn);
+                    move.TurnTo(CurrentPlayer.Body.transform, BackOffTurn);
                     return reaction;
                 case DisarmReaction.Cower:
                     var fear = instance?.GetModule<BrainModuleFear>(false);
@@ -686,7 +686,7 @@ namespace DMCS
         /// <summary>The player's hand behind a hit: the hand holding (or last holding) the item, or the punching hand.</summary>
         private static RagdollHand PlayerHandOf(CollisionInstance hit)
         {
-            var player = Player.currentCreature;
+            var player = CurrentPlayer.Body;
             var handler = hit.damageStruct.damager != null ? hit.damageStruct.damager.collisionHandler : null;
             if (handler == null && hit.sourceColliderGroup != null)
             {
@@ -707,7 +707,7 @@ namespace DMCS
         /// <summary>Creature.GetHeight = morphology.height * lossyScale.y, for the NPC and the player's body alike.</summary>
         private static bool IsSmaller(Creature target)
         {
-            var player = Player.currentCreature;
+            var player = CurrentPlayer.Body;
             return player != null && SizeFilter.IsSmaller(target.GetHeight(), player.GetHeight(), SmallerMargin / 100f);
         }
 

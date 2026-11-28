@@ -568,7 +568,7 @@ namespace DMCS
 
         private static void Shout()
         {
-            var player = Player.currentCreature;
+            var player = CurrentPlayer.Body;
             var speak = player?.brain?.instance?.GetModule<BrainModuleSpeak>(false);
             if (speak == null)
             {
@@ -603,7 +603,7 @@ namespace DMCS
             TimeManager.SetSlowMotion(true, _timeScale, AnimationCurve.EaseInOut(0f, 0f, 0.25f, 1f), effect);
             _timeOwned = true;
             _timeEndsAt = Time.unscaledTime + duration;
-            var player = Player.currentCreature;
+            var player = CurrentPlayer.Body;
             if (hyperfocus && player != null && player.currentLocomotion != null)
             {
                 var (joint, speed, drag) = CriticalTimeModes.Buffs(_timeScale);
@@ -621,7 +621,7 @@ namespace DMCS
             if (_playerBuffed)
             {
                 _playerBuffed = false;
-                var player = Player.currentCreature;
+                var player = CurrentPlayer.Body;
                 if (player != null)
                 {
                     player.RemoveJointForceMultiplier(Handler);
@@ -639,7 +639,7 @@ namespace DMCS
                 return;
             }
             _timeOwned = false;
-            var playerDead = Player.currentCreature == null || Player.currentCreature.isKilled;
+            var playerDead = CurrentPlayer.Body == null || CurrentPlayer.Body.isKilled;
             // Only end our own slow-motion: the player's Focus or the game's death slow-motion may have taken over.
             if (playerDead || (!force && Mathf.Abs(Time.timeScale - _timeScale) > 0.01f))
             {

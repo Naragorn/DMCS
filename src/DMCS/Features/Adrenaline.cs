@@ -467,7 +467,7 @@ namespace DMCS
         /// </summary>
         private static Creature KneelTarget()
         {
-            var player = Player.currentCreature;
+            var player = CurrentPlayer.Body;
             if (player == null)
             {
                 return null;

@@ -110,7 +110,7 @@ namespace DMCS
             SpellTelekinesis.onTelekinesisUngrabEvent += OnTelekinesisRelease;
             EventManager.onCreatureHit += OnThrownHit;
             _hooked = true;
-            Watch(Player.currentCreature);
+            Watch(CurrentPlayer.Body);
         }
 
         public static void Stop()
@@ -160,7 +160,7 @@ namespace DMCS
 
         private static void SetTelekinesisGrab(bool open)
         {
-            var player = Player.currentCreature;
+            var player = CurrentPlayer.Body;
             if (open && player != null)
             {
                 foreach (var hand in new[] { player.handLeft, player.handRight })
@@ -370,7 +370,7 @@ namespace DMCS
 
         private static void Fling(Creature nearest, IReadOnlyCollection<Creature> pushed)
         {
-            var player = Player.currentCreature;
+            var player = CurrentPlayer.Body;
             var center = player != null ? player.transform.position : nearest.transform.position;
             var around = Around(null, center, GravityRadius);
             foreach (var c in pushed.Where(c => !around.Contains(c)))
